@@ -1,3 +1,9 @@
+
+
+
+
+
+
 name: Java CI
 
 on:
@@ -25,3 +31,8 @@ jobs:
       run: |
         cd backend
         mvn clean compile -DskipTests
+
+    - name: Build and test with Maven
+      run : |
+        cd backend
+        mvn clean verify
