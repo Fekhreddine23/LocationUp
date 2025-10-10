@@ -1,0 +1,38 @@
+# =====================
+# Backend Java
+# =====================
+backend/target/
+backend/.settings/
+backend/.classpath
+backend/.project
+backend/bin/
+backend/*.jar
+backend/*.war
+
+# =====================
+# Frontend (pour plus tard)
+# =====================
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+frontend/.env.local
+
+# =====================
+# Database
+# =====================
+*.db
+*.sqlite
+
+# =====================
+# IDE
+# =====================
+.vscode/
+.idea/
+*.iml
+*.iws
+
+# =====================
+# Système
+# =====================
+.DS_Store
+Thumbs.db
