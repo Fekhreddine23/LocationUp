@@ -25,15 +25,3 @@ jobs:
       run: |
         cd backend
         mvn clean verify
-    
-#    - name: Code Quality Checks
-#      run: |
-#       cd backend
-#       mvn checkstyle:check
-#       mvn spotbugs:check
-    
-   - name: Deploy to staging
-     if: github.ref == 'refs/heads/main'
-     run: |
-       echo "🚀 Déploiement automatique vers l'environnement de staging!"
-       echo "Application déployée avec succès ✅"
