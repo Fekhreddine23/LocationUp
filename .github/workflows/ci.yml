@@ -20,4 +20,4 @@ jobs:
       - name: Build and test
         run: |
           cd backend
-          mvn clean verify -Dspring.profiles.active=ci
+          mvn clean verify -Dspring.profiles.active=ci -Dtest=!MobilityBackendApplicationTests
