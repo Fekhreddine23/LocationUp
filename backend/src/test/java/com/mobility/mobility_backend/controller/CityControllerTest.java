@@ -1,13 +1,11 @@
 package com.mobility.mobility_backend.controller;
 
-import com.mobility.mobility_backend.config.TestSecurityConfig;
 import com.mobility.mobility_backend.dto.CityDTO;
 import com.mobility.mobility_backend.service.CityService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -20,8 +18,6 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-// ✅ Configuration pour désactiver la sécurité
-@Import(TestSecurityConfig.class)
 @WebMvcTest(CityController.class)
 public class CityControllerTest {
 
