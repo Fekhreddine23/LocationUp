@@ -17,11 +17,7 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
           cache: 'maven'
-      - name: Build
+      - name: Build and test
         run: |
           cd backend
-          mvn clean compile -q
-      - name: Run tests
-        run: |
-          cd backend
-          mvn test -Dspring.profiles.active=test
+          mvn clean verify -Dspring.profiles.active=ci
