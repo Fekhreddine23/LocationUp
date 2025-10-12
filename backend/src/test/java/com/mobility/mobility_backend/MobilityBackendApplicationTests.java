@@ -5,11 +5,11 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest
-@ActiveProfiles("ci")  // ✅ UTILISE LE PROFIL CI
+@ActiveProfiles("ci")
 class MobilityBackendApplicationTests {
 
     @Test
     void contextLoads() {
-        // Test simple de chargement du contexte
+        // Simple context load test
     }
 }
