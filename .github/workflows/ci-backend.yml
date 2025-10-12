@@ -1,5 +1,7 @@
 name: Java CI
 
+name: Java CI
+
 on:
   push:
     branches: [ main ]
@@ -24,4 +26,4 @@ jobs:
     - name: Build and test with Maven
       run: |
         cd backend
-        mvn clean verify
+        mvn clean verify -Dspring.profiles.active=test 
