@@ -5,22 +5,26 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
-@ActiveProfiles("ci")  // ✅ AJOUTÉ
+@ActiveProfiles("ci")
+@Transactional  // ✅ Utiliser @Transactional au lieu de cleanDatabase()
 public class UserRepositoryTest {
 
     @Autowired
     private UserRepository userRepository;
 
     @Test
-    public void testSaveAndFindUser() {
+    void testSaveAndFindUser() {
         // Given
-        User user = new User("john_doe", "john@example.com", "password123");
+        String uniqueUsername = "testuser_" + System.currentTimeMillis();
+        String uniqueEmail = "test_" + System.currentTimeMillis() + "@example.com";
+        User user = new User(uniqueUsername, uniqueEmail, "password123");
         
         // When
         User savedUser = userRepository.save(user);
@@ -28,35 +32,39 @@ public class UserRepositoryTest {
         
         // Then
         assertThat(foundUser).isPresent();
-        assertThat(foundUser.get().getUsername()).isEqualTo("john_doe");
-        assertThat(foundUser.get().getEmail()).isEqualTo("john@example.com");
+        assertThat(foundUser.get().getUsername()).isEqualTo(uniqueUsername);
+        assertThat(foundUser.get().getEmail()).isEqualTo(uniqueEmail);
     }
 
     @Test
-    public void testFindByUsername() {
+    void testFindByUsername() {
         // Given
-        User user = new User("jane_smith", "jane@example.com", "password123");
+        String uniqueUsername = "finduser_" + System.currentTimeMillis();
+        String uniqueEmail = "find_" + System.currentTimeMillis() + "@example.com";
+        User user = new User(uniqueUsername, uniqueEmail, "password123");
         userRepository.save(user);
         
         // When
-        Optional<User> foundUser = userRepository.findByUsername("jane_smith");
+        Optional<User> foundUser = userRepository.findByUsername(uniqueUsername);
         
         // Then
         assertThat(foundUser).isPresent();
-        assertThat(foundUser.get().getEmail()).isEqualTo("jane@example.com");
+        assertThat(foundUser.get().getUsername()).isEqualTo(uniqueUsername);
     }
 
     @Test
-    public void testFindByEmail() {
+    void testFindByEmail() {
         // Given
-        User user = new User("bob_wilson", "bob@example.com", "password123");
+        String uniqueUsername = "emailuser_" + System.currentTimeMillis();
+        String uniqueEmail = "email_" + System.currentTimeMillis() + "@example.com";
+        User user = new User(uniqueUsername, uniqueEmail, "password123");
         userRepository.save(user);
         
         // When
-        Optional<User> foundUser = userRepository.findByEmail("bob@example.com");
+        Optional<User> foundUser = userRepository.findByEmail(uniqueEmail);
         
         // Then
         assertThat(foundUser).isPresent();
-        assertThat(foundUser.get().getUsername()).isEqualTo("bob_wilson");
+        assertThat(foundUser.get().getEmail()).isEqualTo(uniqueEmail);
     }
 }

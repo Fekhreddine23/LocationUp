@@ -1,7 +1,6 @@
 package com.mobility.mobility_backend.entity;
 
 import jakarta.persistence.*;
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "cities")
@@ -9,32 +8,53 @@ public class City {
     
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "city_id")
     private Long id;
     
-    @Column(name = "name", nullable = false, unique = true, length = 100)
+    @Column(nullable = false, unique = true)
     private String name;
     
-    @Column(name = "created_at", insertable = false, updatable = false)
-    private LocalDateTime createdAt;
-    
+    // Constructeurs
     public City() {}
     
     public City(String name) {
         this.name = name;
     }
     
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    // Getters et Setters
+    public Long getId() { 
+        return id; 
+    }
     
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
+    public void setId(Long id) { 
+        this.id = id; 
+    }
     
-    public LocalDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public String getName() { 
+        return name; 
+    }
+    
+    public void setName(String name) { 
+        this.name = name; 
+    }
+    
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof City)) return false;
+        City city = (City) o;
+        return id != null && id.equals(city.id);
+    }
+    
+    @Override
+    public int hashCode() {
+        return getClass().hashCode();
+    }
     
     @Override
     public String toString() {
-        return "City{id=" + id + ", name='" + name + "', createdAt=" + createdAt + "}";
+        return "City{" +
+                "id=" + id +
+                ", name='" + name + '\'' +
+                '}';
     }
 }
