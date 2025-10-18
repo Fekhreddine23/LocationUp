@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
+import org.springframework.test.context.ActiveProfiles;
 
 import com.mobility.mobility_backend.entity.Admin;
 import com.mobility.mobility_backend.entity.City;
@@ -19,6 +20,7 @@ import com.mobility.mobility_backend.entity.MobilityService;
 import com.mobility.mobility_backend.entity.Offer;
 
 @DataJpaTest
+@ActiveProfiles("test")
 public class OfferRepositoryTest {
 
     @Autowired
