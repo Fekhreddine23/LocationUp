@@ -1,14 +1,21 @@
 package com.mobility.mobility_backend.controller;
 
-import com.mobility.mobility_backend.dto.MobilityServiceDTO;
-import com.mobility.mobility_backend.service.MobilityServiceService;
+import java.util.List;
+import java.util.Optional;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
-import java.util.Optional;
+import com.mobility.mobility_backend.dto.MobilityServiceDTO;
+import com.mobility.mobility_backend.service.MobilityServiceService;
 
 @RestController
 @RequestMapping("/api/mobility-services")
@@ -45,7 +52,7 @@ public class MobilityServiceController {
 	 * Récupère un service de mobilité par son ID GET /api/mobility-services/{id}
 	 */
 	@GetMapping("/{id}")
-	public ResponseEntity<MobilityServiceDTO> getMobilityServiceById(@PathVariable Long id) {
+	public ResponseEntity<MobilityServiceDTO> getMobilityServiceById(@PathVariable Integer id) {
 		Optional<MobilityServiceDTO> service = mobilityServiceService.getMobilityServiceById(id);
 		return service.map(value -> new ResponseEntity<>(value, HttpStatus.OK))
 				.orElse(new ResponseEntity<>(HttpStatus.NOT_FOUND));
@@ -66,7 +73,7 @@ public class MobilityServiceController {
 	 * Supprime un service de mobilité par son ID DELETE /api/mobility-services/{id}
 	 */
 	@DeleteMapping("/{id}")
-	public ResponseEntity<Void> deleteMobilityService(@PathVariable Long id) {
+	public ResponseEntity<Void> deleteMobilityService(@PathVariable Integer id) {
 		boolean deleted = mobilityServiceService.deleteMobilityService(id);
 		return deleted ? new ResponseEntity<>(HttpStatus.NO_CONTENT) : new ResponseEntity<>(HttpStatus.NOT_FOUND);
 	}

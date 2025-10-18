@@ -1,32 +1,36 @@
 package com.mobility.mobility_backend.repository;
 
-import com.mobility.mobility_backend.entity.City;
-import org.junit.jupiter.api.Test;
-
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class CitySimpleTest {
-    
+import java.util.Optional;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+
+import com.mobility.mobility_backend.entity.City;
+
+@DataJpaTest
+class CitySimpleTest {
+
+    @Autowired
+    private CityRepository cityRepository;
+
     @Test
-    public void testCityCreation() {
-        // Test simple sans base de données
-        City city = new City("Paris");
-        
-        assertThat(city.getName()).isEqualTo("Paris");
-        assertThat(city).isNotNull();
-        
-        System.out.println("✅ TEST RÉUSSI : City créée avec nom = " + city.getName());
+    void whenFindById_thenReturnCity() {
+        // Given
+        City city = cityRepository.save(new City("Paris"));
+
+        // When
+        Optional<City> foundCity = cityRepository.findById(city.getCityId()); // ✅ Utiliser getCityId()
+
+        // Then
+        assertThat(foundCity).isPresent();
+        assertThat(foundCity.get().getName()).isEqualTo("Paris");
     }
-    
+
     @Test
-    public void testCityGettersSetters() {
-        City city = new City();
-        city.setId(1L);
-        city.setName("Lyon");
-        
-        assertThat(city.getId()).isEqualTo(1L);
-        assertThat(city.getName()).isEqualTo("Lyon");
-        
-        System.out.println("✅ TEST RÉUSSI : Getters/Setters fonctionnent");
+    void contextLoads() {
+        assertThat(cityRepository).isNotNull();
     }
 }

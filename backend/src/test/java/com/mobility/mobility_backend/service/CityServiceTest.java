@@ -1,21 +1,26 @@
 package com.mobility.mobility_backend.service;
 
-import com.mobility.mobility_backend.dto.CityDTO;
-import com.mobility.mobility_backend.entity.City;
-import com.mobility.mobility_backend.repository.CityRepository;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.util.Optional;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.context.ActiveProfiles;
 
-import java.util.Optional;
+import com.mobility.mobility_backend.dto.CityDTO;
+import com.mobility.mobility_backend.entity.City;
+import com.mobility.mobility_backend.repository.CityRepository;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@ActiveProfiles("ci")
 public class CityServiceTest {
 
 	@Mock
@@ -29,7 +34,7 @@ public class CityServiceTest {
 		// Given
 		String cityName = "Paris";
 		City savedCity = new City(cityName);
-		savedCity.setId(1L);
+		savedCity.setId(1);
 
 		when(cityRepository.existsByName(cityName)).thenReturn(false);
 		when(cityRepository.save(any(City.class))).thenReturn(savedCity);
@@ -49,7 +54,7 @@ public class CityServiceTest {
 	@Test
 	public void testGetCityById() {
 		// Given
-		Long cityId = 1L;
+		Integer cityId = 1;
 		City city = new City("Paris");
 		city.setId(cityId);
 

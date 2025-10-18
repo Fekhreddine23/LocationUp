@@ -1,7 +1,10 @@
 package com.mobility.mobility_backend.dto;
 
+import org.springframework.stereotype.Component;
+
 import com.mobility.mobility_backend.entity.MobilityService;
 
+@Component
 public class MobilityServiceMapper {
 
 	public static MobilityServiceDTO toDTO(MobilityService mobilityService) {

@@ -6,36 +6,10 @@ import java.util.Optional;
 import com.mobility.mobility_backend.dto.CityDTO;
 
 public interface CityService {
-	
-	/**
-     * Crée une nouvelle ville
-     */
     CityDTO createCity(String name);
-    
-    /**
-     * Récupère une ville par son ID
-     */
-    Optional<CityDTO> getCityById(Long id);
-    
-    /**
-     * Récupère toutes les villes
-     */
+    Optional<CityDTO> getCityById(Integer cityId);
     List<CityDTO> getAllCities();
-    
-    /**
-     * Récupère une ville par son nom
-     */
     Optional<CityDTO> getCityByName(String name);
-    
-    /**
-     * Vérifie si une ville existe par son nom
-     */
     boolean cityExists(String name);
-    
-    /**
-     * Supprime une ville par son ID
-     */
-    boolean deleteCity(Long id);
-	
-
+    boolean deleteCity(Integer id);  // ✅ CHANGER Long → Integer
 }

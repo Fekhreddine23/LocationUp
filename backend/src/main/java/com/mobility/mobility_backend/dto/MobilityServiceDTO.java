@@ -1,7 +1,7 @@
 package com.mobility.mobility_backend.dto;
 
 public class MobilityServiceDTO {
-	private Long serviceId;
+	private Integer serviceId;
 	private String name;
 	private String description;
 
@@ -9,18 +9,18 @@ public class MobilityServiceDTO {
 	public MobilityServiceDTO() {
 	}
 
-	public MobilityServiceDTO(Long serviceId, String name, String description) {
-		this.serviceId = serviceId;
+	public MobilityServiceDTO(Integer integer, String name, String description) {
+		this.serviceId = integer;
 		this.name = name;
 		this.description = description;
 	}
 
 	// Getters et Setters
-	public Long getServiceId() {
+	public Integer getServiceId() {
 		return serviceId;
 	}
 
-	public void setServiceId(Long serviceId) {
+	public void setServiceId(Integer serviceId) {
 		this.serviceId = serviceId;
 	}
 

@@ -1,27 +1,33 @@
 package com.mobility.mobility_backend.controller;
 
-import com.mobility.mobility_backend.dto.CityDTO;
-import com.mobility.mobility_backend.service.CityService;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.web.servlet.MockMvc;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.MediaType;
+import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.web.servlet.MockMvc;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mobility.mobility_backend.dto.CityDTO;
+import com.mobility.mobility_backend.service.CityService;
 
 @WebMvcTest(CityController.class)
-@ActiveProfiles("ci")
+@TestPropertySource(properties = {
+	    "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration,org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration",
+	    "spring.security.enabled=false"
+	})
 public class CityControllerTest {
 
     @Autowired
@@ -37,8 +43,8 @@ public class CityControllerTest {
     public void testCreateCity() throws Exception {
         // Given
         CityDTO requestDTO = new CityDTO(null, "Paris");
-        CityDTO responseDTO = new CityDTO(1L, "Paris");
-        
+        CityDTO responseDTO = new CityDTO(1, "Paris");
+
         when(cityService.createCity(any(String.class))).thenReturn(responseDTO);
 
         // When & Then
@@ -53,10 +59,10 @@ public class CityControllerTest {
     @Test
     public void testGetAllCities() throws Exception {
         // Given
-        CityDTO city1 = new CityDTO(1L, "Paris");
-        CityDTO city2 = new CityDTO(2L, "Lyon");
+        CityDTO city1 = new CityDTO(1, "Paris");
+        CityDTO city2 = new CityDTO(2, "Lyon");
         List<CityDTO> cities = Arrays.asList(city1, city2);
-        
+
         when(cityService.getAllCities()).thenReturn(cities);
 
         // When & Then
@@ -70,9 +76,9 @@ public class CityControllerTest {
     @Test
     public void testGetCityById() throws Exception {
         // Given
-        CityDTO city = new CityDTO(1L, "Paris");
-        
-        when(cityService.getCityById(1L)).thenReturn(Optional.of(city));
+        CityDTO city = new CityDTO(1, "Paris");
+
+        when(cityService.getCityById(1)).thenReturn(Optional.of(city));
 
         // When & Then
         mockMvc.perform(get("/api/cities/1"))
@@ -84,7 +90,7 @@ public class CityControllerTest {
     @Test
     public void testGetCityByIdNotFound() throws Exception {
         // Given
-        when(cityService.getCityById(99L)).thenReturn(Optional.empty());
+        when(cityService.getCityById(99)).thenReturn(Optional.empty());
 
         // When & Then
         mockMvc.perform(get("/api/cities/99"))
@@ -94,8 +100,8 @@ public class CityControllerTest {
     @Test
     public void testGetCityByName() throws Exception {
         // Given
-        CityDTO city = new CityDTO(1L, "Paris");
-        
+        CityDTO city = new CityDTO(1, "Paris");
+
         when(cityService.getCityByName("Paris")).thenReturn(Optional.of(city));
 
         // When & Then

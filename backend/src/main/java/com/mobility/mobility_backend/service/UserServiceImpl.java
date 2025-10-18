@@ -1,15 +1,16 @@
 package com.mobility.mobility_backend.service;
 
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
 import com.mobility.mobility_backend.dto.UserDTO;
 import com.mobility.mobility_backend.dto.UserMapper;
 import com.mobility.mobility_backend.entity.User;
 import com.mobility.mobility_backend.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
 public class UserServiceImpl implements UserService {
@@ -23,16 +24,16 @@ public class UserServiceImpl implements UserService {
         if (userRepository.existsByUsername(username)) {
             throw new RuntimeException("Un utilisateur avec le nom '" + username + "' existe déjà");
         }
-        
+
         // Vérifier si l'email existe déjà
         if (userRepository.existsByEmail(email)) {
             throw new RuntimeException("Un utilisateur avec l'email '" + email + "' existe déjà");
         }
-        
+
         // Créer et sauvegarder le nouvel utilisateur
         User user = new User(username, email, password);
         User savedUser = userRepository.save(user);
-        
+
         // Convertir en DTO et retourner
         return UserMapper.toDTO(savedUser);
     }

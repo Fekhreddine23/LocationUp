@@ -1,13 +1,14 @@
 package com.mobility.mobility_backend.repository;
 
-import com.mobility.mobility_backend.entity.City;
+import java.util.Optional;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import java.util.Optional;
+import com.mobility.mobility_backend.entity.City;
 
 @Repository
-public interface CityRepository extends JpaRepository<City, Long> {
+public interface CityRepository extends JpaRepository<City, Integer> {
     Optional<City> findByName(String name);
     boolean existsByName(String name);
 }

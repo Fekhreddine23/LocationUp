@@ -1,8 +1,18 @@
 package com.mobility.mobility_backend.service;
 
-import com.mobility.mobility_backend.dto.MobilityServiceDTO;
-import com.mobility.mobility_backend.entity.MobilityService;
-import com.mobility.mobility_backend.repository.MobilityServiceRepository;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -11,17 +21,13 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.context.ActiveProfiles;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
+import com.mobility.mobility_backend.dto.MobilityServiceDTO;
+import com.mobility.mobility_backend.entity.MobilityService;
+import com.mobility.mobility_backend.repository.MobilityServiceRepository;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import jakarta.persistence.EntityManager;
 
 @ExtendWith(MockitoExtension.class)
-@ActiveProfiles("ci")
 class MobilityServiceServiceImplTest {
 
 	@Mock
@@ -30,16 +36,19 @@ class MobilityServiceServiceImplTest {
 	@InjectMocks
 	private MobilityServiceServiceImpl mobilityServiceService;
 
+	@Mock
+	private EntityManager entityManager;
+
 	private MobilityService velibService;
 	private MobilityService ratpService;
 
 	@BeforeEach
 	void setUp() {
 		velibService = new MobilityService("Vélib", "Service de vélos en libre-service");
-		velibService.setServiceId(1L);
+		velibService.setServiceId(1);
 
 		ratpService = new MobilityService("RATP", "Régie autonome des transports parisiens");
-		ratpService.setServiceId(2L);
+		ratpService.setServiceId(2);
 	}
 
 	@Test
@@ -54,7 +63,7 @@ class MobilityServiceServiceImplTest {
 
 		// Then
 		assertThat(result).isNotNull();
-		assertThat(result.getServiceId()).isEqualTo(1L);
+		assertThat(result.getServiceId()).isEqualTo(1);
 		assertThat(result.getName()).isEqualTo("Vélib");
 		assertThat(result.getDescription()).isEqualTo("Service de vélos en libre-service");
 
@@ -77,28 +86,28 @@ class MobilityServiceServiceImplTest {
 	@Test
 	void whenGetMobilityServiceById_thenSuccess() {
 		// Given
-		when(mobilityServiceRepository.findById(1L)).thenReturn(Optional.of(velibService));
+		when(mobilityServiceRepository.findById(1)).thenReturn(Optional.of(velibService));
 
 		// When
-		Optional<MobilityServiceDTO> result = mobilityServiceService.getMobilityServiceById(1L);
+		Optional<MobilityServiceDTO> result = mobilityServiceService.getMobilityServiceById(1);
 
 		// Then
 		assertThat(result).isPresent();
 		assertThat(result.get().getName()).isEqualTo("Vélib");
-		verify(mobilityServiceRepository).findById(1L);
+		verify(mobilityServiceRepository).findById(1);
 	}
 
 	@Test
 	void whenGetNonExistingMobilityServiceById_thenReturnEmpty() {
 		// Given
-		when(mobilityServiceRepository.findById(99L)).thenReturn(Optional.empty());
+		when(mobilityServiceRepository.findById(99)).thenReturn(Optional.empty());
 
 		// When
-		Optional<MobilityServiceDTO> result = mobilityServiceService.getMobilityServiceById(99L);
+		Optional<MobilityServiceDTO> result = mobilityServiceService.getMobilityServiceById(99);
 
 		// Then
 		assertThat(result).isEmpty();
-		verify(mobilityServiceRepository).findById(99L);
+		verify(mobilityServiceRepository).findById(99);
 	}
 
 	@Test
@@ -147,26 +156,30 @@ class MobilityServiceServiceImplTest {
 	@Test
 	void whenDeleteExistingMobilityService_thenSuccess() {
 		// Given
-		when(mobilityServiceRepository.existsById(1L)).thenReturn(true);
+		when(mobilityServiceRepository.existsById(1)).thenReturn(true); // Changé de findById à existsById
+		doNothing().when(mobilityServiceRepository).deleteById(1);
 
 		// When
-		boolean result = mobilityServiceService.deleteMobilityService(1L);
+		boolean result = mobilityServiceService.deleteMobilityService(1);
 
 		// Then
 		assertThat(result).isTrue();
-		verify(mobilityServiceRepository).deleteById(1L);
+		verify(mobilityServiceRepository, times(1)).existsById(1); // Changé ici aussi
+		verify(mobilityServiceRepository, times(1)).deleteById(1);
 	}
 
 	@Test
 	void whenDeleteNonExistingMobilityService_thenReturnFalse() {
 		// Given
-		when(mobilityServiceRepository.existsById(99L)).thenReturn(false);
+		when(mobilityServiceRepository.existsById(99)).thenReturn(false); // Changé de findById à existsById
 
 		// When
-		boolean result = mobilityServiceService.deleteMobilityService(99L);
+		boolean result = mobilityServiceService.deleteMobilityService(99);
 
 		// Then
 		assertThat(result).isFalse();
-		verify(mobilityServiceRepository, never()).deleteById(anyLong());
+		verify(mobilityServiceRepository, times(1)).existsById(99); // Changé ici aussi
+		verify(mobilityServiceRepository, never()).deleteById(any());
 	}
+
 }
