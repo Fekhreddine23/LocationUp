@@ -20,7 +20,7 @@ import com.mobility.mobility_backend.service.CityService;
 
 @RestController
 @RequestMapping("/api/cities") // ✅ Tous les endpoints commencent par /api/cities
-@PreAuthorize("hasAnyRole('USER', 'ADMIN')") 
+@PreAuthorize("hasAnyRole('USER', 'ADMIN')")
 public class CityController {
 
 	@Autowired

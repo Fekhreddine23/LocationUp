@@ -20,7 +20,7 @@ public class AuthenticationService {
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
 
-    public AuthenticationService(UserService userService, PasswordEncoder passwordEncoder, 
+    public AuthenticationService(UserService userService, PasswordEncoder passwordEncoder,
                                JwtService jwtService, AuthenticationManager authenticationManager) {
         this.userService = userService;
         this.passwordEncoder = passwordEncoder;

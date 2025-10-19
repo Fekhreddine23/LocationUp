@@ -1,16 +1,16 @@
 package com.mobility.mobility_backend.controller.auth;
 
-import com.mobility.mobility_backend.dto.auth.AuthenticationRequest;
-import com.mobility.mobility_backend.dto.auth.AuthenticationResponse;
-import com.mobility.mobility_backend.dto.auth.RegisterRequest;
-import com.mobility.mobility_backend.entity.Role;
-import com.mobility.mobility_backend.entity.User;
-import com.mobility.mobility_backend.service.auth.AuthenticationService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import com.mobility.mobility_backend.dto.auth.AuthenticationRequest;
+import com.mobility.mobility_backend.dto.auth.AuthenticationResponse;
+import com.mobility.mobility_backend.dto.auth.RegisterRequest;
+import com.mobility.mobility_backend.entity.Role;
+import com.mobility.mobility_backend.service.auth.AuthenticationService;
 
 @RestController
 @RequestMapping("/api/auth")

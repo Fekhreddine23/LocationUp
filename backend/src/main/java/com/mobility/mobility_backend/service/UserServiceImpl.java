@@ -94,10 +94,10 @@ public class UserServiceImpl implements UserService {
 		return false;
 	}
 
-	
 
-	
-	
+
+
+
 	@Override
 	public UserDTO createUser(String username, String email, String password) {
 	    // Créer l'entité avec un rôle par défaut
@@ -123,7 +123,7 @@ public class UserServiceImpl implements UserService {
 	    if (userRepository.existsByEmail(email)) {
 	        throw new IllegalArgumentException("Email already exists");
 	    }
-	    
+
 	    // Créer et sauvegarder l'utilisateur
 	    User user = new User(username, email, password, role);
 	    return userRepository.save(user);

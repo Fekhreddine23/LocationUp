@@ -1,17 +1,11 @@
 package com.mobility.mobility_backend.service;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.stereotype.Service;
-
-
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.stereotype.Service;
-
 import java.util.Base64;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.stereotype.Service;
 
 @Service
 public class JwtService {
@@ -30,11 +24,11 @@ public class JwtService {
         // Simulation de génération de token
         String username = userDetails.getUsername();
         long expirationTime = System.currentTimeMillis() + jwtExpiration;
-        
+
         // Création d'un token basique (à remplacer par une vraie implémentation JWT plus tard)
         String tokenContent = username + "|" + expirationTime + "|" + userDetails.getAuthorities();
         String encodedToken = Base64.getEncoder().encodeToString(tokenContent.getBytes());
-        
+
         return "simulated-token-" + encodedToken;
     }
 
@@ -42,7 +36,7 @@ public class JwtService {
         if (token == null || !token.startsWith("simulated-token-")) {
             return false;
         }
-        
+
         final String username = extractUsername(token);
         return (username.equals(userDetails.getUsername())) && !isTokenExpired(token);
     }

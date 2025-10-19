@@ -20,7 +20,7 @@ import com.mobility.mobility_backend.service.MobilityServiceService;
 
 @RestController
 @RequestMapping("/api/mobility-services")
-@PreAuthorize("hasAnyRole('USER', 'ADMIN')") 
+@PreAuthorize("hasAnyRole('USER', 'ADMIN')")
 public class MobilityServiceController {
 
 	@Autowired
