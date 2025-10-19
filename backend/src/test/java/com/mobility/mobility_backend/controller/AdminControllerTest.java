@@ -17,6 +17,7 @@ import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
@@ -29,6 +30,7 @@ import com.mobility.mobility_backend.dto.CreateAdminDTO;
 import com.mobility.mobility_backend.service.AdminService;
 
 @WebMvcTest(AdminController.class)
+@AutoConfigureMockMvc(addFilters = false)
 @TestPropertySource(properties = {
 		"spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration,org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration",
 		"spring.security.enabled=false" })

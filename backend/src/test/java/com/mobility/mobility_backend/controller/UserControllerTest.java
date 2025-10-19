@@ -12,6 +12,7 @@ import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
@@ -22,6 +23,7 @@ import com.mobility.mobility_backend.dto.UserDTO;
 import com.mobility.mobility_backend.service.UserService;
 
 @WebMvcTest(UserController.class)
+@AutoConfigureMockMvc(addFilters = false)
 @TestPropertySource(properties = {
 		"spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration,org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration",
 		"spring.security.enabled=false" })
@@ -77,7 +79,7 @@ public class UserControllerTest {
 		when(userService.getUserById(99)).thenReturn(Optional.empty());
 
 		// When & Then
-		mockMvc.perform(get("/api/users/999")).andExpect(status().isNotFound());
+		mockMvc.perform(get("/api/users/99")).andExpect(status().isNotFound());
 	}
 
 	@Test
