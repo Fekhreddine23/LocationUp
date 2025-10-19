@@ -17,7 +17,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
-import com.mobility.mobility_backend.authentification.JwtAuthenticationFilter;
+import com.mobility.mobility_backend.authentication.JwtAuthenticationFilter;
 
 @Profile("!test")
 @Configuration
@@ -44,7 +44,7 @@ public class SecurityConfig {
 				.requestMatchers("/api/admin/**").hasRole("ADMIN").requestMatchers("/api/users/**")
 				.hasAnyRole("USER", "ADMIN")
 
-				// Toutes les autres routes nécessitent une authentification
+				// Toutes les autres routes nécessitent une authentication
 				.anyRequest().authenticated())
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				.authenticationProvider(authenticationProvider())

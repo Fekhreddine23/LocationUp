@@ -1,4 +1,4 @@
-package com.mobility.mobility_backend.authentification;
+package com.mobility.mobility_backend.authentication;
 
 import com.mobility.mobility_backend.service.JwtService;
 import com.mobility.mobility_backend.service.UserService;
