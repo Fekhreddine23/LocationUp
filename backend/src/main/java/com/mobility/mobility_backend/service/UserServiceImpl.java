@@ -94,16 +94,39 @@ public class UserServiceImpl implements UserService {
 		return false;
 	}
 
+	
+
+	
+	
 	@Override
 	public UserDTO createUser(String username, String email, String password) {
-		// TODO Auto-generated method stub
-		return null;
+	    // Créer l'entité avec un rôle par défaut
+	    User user = new User(username, email, password, Role.ROLE_USER); // ← AJOUTER ROLE_USER
+
+	    // Réutiliser l'implémentation existante qui vérifie et sauve
+	    User saved = createUser(user);
+
+	    // Mapper en DTO
+	    UserDTO dto = new UserDTO();
+	    dto.setId(saved.getId());
+	    dto.setUsername(saved.getUsername());
+	    dto.setEmail(saved.getEmail());
+	    return dto;
 	}
 
 	@Override
 	public User createUser(String username, String email, String password, Role role) {
-		// TODO Auto-generated method stub
-		return null;
+	    // Vérifier si username ou email existe déjà
+	    if (userRepository.existsByUsername(username)) {
+	        throw new IllegalArgumentException("Username already exists");
+	    }
+	    if (userRepository.existsByEmail(email)) {
+	        throw new IllegalArgumentException("Email already exists");
+	    }
+	    
+	    // Créer et sauvegarder l'utilisateur
+	    User user = new User(username, email, password, role);
+	    return userRepository.save(user);
 	}
 
 }
