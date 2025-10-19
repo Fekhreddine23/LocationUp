@@ -23,81 +23,71 @@ import com.mobility.mobility_backend.service.UserService;
 
 @WebMvcTest(UserController.class)
 @TestPropertySource(properties = {
-	    "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration,org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration",
-	    "spring.security.enabled=false"
-	})
+		"spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration,org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration",
+		"spring.security.enabled=false" })
 public class UserControllerTest {
 
-    @Autowired
-    private MockMvc mockMvc;
+	@Autowired
+	private MockMvc mockMvc;
 
-    @MockBean
-    private UserService userService;
+	@MockBean
+	private UserService userService;
 
-    @Test
-    public void testCreateUser() throws Exception {
-        // Given
-        UserDTO userDTO = new UserDTO(1L, "john_doe", "john@example.com");
-        when(userService.createUser(anyString(), anyString(), anyString())).thenReturn(userDTO);
+	@Test
+	public void testCreateUser() throws Exception {
+		// Given
+		UserDTO userDTO = new UserDTO(1, "john_doe", "john@example.com");
+		when(userService.createUser(anyString(), anyString(), anyString())).thenReturn(userDTO);
 
-        // When & Then
-        mockMvc.perform(post("/api/users")
-                .param("password", "password123")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"username\": \"john_doe\", \"email\": \"john@example.com\"}"))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").value(1L))
-                .andExpect(jsonPath("$.username").value("john_doe"))
-                .andExpect(jsonPath("$.email").value("john@example.com"));
-    }
+		// When & Then
+		mockMvc.perform(post("/api/users").param("password", "password123").contentType(MediaType.APPLICATION_JSON)
+				.content("{\"username\": \"john_doe\", \"email\": \"john@example.com\"}"))
+				.andExpect(status().isCreated()).andExpect(jsonPath("$.id").value(1L))
+				.andExpect(jsonPath("$.username").value("john_doe"))
+				.andExpect(jsonPath("$.email").value("john@example.com"));
+	}
 
-    @Test
-    public void testGetAllUsers() throws Exception {
-        // Given
-        UserDTO user1 = new UserDTO(1L, "john_doe", "john@example.com");
-        UserDTO user2 = new UserDTO(2L, "jane_smith", "jane@example.com");
-        when(userService.getAllUsers()).thenReturn(Arrays.asList(user1, user2));
+	@Test
+	public void testGetAllUsers() throws Exception {
+		// Given
+		UserDTO user1 = new UserDTO(1, "john_doe", "john@example.com");
+		UserDTO user2 = new UserDTO(2, "jane_smith", "jane@example.com");
+		when(userService.getAllUsers()).thenReturn(Arrays.asList(user1, user2));
 
-        // When & Then
-        mockMvc.perform(get("/api/users"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(2))
-                .andExpect(jsonPath("$[0].username").value("john_doe"))
-                .andExpect(jsonPath("$[1].username").value("jane_smith"));
-    }
+		// When & Then
+		mockMvc.perform(get("/api/users")).andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(2))
+				.andExpect(jsonPath("$[0].username").value("john_doe"))
+				.andExpect(jsonPath("$[1].username").value("jane_smith"));
+	}
 
-    @Test
-    public void testGetUserById() throws Exception {
-        // Given
-        UserDTO userDTO = new UserDTO(1L, "john_doe", "john@example.com");
-        when(userService.getUserById(1L)).thenReturn(Optional.of(userDTO));
+	@Test
+	public void testGetUserById() throws Exception {
+		// Given
+		UserDTO userDTO = new UserDTO(1, "john_doe", "john@example.com");
+		when(userService.getUserById(1)).thenReturn(Optional.of(userDTO));
 
-        // When & Then
-        mockMvc.perform(get("/api/users/1"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(1L))
-                .andExpect(jsonPath("$.username").value("john_doe"));
-    }
+		// When & Then
+		mockMvc.perform(get("/api/users/1")).andExpect(status().isOk()).andExpect(jsonPath("$.id").value(1L))
+				.andExpect(jsonPath("$.username").value("john_doe"));
+	}
 
-    @Test
-    public void testGetUserByIdNotFound() throws Exception {
-        // Given
-        when(userService.getUserById(999L)).thenReturn(Optional.empty());
+	@Test
+	public void testGetUserByIdNotFound() throws Exception {
+		// Given
+		when(userService.getUserById(99)).thenReturn(Optional.empty());
 
-        // When & Then
-        mockMvc.perform(get("/api/users/999"))
-                .andExpect(status().isNotFound());
-    }
+		// When & Then
+		mockMvc.perform(get("/api/users/999")).andExpect(status().isNotFound());
+	}
 
-    @Test
-    public void testGetUserByUsername() throws Exception {
-        // Given
-        UserDTO userDTO = new UserDTO(1L, "john_doe", "john@example.com");
-        when(userService.getUserByUsername("john_doe")).thenReturn(Optional.of(userDTO));
+	@Test
+	public void testGetUserByUsername() throws Exception {
+		// Given
+		UserDTO userDTO = new UserDTO(1, "john_doe", "john@example.com");
+		when(userService.getUserByUsername("john_doe")).thenReturn(Optional.of(userDTO));
 
-        // When & Then
-        mockMvc.perform(get("/api/users/username/john_doe"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.username").value("john_doe"));
-    }
+		// When & Then
+		mockMvc.perform(get("/api/users/username/john_doe")).andExpect(status().isOk())
+				.andExpect(jsonPath("$.username").value("john_doe"));
+	}
 }

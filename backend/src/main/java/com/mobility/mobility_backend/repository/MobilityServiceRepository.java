@@ -10,7 +10,7 @@ import com.mobility.mobility_backend.entity.MobilityService;
 @Repository
 public interface MobilityServiceRepository extends JpaRepository<MobilityService, Integer> {
 
-    Optional<MobilityService> findByName(String name);
+	Optional<MobilityService> findByName(String name);
 
-    boolean existsByName(String name);
+	boolean existsByName(String name);
 }

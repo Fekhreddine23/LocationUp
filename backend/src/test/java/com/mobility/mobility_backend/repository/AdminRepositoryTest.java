@@ -119,8 +119,7 @@ class AdminRepositoryTest {
 		assertThat(exists).isTrue();
 	}
 
-
-	//Créer un admin de test avec des données cohérentes
+	// Créer un admin de test avec des données cohérentes
 	private Admin createTestAdmin() {
 		Admin admin = new Admin();
 		admin.setUsername("testadmin");

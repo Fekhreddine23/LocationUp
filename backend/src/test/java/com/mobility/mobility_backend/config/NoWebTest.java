@@ -13,24 +13,19 @@ import org.springframework.test.context.TestPropertySource;
 
 @SpringBootTest(classes = NoWebTest.TestConfig.class)
 @ActiveProfiles("test")
-@TestPropertySource(properties = {
-    "spring.main.web-application-type=none",
-    "management.endpoints.enabled-by-default=false"
-})
+@TestPropertySource(properties = { "spring.main.web-application-type=none",
+		"management.endpoints.enabled-by-default=false" })
 public class NoWebTest {
-    
-    @Test
-    void testWithMinimalContext() {
-        System.out.println("✅ Contexte Spring minimal chargé !");
-        assertTrue(true);
-    }
-    
-    @SpringBootConfiguration
-    @EnableAutoConfiguration(exclude = {
-        SecurityAutoConfiguration.class,
-        UserDetailsServiceAutoConfiguration.class,
-        org.springframework.boot.actuate.autoconfigure.security.servlet.ManagementWebSecurityAutoConfiguration.class
-    })
-    static class TestConfig {
-    }
+
+	@Test
+	void testWithMinimalContext() {
+		System.out.println("✅ Contexte Spring minimal chargé !");
+		assertTrue(true);
+	}
+
+	@SpringBootConfiguration
+	@EnableAutoConfiguration(exclude = { SecurityAutoConfiguration.class, UserDetailsServiceAutoConfiguration.class,
+			org.springframework.boot.actuate.autoconfigure.security.servlet.ManagementWebSecurityAutoConfiguration.class })
+	static class TestConfig {
+	}
 }

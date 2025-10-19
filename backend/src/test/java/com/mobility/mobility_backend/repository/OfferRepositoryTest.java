@@ -23,160 +23,154 @@ import com.mobility.mobility_backend.entity.Offer;
 @ActiveProfiles("test")
 public class OfferRepositoryTest {
 
-    @Autowired
-    private OfferRepository offerRepository;
+	@Autowired
+	private OfferRepository offerRepository;
 
-    @Autowired
-    private TestEntityManager entityManager;
-    
-    @Autowired
-    private  MobilityServiceRepository mobilityServiceRepository;
+	@Autowired
+	private TestEntityManager entityManager;
 
-    // Méthode utilitaire pour créer des données UNIQUES
-    private String generateUniqueString(String prefix) {
-        return prefix + "_" + UUID.randomUUID().toString().substring(0, 8);
-    }
+	@Autowired
+	private MobilityServiceRepository mobilityServiceRepository;
 
-    private Admin createUniqueAdmin() {
-        String uniqueUsername = generateUniqueString("admin");
-        String uniqueEmail = generateUniqueString("test") + "@test.com";
-        
-        Admin admin = new Admin(uniqueUsername, uniqueEmail, "password", 1);
-        return entityManager.persistAndFlush(admin);
-    }
+	// Méthode utilitaire pour créer des données UNIQUES
+	private String generateUniqueString(String prefix) {
+		return prefix + "_" + UUID.randomUUID().toString().substring(0, 8);
+	}
 
-    private City createUniqueCity(String namePrefix) {
-        String uniqueName = generateUniqueString(namePrefix);
-        City city = new City(uniqueName);
-        return entityManager.persistAndFlush(city);
-    }
+	private Admin createUniqueAdmin() {
+		String uniqueUsername = generateUniqueString("admin");
+		String uniqueEmail = generateUniqueString("test") + "@test.com";
 
-    private MobilityService createUniqueMobilityService(String namePrefix) {
-        String uniqueName = generateUniqueString(namePrefix);
-        String uniqueDescription = generateUniqueString("desc");
-        MobilityService service = new MobilityService(uniqueName, uniqueDescription);
-        return entityManager.persistAndFlush(service);
-    }
+		Admin admin = new Admin(uniqueUsername, uniqueEmail, "password", 1);
+		return entityManager.persistAndFlush(admin);
+	}
 
-    private Offer createTestOffer() {
-        City pickupCity = createUniqueCity("pickup");
-        City returnCity = createUniqueCity("return");
-        MobilityService service = createUniqueMobilityService("service");
-        Admin admin = createUniqueAdmin();
+	private City createUniqueCity(String namePrefix) {
+		String uniqueName = generateUniqueString(namePrefix);
+		City city = new City(uniqueName);
+		return entityManager.persistAndFlush(city);
+	}
 
-        return Offer.builder()
-            .pickupLocation(pickupCity)
-            .returnLocation(returnCity)
-            .mobilityService(service)
-            .admin(admin)
-            .pickupDatetime(LocalDateTime.now().plusDays(1))
-            .description("Test Description")
-            .price(new BigDecimal("15.99"))
-            .build();
-    }
+	private MobilityService createUniqueMobilityService(String namePrefix) {
+		String uniqueName = generateUniqueString(namePrefix);
+		String uniqueDescription = generateUniqueString("desc");
+		MobilityService service = new MobilityService(uniqueName, uniqueDescription);
+		return entityManager.persistAndFlush(service);
+	}
 
-    // TESTS CORRIGÉS
+	private Offer createTestOffer() {
+		City pickupCity = createUniqueCity("pickup");
+		City returnCity = createUniqueCity("return");
+		MobilityService service = createUniqueMobilityService("service");
+		Admin admin = createUniqueAdmin();
 
-    @Test
-    void whenSaveOffer_thenOfferIsSaved() {
-        // Given
-        Offer offer = createTestOffer();
+		return Offer.builder().pickupLocation(pickupCity).returnLocation(returnCity).mobilityService(service)
+				.admin(admin).pickupDatetime(LocalDateTime.now().plusDays(1)).description("Test Description")
+				.price(new BigDecimal("15.99")).build();
+	}
 
-        // When
-        Offer savedOffer = offerRepository.save(offer);
+	// TESTS CORRIGÉS
 
-        // Then
-        assertThat(savedOffer).isNotNull();
-        assertThat(savedOffer.getOfferId()).isNotNull();
-        assertThat(savedOffer.getDescription()).isEqualTo("Test Description");
-    }
+	@Test
+	void whenSaveOffer_thenOfferIsSaved() {
+		// Given
+		Offer offer = createTestOffer();
 
-    @Test
-    void whenFindById_thenReturnOffer() {
-        // Given
-        Offer offer = createTestOffer();
-        Offer savedOffer = entityManager.persistAndFlush(offer);
+		// When
+		Offer savedOffer = offerRepository.save(offer);
 
-        // When
-        Optional<Offer> foundOffer = offerRepository.findById(savedOffer.getOfferId());
+		// Then
+		assertThat(savedOffer).isNotNull();
+		assertThat(savedOffer.getOfferId()).isNotNull();
+		assertThat(savedOffer.getDescription()).isEqualTo("Test Description");
+	}
 
-        // Then
-        assertThat(foundOffer).isPresent();
-        assertThat(foundOffer.get().getOfferId()).isEqualTo(savedOffer.getOfferId());
-    }
+	@Test
+	void whenFindById_thenReturnOffer() {
+		// Given
+		Offer offer = createTestOffer();
+		Offer savedOffer = entityManager.persistAndFlush(offer);
 
-    @Test
-    void whenFindAll_thenReturnAllOffers() {
-        // Given
-        Offer offer1 = createTestOffer();
-        Offer offer2 = createTestOffer();
-        entityManager.persistAndFlush(offer1);
-        entityManager.persistAndFlush(offer2);
+		// When
+		Optional<Offer> foundOffer = offerRepository.findById(savedOffer.getOfferId());
 
-        // When
-        List<Offer> offers = offerRepository.findAll();
+		// Then
+		assertThat(foundOffer).isPresent();
+		assertThat(foundOffer.get().getOfferId()).isEqualTo(savedOffer.getOfferId());
+	}
 
-        // Then
-        assertThat(offers).hasSize(2);
-    }
+	@Test
+	void whenFindAll_thenReturnAllOffers() {
+		// Given
+		Offer offer1 = createTestOffer();
+		Offer offer2 = createTestOffer();
+		entityManager.persistAndFlush(offer1);
+		entityManager.persistAndFlush(offer2);
 
-    @Test
-    void whenFindByPickupLocation_thenReturnOffers() {
-        // Given
-        City paris = createUniqueCity("Paris");
-        Offer offer = createTestOffer();
-        offer.setPickupLocation(paris);
-        entityManager.persistAndFlush(offer);
+		// When
+		List<Offer> offers = offerRepository.findAll();
 
-        // When
-        List<Offer> offers = offerRepository.findByPickupLocation(paris);
+		// Then
+		assertThat(offers).hasSize(2);
+	}
 
-        // Then
-        assertThat(offers).hasSize(1);
-        assertThat(offers.get(0).getPickupLocation().getName()).contains("Paris");
-    }
+	@Test
+	void whenFindByPickupLocation_thenReturnOffers() {
+		// Given
+		City paris = createUniqueCity("Paris");
+		Offer offer = createTestOffer();
+		offer.setPickupLocation(paris);
+		entityManager.persistAndFlush(offer);
 
-    @Test
-    void whenDeleteOffer_thenOfferIsDeleted() {
-        // Given
-        Offer offer = createTestOffer();
-        Offer savedOffer = entityManager.persistAndFlush(offer);
+		// When
+		List<Offer> offers = offerRepository.findByPickupLocation(paris);
 
-        // When
-        offerRepository.deleteById(savedOffer.getOfferId());
-        entityManager.flush();
+		// Then
+		assertThat(offers).hasSize(1);
+		assertThat(offers.get(0).getPickupLocation().getName()).contains("Paris");
+	}
 
-        // Then
-        Optional<Offer> deletedOffer = offerRepository.findById(savedOffer.getOfferId());
-        assertThat(deletedOffer).isEmpty();
-    }
+	@Test
+	void whenDeleteOffer_thenOfferIsDeleted() {
+		// Given
+		Offer offer = createTestOffer();
+		Offer savedOffer = entityManager.persistAndFlush(offer);
 
-    @Test
-    void whenFindMobilityService_thenDescriptionIsPresent() {
-        // Given
-        MobilityService service = createUniqueMobilityService("TestService");
-        
-        // When
-        Optional<MobilityService> foundService = mobilityServiceRepository.findById(service.getServiceId());
+		// When
+		offerRepository.deleteById(savedOffer.getOfferId());
+		entityManager.flush();
 
-        // Then
-        assertThat(foundService).isPresent();
-        assertThat(foundService.get().getDescription()).isNotNull();
-    }
+		// Then
+		Optional<Offer> deletedOffer = offerRepository.findById(savedOffer.getOfferId());
+		assertThat(deletedOffer).isEmpty();
+	}
 
-    @Test
-    void whenCreateOfferWithMobilityService_thenDescriptionIsAccessible() {
-        // Given
-        MobilityService bikeService = createUniqueMobilityService("BikeService");
-        Offer offer = createTestOffer();
-        offer.setMobilityService(bikeService);
-        Offer savedOffer = entityManager.persistAndFlush(offer);
+	@Test
+	void whenFindMobilityService_thenDescriptionIsPresent() {
+		// Given
+		MobilityService service = createUniqueMobilityService("TestService");
 
-        // When - Recharge depuis la base
-        entityManager.clear();
-        Offer refreshedOffer = offerRepository.findById(savedOffer.getOfferId()).orElseThrow();
+		// When
+		Optional<MobilityService> foundService = mobilityServiceRepository.findById(service.getServiceId());
 
-        // Then
-        assertThat(refreshedOffer.getMobilityService().getDescription()).isNotNull();
-    }
+		// Then
+		assertThat(foundService).isPresent();
+		assertThat(foundService.get().getDescription()).isNotNull();
+	}
+
+	@Test
+	void whenCreateOfferWithMobilityService_thenDescriptionIsAccessible() {
+		// Given
+		MobilityService bikeService = createUniqueMobilityService("BikeService");
+		Offer offer = createTestOffer();
+		offer.setMobilityService(bikeService);
+		Offer savedOffer = entityManager.persistAndFlush(offer);
+
+		// When - Recharge depuis la base
+		entityManager.clear();
+		Offer refreshedOffer = offerRepository.findById(savedOffer.getOfferId()).orElseThrow();
+
+		// Then
+		assertThat(refreshedOffer.getMobilityService().getDescription()).isNotNull();
+	}
 }

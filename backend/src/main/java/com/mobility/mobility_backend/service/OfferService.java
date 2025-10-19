@@ -17,58 +17,55 @@ import com.mobility.mobility_backend.repository.OfferRepository;
 @Transactional
 public class OfferService {
 
-    private final OfferRepository offerRepository;
-    private final OfferMapper offerMapper;
+	private final OfferRepository offerRepository;
+	private final OfferMapper offerMapper;
 
-    @Autowired
-    public OfferService(OfferRepository offerRepository, OfferMapper offerMapper) {
-        this.offerRepository = offerRepository;
-        this.offerMapper = offerMapper;
-    }
+	@Autowired
+	public OfferService(OfferRepository offerRepository, OfferMapper offerMapper) {
+		this.offerRepository = offerRepository;
+		this.offerMapper = offerMapper;
+	}
 
-    @Transactional(readOnly = true)
-    public List<OfferDTO> getAllOffers() {
-        return offerRepository.findAll().stream()
-                .map(offerMapper::toDTO)
-                .collect(Collectors.toList());
-    }
+	@Transactional(readOnly = true)
+	public List<OfferDTO> getAllOffers() {
+		return offerRepository.findAll().stream().map(offerMapper::toDTO).collect(Collectors.toList());
+	}
 
-    @Transactional(readOnly = true)
-    public Optional<OfferDTO> getOfferById(Integer id) {
-        return offerRepository.findById(id)
-                .map(offerMapper::toDTO);
-    }
+	@Transactional(readOnly = true)
+	public Optional<OfferDTO> getOfferById(Integer id) {
+		return offerRepository.findById(id).map(offerMapper::toDTO);
+	}
 
-    public OfferDTO createOffer(OfferDTO offerDTO) {
-        validateOffer(offerDTO);
-        Offer offer = offerMapper.toEntity(offerDTO);
-        Offer savedOffer = offerRepository.save(offer);
-        return offerMapper.toDTO(savedOffer);
-    }
+	public OfferDTO createOffer(OfferDTO offerDTO) {
+		validateOffer(offerDTO);
+		Offer offer = offerMapper.toEntity(offerDTO);
+		Offer savedOffer = offerRepository.save(offer);
+		return offerMapper.toDTO(savedOffer);
+	}
 
-    public Optional<OfferDTO> updateOffer(Integer id, OfferDTO offerDTO) {
-        if (!offerRepository.existsById(id)) {
-            return Optional.empty();
-        }
-        validateOffer(offerDTO);
-        Offer offer = offerMapper.toEntity(offerDTO);
-        offer.setOfferId(id);
-        Offer updatedOffer = offerRepository.save(offer);
-        return Optional.of(offerMapper.toDTO(updatedOffer));
-    }
+	public Optional<OfferDTO> updateOffer(Integer id, OfferDTO offerDTO) {
+		if (!offerRepository.existsById(id)) {
+			return Optional.empty();
+		}
+		validateOffer(offerDTO);
+		Offer offer = offerMapper.toEntity(offerDTO);
+		offer.setOfferId(id);
+		Offer updatedOffer = offerRepository.save(offer);
+		return Optional.of(offerMapper.toDTO(updatedOffer));
+	}
 
-    public boolean deleteOffer(Integer id) {
-        if (offerRepository.existsById(id)) {
-            offerRepository.deleteById(id);
-            return true;
-        }
-        return false;
-    }
+	public boolean deleteOffer(Integer id) {
+		if (offerRepository.existsById(id)) {
+			offerRepository.deleteById(id);
+			return true;
+		}
+		return false;
+	}
 
-    private void validateOffer(OfferDTO offerDTO) {
-        // Vos règles de validation métier
-        if (offerDTO.getPrice() != null && offerDTO.getPrice().signum() <= 0) {
-            throw new IllegalArgumentException("Le prix doit être positif");
-        }
-    }
+	private void validateOffer(OfferDTO offerDTO) {
+		// Vos règles de validation métier
+		if (offerDTO.getPrice() != null && offerDTO.getPrice().signum() <= 0) {
+			throw new IllegalArgumentException("Le prix doit être positif");
+		}
+	}
 }

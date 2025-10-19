@@ -29,9 +29,8 @@ import com.mobility.mobility_backend.service.OfferService;
 
 @WebMvcTest(OfferController.class)
 @TestPropertySource(properties = {
-	    "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration,org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration",
-	    "spring.security.enabled=false"
-	})
+		"spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration,org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration",
+		"spring.security.enabled=false" })
 public class OfferControllerTest {
 
 	@Autowired

@@ -18,7 +18,6 @@ import com.mobility.mobility_backend.dto.CityDTO;
 import com.mobility.mobility_backend.entity.City;
 import com.mobility.mobility_backend.repository.CityRepository;
 
-
 @ExtendWith(MockitoExtension.class)
 @ActiveProfiles("ci")
 public class CityServiceTest {

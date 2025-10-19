@@ -10,8 +10,8 @@ import org.springframework.test.context.ActiveProfiles;
 @Disabled("Temporarily disabled - context loading issue needs investigation")
 class MobilityApplicationTests {
 
-    @Test
-    void contextLoads() {
-        // Test que le contexte Spring se charge correctement
-    }
+	@Test
+	void contextLoads() {
+		// Test que le contexte Spring se charge correctement
+	}
 }

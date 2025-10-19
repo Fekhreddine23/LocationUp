@@ -15,24 +15,24 @@ import com.mobility.mobility_backend.entity.City;
 @ActiveProfiles("test")
 class CitySimpleTest {
 
-    @Autowired
-    private CityRepository cityRepository;
+	@Autowired
+	private CityRepository cityRepository;
 
-    @Test
-    void whenFindById_thenReturnCity() {
-        // Given
-        City city = cityRepository.save(new City("Paris"));
+	@Test
+	void whenFindById_thenReturnCity() {
+		// Given
+		City city = cityRepository.save(new City("Paris"));
 
-        // When
-        Optional<City> foundCity = cityRepository.findById(city.getCityId()); // ✅ Utiliser getCityId()
+		// When
+		Optional<City> foundCity = cityRepository.findById(city.getCityId()); // ✅ Utiliser getCityId()
 
-        // Then
-        assertThat(foundCity).isPresent();
-        assertThat(foundCity.get().getName()).isEqualTo("Paris");
-    }
+		// Then
+		assertThat(foundCity).isPresent();
+		assertThat(foundCity.get().getName()).isEqualTo("Paris");
+	}
 
-    @Test
-    void contextLoads() {
-        assertThat(cityRepository).isNotNull();
-    }
+	@Test
+	void contextLoads() {
+		assertThat(cityRepository).isNotNull();
+	}
 }
