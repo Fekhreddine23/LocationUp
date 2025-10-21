@@ -1,1 +1,208 @@
 /* You can add global styles to this file, and also import other style files */
+/* Import de Polices Google */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+/* Reset et styles globaux */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+  color: #333;
+}
+
+/* Container principal */
+.app-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+  min-height: 100vh;
+}
+
+/* Header */
+.app-header {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 15px;
+  padding: 25px;
+  margin-bottom: 30px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  
+  h1 {
+    color: #2c3e50;
+    font-size: 2.5em;
+    font-weight: 700;
+    margin-bottom: 10px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  
+  .subtitle {
+    color: #7f8c8d;
+    font-size: 1.1em;
+    font-weight: 400;
+  }
+}
+
+/* Cartes d'offres */
+.offers-container {
+  display: grid;
+  gap: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+}
+
+.offer-card {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 15px;
+  padding: 25px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  
+  &:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+  }
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+  }
+}
+
+.offer-title {
+  color: #2c3e50;
+  font-size: 1.4em;
+  font-weight: 600;
+  margin-bottom: 12px;
+  line-height: 1.3;
+}
+
+.offer-description {
+  color: #5a6c7d;
+  font-size: 1em;
+  line-height: 1.5;
+  margin-bottom: 15px;
+}
+
+.offer-details {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 20px;
+  padding-top: 15px;
+  border-top: 1px solid #ecf0f1;
+}
+
+.offer-price {
+  font-size: 1.5em;
+  font-weight: 700;
+  color: #27ae60;
+}
+
+.offer-date {
+  color: #7f8c8d;
+  font-size: 0.9em;
+}
+
+/* États de chargement et erreurs */
+.loading-state {
+  text-align: center;
+  padding: 40px;
+  color: #3498db;
+  font-size: 1.1em;
+  
+  &::before {
+    content: '⏳';
+    font-size: 2em;
+    display: block;
+    margin-bottom: 10px;
+  }
+}
+
+.error-state {
+  background: rgba(231, 76, 60, 0.1);
+  border: 1px solid rgba(231, 76, 60, 0.3);
+  border-radius: 10px;
+  padding: 20px;
+  text-align: center;
+  color: #c0392b;
+  
+  &::before {
+    content: '❌';
+    font-size: 2em;
+    display: block;
+    margin-bottom: 10px;
+  }
+}
+
+.empty-state {
+  text-align: center;
+  padding: 40px;
+  color: #7f8c8d;
+  
+  &::before {
+    content: '📭';
+    font-size: 3em;
+    display: block;
+    margin-bottom: 15px;
+  }
+}
+
+/* Bouton Actualiser */
+.refresh-button {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  border: none;
+  padding: 12px 30px;
+  border-radius: 25px;
+  font-size: 1em;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin: 30px auto;
+  display: block;
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+  }
+  
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .app-container {
+    padding: 15px;
+  }
+  
+  .app-header h1 {
+    font-size: 2em;
+  }
+  
+  .offers-container {
+    grid-template-columns: 1fr;
+  }
+  
+  .offer-card {
+    padding: 20px;
+  }
+}
