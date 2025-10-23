@@ -5,6 +5,8 @@
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",
+    "lint:fix": "eslint --ext .ts --fix src/",
+  "organize:imports": "node ./scripts/organize-imports.js",
     "watch": "ng build --watch --configuration development",
     "test": "ng test"
   },
@@ -45,5 +47,11 @@
     "karma-jasmine": "~5.1.0",
     "karma-jasmine-html-reporter": "~2.1.0",
     "typescript": "~5.9.2"
+    ,
+    "eslint": "^8.50.0",
+    "@typescript-eslint/eslint-plugin": "^6.3.0",
+    "@typescript-eslint/parser": "^6.3.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-simple-import-sort": "^9.0.0"
   }
 }

@@ -1,0 +1,46 @@
+<div class="app-container">
+  <header class="app-header">
+    <h1>🚀 MobilityUp</h1>
+    <p class="subtitle">Votre plateforme de réservation de mobilité urbaine</p>
+  </header>
+
+  <main>
+    <div *ngIf="loading" class="loading-state">
+      Chargement des offres...
+    </div>
+
+    <div *ngIf="error" class="error-state">
+      {{ error }}
+    </div>
+
+    <div *ngIf="!loading && !error">
+      <h2 style="text-align: center; color: white; margin-bottom: 20px;">
+        📋 Offres Disponibles ({{ offers.length }})
+      </h2>
+      
+      <div *ngIf="offers.length === 0" class="empty-state">
+        Aucune offre disponible pour le moment
+      </div>
+
+      <div *ngIf="offers.length > 0" class="offers-container">
+        <div *ngFor="let offer of offers" class="offer-card">
+          <h3 class="offer-title">{{ offer.description }}</h3>
+          <p class="offer-description">
+            Service #{{ offer.mobilityServiceId }} • 
+            Lieu #{{ offer.pickupLocationId }}
+          </p>
+          <div class="offer-details">
+            <span class="offer-price">{{ offer.price }}€</span>
+            <span class="offer-date">
+              {{ offer.pickupDatetime | date: 'dd/MM/yyyy HH:mm' }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <button (click)="loadOffers()" class="refresh-button">
+      🔄 Actualiser les offres
+    </button>
+  </main>
+</div>

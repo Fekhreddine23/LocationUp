@@ -1,0 +1,19 @@
+<header class="header">
+  <nav class="nav">
+    <a routerLink="/home" class="logo">🚀 MobilityUp</a>
+    
+    <div class="nav-links">
+      <a routerLink="/home" class="nav-link">Accueil</a>
+      
+      <ng-container *ngIf="authService.isLoggedIn(); else notLoggedIn">
+        <span class="user-info">Bienvenue, {{ authService.getCurrentUser()?.username }}</span>
+        <button (click)="logout()" class="logout-btn">Déconnexion</button>
+      </ng-container>
+      
+      <ng-template #notLoggedIn>
+        <a routerLink="/login" class="nav-link">Connexion</a>
+        <a routerLink="/register" class="nav-link">Inscription</a>
+      </ng-template>
+    </div>
+  </nav>
+</header>

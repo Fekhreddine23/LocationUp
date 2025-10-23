@@ -1,12 +1,15 @@
+import { CommonModule } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
 import { Component, OnInit, signal } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { CommonModule } from '@angular/common'; // ← AJOUTE
-import { HttpClient } from '@angular/common/http'; // ← AJOUTE
-import { environment } from '../environments/environment'; // ← AJOUTE
 
+import { environment } from '../environments/environment'; // ← AJOUTE
+import { HeaderComponent } from '../../src/app/components/header/header.component'; // ← Ajouter cette ligne
+
+ 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, CommonModule], // ← AJOUTE CommonModule
+  imports: [RouterOutlet, CommonModule, HeaderComponent], // ← AJOUTE CommonModule
   templateUrl: './app.html',
   styleUrl: './app.scss'
 })
