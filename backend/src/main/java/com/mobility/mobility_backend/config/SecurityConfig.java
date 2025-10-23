@@ -57,10 +57,10 @@ public class SecurityConfig {
                 .requestMatchers("/actuator/**").permitAll()
 
                 // ← CETTE LIGNE DOIT ÊTRE APRÈS LES ROUTES SPÉCIFIQUES
-                .requestMatchers("/api/**").permitAll()  // ← DÉPLACÉ APRÈS LES ROUTES SPÉCIFIQUES
-
+                .requestMatchers("/api/offers/**").authenticated()  // ← DÉPLACÉ APRÈS LES ROUTES SPÉCIFIQUES
+                .requestMatchers("/api/**").authenticated()  
                 // Routes protégées par rôle - COMMENTE TEMPORAIREMENT
-                // .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 // .requestMatchers("/api/users/**").hasAnyRole("USER", "ADMIN")
                 // .requestMatchers("/api/cities/**").hasAnyRole("USER", "ADMIN")
                 // .requestMatchers("/api/mobility-services/**").hasAnyRole("USER", "ADMIN")

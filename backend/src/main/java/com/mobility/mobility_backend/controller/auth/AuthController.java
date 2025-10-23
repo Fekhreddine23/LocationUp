@@ -16,23 +16,23 @@ import com.mobility.mobility_backend.service.auth.AuthenticationService;
 @RequestMapping("/api/auth")
 public class AuthController {
 
-    private final AuthenticationService authenticationService;
+	private final AuthenticationService authenticationService;
 
-    public AuthController(AuthenticationService authenticationService) {
-        this.authenticationService = authenticationService;
-    }
+	public AuthController(AuthenticationService authenticationService) {
+		this.authenticationService = authenticationService;
+	}
 
-    @PostMapping("/register")
-    public ResponseEntity<AuthenticationResponse> register(@RequestBody RegisterRequest request) {
-        // Par défaut, on crée un USER si aucun rôle n'est spécifié
-        if (request.getRole() == null) {
-            request.setRole(Role.ROLE_USER);
-        }
-        return ResponseEntity.ok(authenticationService.register(request));
-    }
+	@PostMapping("/register")
+	public ResponseEntity<AuthenticationResponse> register(@RequestBody RegisterRequest request) {
+		// Par défaut, on crée un USER si aucun rôle n'est spécifié
+		if (request.getRole() == null) {
+			request.setRole(Role.ROLE_USER);
+		}
+		return ResponseEntity.ok(authenticationService.register(request));
+	}
 
-    @PostMapping("/login")
-    public ResponseEntity<AuthenticationResponse> login(@RequestBody AuthenticationRequest request) {
-        return ResponseEntity.ok(authenticationService.authenticate(request));
-    }
+	@PostMapping("/login")
+	public ResponseEntity<AuthenticationResponse> login(@RequestBody AuthenticationRequest request) {
+		return ResponseEntity.ok(authenticationService.authenticate(request));
+	}
 }
