@@ -22,6 +22,11 @@ public class MobilityService {
 	@Column(name = "description", length = 500)
 	private String description;
 
+	@Column(name = "categorie", length = 500)
+	private String categorie;
+
+
+
 	// Constructeurs
 	public MobilityService() {
 	}
@@ -56,6 +61,15 @@ public class MobilityService {
 		this.description = description;
 	}
 
+
+	public String getCategorie() {
+		return categorie;
+	}
+
+	public void setCategorie(String categorie) {
+		this.categorie = categorie;
+	}
+
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) {
@@ -75,7 +89,7 @@ public class MobilityService {
 
 	@Override
 	public String toString() {
-		return "MobilityService{" + "serviceId=" + serviceId + ", name='" + name + '\'' + ", description='"
-				+ description + '\'' + '}';
+		return "MobilityService [serviceId=" + serviceId + ", name=" + name + ", description=" + description
+				+ ", categorie=" + categorie + "]";
 	}
 }

@@ -26,11 +26,32 @@ public class UserServiceImpl implements UserService {
 	}
 
 	// Implémentation de loadUserByUsername de UserDetailsService
-	@Override
-	public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-		return userRepository.findByUsername(username)
-				.orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
-	}
+	 @Override
+	    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+	        System.out.println("🔍 UserDetailsService loading user: " + username);
+
+	        User user = userRepository.findByUsername(username)
+	            .orElseThrow(() -> {
+	                System.out.println("❌ User not found in database: " + username);
+	                return new UsernameNotFoundException("User not found: " + username);
+	            });
+
+	        System.out.println("✅ User found: " + user.getUsername());
+	        System.out.println("🔐 Password hash: " + user.getPassword());
+	        System.out.println("🎭 Role: " + user.getRole());
+
+	        // ⚠️ CORRECTION CRITIQUE : Convertir le rôle correctement
+	        String role = user.getRole().name(); // "ROLE_USER"
+	        String simpleRole = role.startsWith("ROLE_") ? role.substring(5) : role; // "USER"
+
+	        System.out.println("👤 Creating UserDetails with role: " + simpleRole);
+
+	        return org.springframework.security.core.userdetails.User.builder()
+	            .username(user.getUsername())
+	            .password(user.getPassword()) // Le hash BCrypt
+	            .roles(simpleRole) // "USER" sans le préfixe ROLE_
+	            .build();
+	    }
 
 	@Override
 	public User createUser(User user) {
@@ -94,39 +115,35 @@ public class UserServiceImpl implements UserService {
 		return false;
 	}
 
-
-
-
-
 	@Override
 	public UserDTO createUser(String username, String email, String password) {
-	    // Créer l'entité avec un rôle par défaut
-	    User user = new User(username, email, password, Role.ROLE_USER); // ← AJOUTER ROLE_USER
+		// Créer l'entité avec un rôle par défaut
+		User user = new User(username, email, password, Role.ROLE_USER); // ← AJOUTER ROLE_USER
 
-	    // Réutiliser l'implémentation existante qui vérifie et sauve
-	    User saved = createUser(user);
+		// Réutiliser l'implémentation existante qui vérifie et sauve
+		User saved = createUser(user);
 
-	    // Mapper en DTO
-	    UserDTO dto = new UserDTO();
-	    dto.setId(saved.getId());
-	    dto.setUsername(saved.getUsername());
-	    dto.setEmail(saved.getEmail());
-	    return dto;
+		// Mapper en DTO
+		UserDTO dto = new UserDTO();
+		dto.setId(saved.getId());
+		dto.setUsername(saved.getUsername());
+		dto.setEmail(saved.getEmail());
+		return dto;
 	}
 
 	@Override
 	public User createUser(String username, String email, String password, Role role) {
-	    // Vérifier si username ou email existe déjà
-	    if (userRepository.existsByUsername(username)) {
-	        throw new IllegalArgumentException("Username already exists");
-	    }
-	    if (userRepository.existsByEmail(email)) {
-	        throw new IllegalArgumentException("Email already exists");
-	    }
+		// Vérifier si username ou email existe déjà
+		if (userRepository.existsByUsername(username)) {
+			throw new IllegalArgumentException("Username already exists");
+		}
+		if (userRepository.existsByEmail(email)) {
+			throw new IllegalArgumentException("Email already exists");
+		}
 
-	    // Créer et sauvegarder l'utilisateur
-	    User user = new User(username, email, password, role);
-	    return userRepository.save(user);
+		// Créer et sauvegarder l'utilisateur
+		User user = new User(username, email, password, role);
+		return userRepository.save(user);
 	}
 
 }

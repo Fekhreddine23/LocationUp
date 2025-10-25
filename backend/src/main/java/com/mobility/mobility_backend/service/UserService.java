@@ -36,4 +36,6 @@ public interface UserService extends UserDetailsService {
 	// Pour créer à partir de champs simples (optionnel)
 	User createUser(String username, String email, String password, Role role);
 
+
+
 }

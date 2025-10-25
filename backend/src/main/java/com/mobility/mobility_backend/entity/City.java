@@ -19,6 +19,18 @@ public class City {
 	@Column(nullable = false, unique = true)
 	private String name;
 
+
+	@Column(nullable = false, unique = true)
+	private String postalCode;
+
+	public String getPostalCode() {
+		return postalCode;
+	}
+
+	public void setPostalCode(String postalCode) {
+		this.postalCode = postalCode;
+	}
+
 	// Constructeurs
 	public City() {
 	}
@@ -63,6 +75,6 @@ public class City {
 
 	@Override
 	public String toString() {
-		return "City{" + "id=" + cityId + ", name='" + name + '\'' + '}';
+		return "City [cityId=" + cityId + ", name=" + name + ", postalCode=" + postalCode + "]";
 	}
 }

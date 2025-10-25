@@ -30,84 +30,78 @@ import com.mobility.mobility_backend.authentication.JwtAuthenticationFilter;
 @EnableMethodSecurity
 public class SecurityConfig {
 
-    private final JwtAuthenticationFilter jwtAuthFilter;
-    private final UserDetailsService userDetailsService;
+	private final JwtAuthenticationFilter jwtAuthFilter;
+	private final UserDetailsService userDetailsService;
 
-    public SecurityConfig(JwtAuthenticationFilter jwtAuthFilter, UserDetailsService userDetailsService) {
-        this.jwtAuthFilter = jwtAuthFilter;
-        this.userDetailsService = userDetailsService;
-    }
+	public SecurityConfig(JwtAuthenticationFilter jwtAuthFilter, UserDetailsService userDetailsService) {
+		this.jwtAuthFilter = jwtAuthFilter;
+		this.userDetailsService = userDetailsService;
+	}
 
-    @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http
-            .csrf(csrf -> csrf.disable())
-            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            .headers(headers -> headers
-                    .frameOptions(frame -> frame.disable()) // ← AUTORISER LES IFRAMES
-                    .contentSecurityPolicy(csp -> csp
-                        .policyDirectives("frame-ancestors 'self' http://localhost:8088")
-                    )
-                )
-            .authorizeHttpRequests(auth -> auth
-                // Routes publiques - DOIVENT ÊTRE EN PREMIER
-                .requestMatchers("/api/auth/**").permitAll()
-                .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
-                .requestMatchers("/h2-console/**").permitAll()
-                .requestMatchers("/actuator/**").permitAll()
+	@Bean
+	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+		http.csrf(csrf -> csrf.disable()).cors(cors -> cors.configurationSource(corsConfigurationSource()))
+				.headers(headers -> headers.frameOptions(frame -> frame.disable())
+						.contentSecurityPolicy(
+								csp -> csp.policyDirectives("frame-ancestors 'self' http://localhost:8088")))
+				.authorizeHttpRequests(auth -> auth
+						// Routes publiques - DOIVENT ÊTRE EN PREMIER
+						.requestMatchers("/api/auth/**").permitAll()
+						.requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
+						.requestMatchers("/h2-console/**").permitAll()
+						.requestMatchers("/actuator/**").permitAll()
 
-                // ← CETTE LIGNE DOIT ÊTRE APRÈS LES ROUTES SPÉCIFIQUES
-                .requestMatchers("/api/offers/**").authenticated()  // ← DÉPLACÉ APRÈS LES ROUTES SPÉCIFIQUES
-                .requestMatchers("/api/**").authenticated()  
-                // Routes protégées par rôle - COMMENTE TEMPORAIREMENT
-                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                // .requestMatchers("/api/users/**").hasAnyRole("USER", "ADMIN")
-                // .requestMatchers("/api/cities/**").hasAnyRole("USER", "ADMIN")
-                // .requestMatchers("/api/mobility-services/**").hasAnyRole("USER", "ADMIN")
-                // .requestMatchers("/api/offers/**").hasAnyRole("USER", "ADMIN")
+						// ✅ AJOUTEZ CETTE LIGNE - OFFRES ACCESSIBLES SANS AUTH
+						.requestMatchers("/api/offers/**").permitAll()
+						 .requestMatchers("/api/debug/**").permitAll() // ← AJOUTEZ CETTE LIGNE
 
-                // Toutes les autres routes - PERMET TOUT TEMPORAIREMENT
-                .anyRequest().permitAll()  // ← CHANGE authenticated() À permitAll()
-            )
-            .sessionManagement(session -> session
-                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-            )
-            .authenticationProvider(authenticationProvider())
-            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+						// Routes protégées par rôle
+						.requestMatchers("/api/admin/**").hasRole("ADMIN")
 
-        return http.build();
-    }
+						// Routes nécessitant une authentification
+						.requestMatchers("/api/reservations/**").authenticated()
+						.requestMatchers("/api/users/**").authenticated()
 
+						// Toutes les autres routes API
+						.requestMatchers("/api/**").authenticated()
 
- // ← AJOUTE CETTE MÉTHODE POUR CORS
-    @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:4200", "http://127.0.0.1:4200"));
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(Arrays.asList("*"));
-        configuration.setAllowCredentials(true);
+						// Toutes les autres routes
+						.anyRequest().permitAll()
+				).sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+				.authenticationProvider(authenticationProvider())
+				.addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
-        return source;
-    }
+		return http.build();
+	}
 
-    @Bean
-    public AuthenticationProvider authenticationProvider() {
-        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
-        authProvider.setUserDetailsService(userDetailsService);
-        authProvider.setPasswordEncoder(passwordEncoder());
-        return authProvider;
-    }
+	@Bean
+	public CorsConfigurationSource corsConfigurationSource() {
+		CorsConfiguration configuration = new CorsConfiguration();
+		configuration.setAllowedOrigins(Arrays.asList("http://localhost:4200", "http://127.0.0.1:4200"));
+		configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+		configuration.setAllowedHeaders(Arrays.asList("*"));
+		configuration.setAllowCredentials(true);
 
-    @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
-        return config.getAuthenticationManager();
-    }
+		UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+		source.registerCorsConfiguration("/**", configuration);
+		return source;
+	}
 
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
+	@Bean
+	public AuthenticationProvider authenticationProvider() {
+		DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
+		authProvider.setUserDetailsService(userDetailsService);
+		authProvider.setPasswordEncoder(passwordEncoder());
+		return authProvider;
+	}
+
+	@Bean
+	public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+		return config.getAuthenticationManager();
+	}
+
+	@Bean
+	public PasswordEncoder passwordEncoder() {
+	    return new BCryptPasswordEncoder();
+	}
 }
