@@ -1,5 +1,6 @@
 package com.mobility.mobility_backend.service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -53,17 +54,39 @@ public class UserServiceImpl implements UserService {
 	            .build();
 	    }
 
-	@Override
-	public User createUser(User user) {
-		// Vérifier si username ou email existe déjà
-		if (userRepository.existsByUsername(user.getUsername())) {
-			throw new IllegalArgumentException("Username already exists");
-		}
-		if (userRepository.existsByEmail(user.getEmail())) {
-			throw new IllegalArgumentException("Email already exists");
-		}
-		return userRepository.save(user);
-	}
+	 @Override
+	 public User createUser(User user) {
+	     System.out.println("🔵 [UserServiceImpl] Creating user: " + user.getUsername());
+
+	     // Vérifier si username ou email existe déjà
+	     if (userRepository.existsByUsername(user.getUsername())) {
+	         System.out.println("🔴 [UserServiceImpl] Username already exists: " + user.getUsername());
+	         throw new IllegalArgumentException("Username already exists");
+	     }
+	     if (userRepository.existsByEmail(user.getEmail())) {
+	         System.out.println("🔴 [UserServiceImpl] Email already exists: " + user.getEmail());
+	         throw new IllegalArgumentException("Email already exists");
+	     }
+
+	     // Vérifier les dates
+	     System.out.println("🟡 [UserServiceImpl] User createdAt: " + user.getCreatedAt());
+	     System.out.println("🟡 [UserServiceImpl] User updatedAt: " + user.getUpdatedAt());
+
+	     // S'assurer que les dates sont définies
+	     if (user.getCreatedAt() == null) {
+	         user.setCreatedAt(LocalDateTime.now());
+	         System.out.println("🟡 [UserServiceImpl] Set createdAt to now");
+	     }
+	     if (user.getUpdatedAt() == null) {
+	         user.setUpdatedAt(LocalDateTime.now());
+	         System.out.println("🟡 [UserServiceImpl] Set updatedAt to now");
+	     }
+
+	     User savedUser = userRepository.save(user);
+	     System.out.println("🟢 [UserServiceImpl] User created with ID: " + savedUser.getId());
+
+	     return savedUser;
+	 }
 
 	@Override
 	public User updateUser(Integer id, User user) {

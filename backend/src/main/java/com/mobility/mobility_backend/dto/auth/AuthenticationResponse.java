@@ -4,6 +4,7 @@ public class AuthenticationResponse {
 	private String token;
 	private String username;
 	private String role;
+	 private Integer userId;
 
 	// Constructeurs
 	public AuthenticationResponse() {
@@ -14,6 +15,14 @@ public class AuthenticationResponse {
 		this.username = username;
 		this.role = role;
 	}
+
+	// NOUVEAU Constructeur avec userId
+    public AuthenticationResponse(String token, String username, String role, Integer userId) {
+        this.token = token;
+        this.username = username;
+        this.role = role;
+        this.setUserId(userId); // ← MÊME TYPE QUE User.id
+    }
 
 
 
@@ -40,6 +49,14 @@ public class AuthenticationResponse {
 
 	public void setRole(String role) {
 		this.role = role;
+	}
+
+	public Integer getUserId() {
+		return userId;
+	}
+
+	public void setUserId(Integer userId) {
+		this.userId = userId;
 	}
 
 

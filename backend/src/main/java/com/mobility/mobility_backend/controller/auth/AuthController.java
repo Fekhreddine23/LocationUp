@@ -29,6 +29,8 @@ public class AuthController {
 			request.setRole(Role.ROLE_USER);
 		}
 		return ResponseEntity.ok(authenticationService.register(request));
+
+
 	}
 
 	@PostMapping("/login")

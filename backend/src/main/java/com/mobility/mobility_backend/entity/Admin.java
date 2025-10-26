@@ -45,12 +45,12 @@ public class Admin {
 	@Max(value = 10, message = "Le niveau admin ne peut pas dépasser 10")
 	@Column(name = "admin_level", nullable = false)
 	private Integer adminLevel;
-	
-	
+
+
 	@Column(nullable = false)
     private String role;
 
-	
+
 
 	@CreationTimestamp
 	@Column(name = "created_at", updatable = false)
@@ -163,8 +163,8 @@ public class Admin {
 	public void setUpdatedAt(LocalDateTime updatedAt) {
 		this.updatedAt = updatedAt;
 	}
-	
-	
+
+
 	public String getRole() {
 		return role;
 	}

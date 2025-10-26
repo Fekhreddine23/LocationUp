@@ -1,5 +1,7 @@
 package com.mobility.mobility_backend.service.auth;
 
+import java.time.LocalDateTime;
+
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -38,21 +40,47 @@ public class AuthenticationService {
 
     @Transactional
     public AuthenticationResponse register(RegisterRequest request) {
-        // Créer l'utilisateur
+        System.out.println("🔵 [AuthService] Registering user: " + request.getUsername());
+
+        // VÉRIFICATION DIRECTE avec repository
+        if (userRepository.findByUsername(request.getUsername()).isPresent()) {
+            System.out.println("🔴 [AuthService] Username already exists: " + request.getUsername());
+            throw new RuntimeException("Username already exists");
+        }
+        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
+            System.out.println("🔴 [AuthService] Email already exists: " + request.getEmail());
+            throw new RuntimeException("Email already exists");
+        }
+
+        // CRÉATION DIRECTE avec toutes les données nécessaires
         User user = new User();
         user.setUsername(request.getUsername());
         user.setEmail(request.getEmail());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setRole(request.getRole());
+        user.setCreatedAt(LocalDateTime.now());
+        user.setUpdatedAt(LocalDateTime.now());
 
-        // Sauvegarder l'utilisateur
-        User savedUser = userService.createUser(user);
+        System.out.println("🟡 [AuthService] Saving user directly...");
+        User savedUser = userRepository.save(user);
+        System.out.println("🟢 [AuthService] User saved with ID: " + savedUser.getId());
 
-        // Générer le token JWT
+        // GÉNÉRATION DU TOKEN
+        System.out.println("🟡 [AuthService] Generating JWT token...");
         String jwtToken = jwtService.generateToken(savedUser);
+        System.out.println("🟢 [AuthService] JWT Token length: " + (jwtToken != null ? jwtToken.length() : "NULL"));
 
-        // Retourner la réponse
-        return new AuthenticationResponse(jwtToken, savedUser.getUsername(), savedUser.getRole().name());
+        // 🔥 CORRECTION ICI : Utiliser le NOUVEAU constructeur avec userId
+        AuthenticationResponse response = new AuthenticationResponse(
+            jwtToken,
+            savedUser.getUsername(),
+            savedUser.getRole().name(),
+            savedUser.getId()  // ← AJOUTER userId ICI
+        );
+
+        System.out.println("✅ [AuthService] Registration SUCCESS - UserId: " + response.getUserId() + ", Token: " + (response.getToken() != null ? "PRESENT" : "MISSING"));
+
+        return response;
     }
 
     public AuthenticationResponse authenticate(AuthenticationRequest request) {
@@ -73,8 +101,13 @@ public class AuthenticationService {
 
             var jwtToken = jwtService.generateToken(user);
 
-            return new AuthenticationResponse(jwtToken, user.getUsername(), user.getRole().name());
-
+            // 🔥 CORRECTION ICI : Utiliser le NOUVEAU constructeur avec userId
+            return new AuthenticationResponse(
+                jwtToken,
+                user.getUsername(),
+                user.getRole().name(),
+                user.getId()  // ← AJOUTER userId ICI
+            );
 
         } catch (Exception e) {
             System.out.println("❌ Authentication failed for " + request.getUsername() + ": " + e.getMessage());

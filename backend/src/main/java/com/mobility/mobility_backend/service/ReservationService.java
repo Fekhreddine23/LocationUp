@@ -35,70 +35,134 @@ public class ReservationService {
 
 	// Récupérer toutes les réservations
 	public List<ReservationDTO> getAllReservations() {
-		return reservationRepository.findAll().stream().map(reservationMapper::toDTO).collect(Collectors.toList());
+		System.out.println("🔵 [ReservationService] Getting all reservations");
+		List<ReservationDTO> reservations = reservationRepository.findAll().stream()
+				.map(reservationMapper::toDTO)
+				.collect(Collectors.toList());
+		System.out.println("🟢 [ReservationService] Found " + reservations.size() + " reservations");
+		return reservations;
 	}
 
 	// Récupérer une réservation par ID
 	public Optional<ReservationDTO> getReservationById(Integer id) {
-		return reservationRepository.findById(id).map(reservationMapper::toDTO);
+		System.out.println("🔵 [ReservationService] Getting reservation by ID: " + id);
+		Optional<ReservationDTO> result = reservationRepository.findById(id).map(reservationMapper::toDTO);
+		if (result.isPresent()) {
+			System.out.println("🟢 [ReservationService] Reservation found: " + result.get().getReservationId());
+		} else {
+			System.out.println("🔴 [ReservationService] Reservation not found: " + id);
+		}
+		return result;
 	}
 
 	// Récupérer les réservations d'un utilisateur
 	public List<ReservationDTO> getReservationsByUserId(Integer userId) {
-		return reservationRepository.findByUserId(userId).stream().map(reservationMapper::toDTO)
+		System.out.println("🔵 [ReservationService] Getting reservations for user ID: " + userId);
+
+		// Vérifier si l'utilisateur existe
+		Optional<User> user = userRepository.findById(userId);
+		if (user.isEmpty()) {
+			System.out.println("🔴 [ReservationService] User not found with ID: " + userId);
+			return List.of();
+		}
+		System.out.println("🟡 [ReservationService] User found: " + user.get().getUsername());
+
+		List<ReservationDTO> reservations = reservationRepository.findByUserId(userId).stream()
+				.map(reservationMapper::toDTO)
 				.collect(Collectors.toList());
+
+		System.out.println("🟢 [ReservationService] Found " + reservations.size() + " reservations for user ID: " + userId);
+		return reservations;
 	}
 
 	// Créer une nouvelle réservation
 	public ReservationDTO createReservation(ReservationDTO reservationDTO) {
+		System.out.println("🔵 [ReservationService] Creating new reservation: " + reservationDTO);
+
 		// Validation des relations
 		User user = userRepository.findById(reservationDTO.getUserId())
-				.orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
+				.orElseThrow(() -> {
+					System.out.println("🔴 [ReservationService] User not found with ID: " + reservationDTO.getUserId());
+					return new RuntimeException("Utilisateur non trouvé");
+				});
+		System.out.println("🟡 [ReservationService] User found: " + user.getUsername());
 
 		Offer offer = offerRepository.findById(reservationDTO.getOfferId())
-				.orElseThrow(() -> new RuntimeException("Offre non trouvé"));
+				.orElseThrow(() -> {
+					System.out.println("🔴 [ReservationService] Offer not found with ID: " + reservationDTO.getOfferId());
+					return new RuntimeException("Offre non trouvé");
+				});
+		System.out.println("🟡 [ReservationService] Offer found: " + offer.getOfferId());
 
 		Reservation reservation = reservationMapper.toEntity(reservationDTO);
 		reservation.setUser(user);
 		reservation.setOffer(offer);
 		reservation.setStatus(Reservation.ReservationStatus.PENDING);
 
+		System.out.println("🟡 [ReservationService] Saving reservation...");
 		Reservation savedReservation = reservationRepository.save(reservation);
+		System.out.println("🟢 [ReservationService] Reservation created with ID: " + savedReservation.getReservationId());
+
 		return reservationMapper.toDTO(savedReservation);
 	}
 
 	// Mettre à jour une réservation
 	public Optional<ReservationDTO> updateReservation(Integer id, ReservationDTO reservationDTO) {
+		System.out.println("🔵 [ReservationService] Updating reservation ID: " + id);
+
 		return reservationRepository.findById(id).map(existingReservation -> {
+			System.out.println("🟡 [ReservationService] Reservation found, current status: " + existingReservation.getStatus());
+
 			reservationMapper.updateEntityFromDTO(reservationDTO, existingReservation);
 			Reservation updatedReservation = reservationRepository.save(existingReservation);
+
+			System.out.println("🟢 [ReservationService] Reservation updated, new status: " + updatedReservation.getStatus());
 			return reservationMapper.toDTO(updatedReservation);
 		});
 	}
 
 	// Supprimer une réservation
 	public boolean deleteReservation(Integer id) {
+		System.out.println("🔵 [ReservationService] Deleting reservation ID: " + id);
+
 		if (reservationRepository.existsById(id)) {
 			reservationRepository.deleteById(id);
+			System.out.println("🟢 [ReservationService] Reservation deleted: " + id);
 			return true;
 		}
+
+		System.out.println("🔴 [ReservationService] Reservation not found for deletion: " + id);
 		return false;
 	}
 
 	// Confirmer une réservation
 	public Optional<ReservationDTO> confirmReservation(Integer id) {
+		System.out.println("🔵 [ReservationService] Confirming reservation ID: " + id);
+
 		return reservationRepository.findById(id).map(reservation -> {
+			System.out.println("🟡 [ReservationService] Reservation found, current status: " + reservation.getStatus());
+			System.out.println("🟡 [ReservationService] Reservation user ID: " + reservation.getUser().getId());
+			System.out.println("🟡 [ReservationService] Reservation offer ID: " + reservation.getOffer().getOfferId());
+
 			reservation.setStatus(Reservation.ReservationStatus.CONFIRMED);
 			Reservation updatedReservation = reservationRepository.save(reservation);
+
+			System.out.println("🟢 [ReservationService] Reservation confirmed, new status: " + updatedReservation.getStatus());
 			return reservationMapper.toDTO(updatedReservation);
 		});
 	}
 
 	// Annuler une réservation
 	public Optional<ReservationDTO> cancelReservation(Integer id) {
+		System.out.println("🔵 [ReservationService] Cancelling reservation ID: " + id);
+
 		return reservationRepository.findById(id).map(reservation -> {
+			System.out.println("🟡 [ReservationService] Reservation found, current status: " + reservation.getStatus());
+
 			reservation.setStatus(Reservation.ReservationStatus.CANCELLED);
 			Reservation updatedReservation = reservationRepository.save(reservation);
+
+			System.out.println("🟢 [ReservationService] Reservation cancelled, new status: " + updatedReservation.getStatus());
 			return reservationMapper.toDTO(updatedReservation);
 		});
 	}
