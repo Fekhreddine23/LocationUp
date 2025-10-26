@@ -1,0 +1,77 @@
+
+<!-- 
+<div class="offer-card" [class.available]="true">
+      <div class="offer-header">
+        <h3 class="offer-title">{{ offer.description }}</h3>
+        <span class="offer-price">{{ formatPrice(offer.price) }}</span>
+      </div>
+      
+      <div class="offer-details">
+        <div class="detail-item">
+          <span class="label">📍 Départ:</span>
+          <span class="value">Lieu #{{ offer.pickupLocationId }}</span>
+        </div>
+        
+        <div class="detail-item">
+          <span class="label">🎯 Retour:</span>
+          <span class="value">Lieu #{{ offer.returnLocationId }}</span>
+        </div>
+        
+        <div class="detail-item">
+          <span class="label">⏰ Date:</span>
+          <span class="value">{{ formatDate(offer.pickupDatetime) }}</span>
+        </div>
+        
+        <div class="detail-item">
+          <span class="label">🏢 Service:</span>
+          <span class="value">Service #{{ offer.mobilityServiceId }}</span>
+        </div>
+      </div>
+
+      <div class="offer-actions">
+        <button class="btn-primary" (click)="onReserve()">
+          Réserver
+        </button>
+        <button class="btn-secondary" (click)="onViewDetails()">
+          Détails
+        </button>
+      </div>
+    </div>
+  -->
+
+  <div class="offer-card">
+  <div class="offer-header">
+    <h3>Offre #{{ offer.offerId }}</h3>
+    <span class="price">{{ formatPrice(offer.price) }}</span>
+  </div>
+
+  <div class="offer-content">
+    <p class="description">{{ offer.description }}</p>
+    
+    <div class="offer-details">
+      <div class="detail">
+        <strong>📍 Lieu de prise en charge:</strong> ID {{ offer.pickupLocationId }}
+      </div>
+      <div class="detail">
+        <strong>📅 Date de prise en charge:</strong> {{ formatDate(offer.pickupDatetime) }}
+      </div>
+      <div class="detail">
+        <strong>🆔 Service de mobilité:</strong> ID {{ offer.mobilityServiceId }}
+      </div>
+    </div>
+  </div>
+
+  <div class="offer-actions">
+    <button 
+      class="btn btn-primary" 
+      (click)="onReserve()">
+      🚗 Réserver
+    </button>
+    
+    <button 
+      class="btn btn-secondary" 
+      (click)="onViewDetails()">
+      📋 Détails
+    </button>
+  </div>
+</div>

@@ -1,1 +1,47 @@
-<p>login works!</p>
+<div class="login-container">
+    <form (ngSubmit)="onLogin()" #loginForm="ngForm">
+        <h2>Connexion</h2>
+
+        <!-- Message d'erreur -->
+        <div class="error-message" *ngIf="errorMessage">
+            {{ errorMessage }}
+        </div>
+
+        <div class="form-group">
+            <label for="username">Nom d'utilisateur</label>
+            <input 
+                type="text" 
+                id="username" 
+                name="username" 
+                [(ngModel)]="credentials.username" 
+                required 
+                [disabled]="isLoading"
+                placeholder="Entrez votre nom d'utilisateur">
+        </div>
+
+        <div class="form-group">
+            <label for="password">Mot de passe</label>
+            <input 
+                type="password" 
+                id="password" 
+                name="password" 
+                [(ngModel)]="credentials.password" 
+                required 
+                [disabled]="isLoading"
+                placeholder="Entrez votre mot de passe">
+        </div>
+
+        <button 
+            type="submit" 
+            class="btn-primary" 
+            [disabled]="!loginForm.form.valid || isLoading">
+            
+            <span *ngIf="!isLoading">Se connecter</span>
+            <span *ngIf="isLoading">Connexion...</span>
+        </button>
+
+        <p class="register-link">
+            Pas de compte ? <a routerLink="/register">Créer un compte</a>
+        </p>
+    </form>
+</div>

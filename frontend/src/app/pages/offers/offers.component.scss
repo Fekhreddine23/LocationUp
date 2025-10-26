@@ -1,0 +1,106 @@
+.offers-page {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.page-header {
+  text-align: center;
+  margin-bottom: 3rem;
+
+  h1 {
+    color: #2c3e50;
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  p {
+    color: #7f8c8d;
+    font-size: 1.2rem;
+  }
+}
+
+.loading-state {
+  text-align: center;
+  padding: 3rem;
+  color: #666;
+
+  .spinner {
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #3498db;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 1rem;
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+}
+
+.error-state {
+  text-align: center;
+  padding: 2rem;
+  background: #f8d7da;
+  color: #721c24;
+  border-radius: 8px;
+  margin: 2rem 0;
+
+  .btn-retry {
+    background: #dc3545;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-top: 1rem;
+
+    &:hover {
+      background: #c82333;
+    }
+  }
+}
+
+.offers-grid {
+  display: grid;
+  gap: 2rem;
+  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+}
+
+.empty-state {
+  text-align: center;
+  padding: 4rem;
+  color: #666;
+  background: #f8f9fa;
+  border-radius: 8px;
+
+  p {
+    font-size: 1.2rem;
+    margin: 0;
+  }
+}
+
+// Responsive
+@media (max-width: 768px) {
+  .offers-page {
+    padding: 1rem;
+  }
+
+  .page-header {
+    h1 {
+      font-size: 2rem;
+    }
+
+    p {
+      font-size: 1rem;
+    }
+  }
+
+  .offers-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+}

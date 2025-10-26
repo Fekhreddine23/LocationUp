@@ -71,7 +71,8 @@
               "buildTarget": "location-up-frontend:build:production"
             },
             "development": {
-              "buildTarget": "location-up-frontend:build:development"
+              "buildTarget": "location-up-frontend:build:development",
+              "proxyConfig": "proxy.conf.json"
             }
           },
           "defaultConfiguration": "development"

@@ -1,7 +1,8 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
+import { User } from '../../core/models/auth.models';
 @Component({
   selector: 'app-header',
   standalone: true,
@@ -10,9 +11,30 @@ import { AuthService } from '../../core/services/auth.service';
   styleUrls: ['./header.component.scss']
 })
 export class HeaderComponent {
-  constructor(public authService: AuthService) {}
+ 
+  isLoggedIn = false;
+  currentUser: User | null = null;
+  isMenuOpen = false;
+
+  constructor(
+    private authService: AuthService,
+    private router: Router
+  ) {}
+
+  ngOnInit() {
+    this.authService.currentUser.subscribe(user => {
+      this.isLoggedIn = !!user;
+      this.currentUser = user;
+    });
+  }
+
+  toggleMenu(): void {
+    this.isMenuOpen = !this.isMenuOpen;
+  }
 
   logout(): void {
     this.authService.logout();
+    this.isMenuOpen = false;
+    this.router.navigate(['/']);
   }
 }

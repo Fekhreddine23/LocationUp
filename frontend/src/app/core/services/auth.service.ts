@@ -1,34 +1,41 @@
-import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, tap } from 'rxjs';
-
-import { environment } from '../../../environments/environment';
-import { AuthResponse, LoginRequest, RegisterRequest, User } from '../models/auth.models';
+import { LoginRequest, RegisterRequest, AuthResponse, User } from '../models/auth.models';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
-  private apiUrl = `${environment.apiUrl}/auth`;
-  private currentUserSubject = new BehaviorSubject<User | null>(null);
-  public currentUser$ = this.currentUserSubject.asObservable();
+  private apiUrl = 'http://localhost:8088/api/auth';
+  private currentUserSubject: BehaviorSubject<User | null>;
+  public currentUser: Observable<User | null>;
 
   constructor(private http: HttpClient) {
-    // Vérifier si un token existe au démarrage
-    const token = localStorage.getItem('token');
-    const username = localStorage.getItem('username');
-    const role = localStorage.getItem('role');
-    
-    if (token && username && role) {
-      this.currentUserSubject.next({ username, role, token });
-    }
+    this.currentUserSubject = new BehaviorSubject<User | null>(
+      JSON.parse(localStorage.getItem('currentUser') || 'null')
+    );
+    this.currentUser = this.currentUserSubject.asObservable();
   }
 
   login(loginRequest: LoginRequest): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.apiUrl}/login`, loginRequest)
       .pipe(
         tap(response => {
-          this.storeUserData(response);
+          console.log('🔐 [AuthService] Login response:', response);
+          
+          // 🔥 CORRECTION : Utiliser response.userId au lieu de extractUserIdFromToken
+          const user: User = {
+            id: response.userId,  // ← DIRECT depuis la réponse API
+            username: response.username,
+            role: response.role,
+            token: response.token
+          };
+          
+          console.log('✅ [AuthService] User created:', user);
+          localStorage.setItem('currentUser', JSON.stringify(user));
+          localStorage.setItem('token', response.token);
+          this.currentUserSubject.next(user);
         })
       );
   }
@@ -37,39 +44,39 @@ export class AuthService {
     return this.http.post<AuthResponse>(`${this.apiUrl}/register`, registerRequest)
       .pipe(
         tap(response => {
-          this.storeUserData(response);
+          console.log('👤 [AuthService] Register response:', response);
+          
+          // 🔥 CORRECTION : Utiliser response.userId au lieu de extractUserIdFromToken
+          const user: User = {
+            id: response.userId,  // ← DIRECT depuis la réponse API
+            username: response.username,
+            role: response.role,
+            token: response.token
+          };
+          
+          console.log('✅ [AuthService] User created:', user);
+          localStorage.setItem('currentUser', JSON.stringify(user));
+          localStorage.setItem('token', response.token);
+          this.currentUserSubject.next(user);
         })
       );
   }
 
-  private storeUserData(response: AuthResponse): void {
-    localStorage.setItem('token', response.token);
-    localStorage.setItem('username', response.username);
-    localStorage.setItem('role', response.role);
-    
-    this.currentUserSubject.next({
-      username: response.username,
-      role: response.role,
-      token: response.token
-    });
+  logout(): void {
+    localStorage.removeItem('currentUser');
+    localStorage.removeItem('token');
+    this.currentUserSubject.next(null);
   }
 
-  logout(): void {
-    localStorage.removeItem('token');
-    localStorage.removeItem('username');
-    localStorage.removeItem('role');
-    this.currentUserSubject.next(null);
+  isLoggedIn(): boolean {
+    return !!this.currentUserValue?.token;
   }
 
   getToken(): string | null {
     return localStorage.getItem('token');
   }
 
-  isLoggedIn(): boolean {
-    return !!this.getToken();
-  }
-
-  getCurrentUser(): User | null {
+  get currentUserValue(): User | null {
     return this.currentUserSubject.value;
   }
 }

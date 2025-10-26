@@ -1,19 +1,33 @@
-<header class="header">
-  <nav class="nav">
-    <a routerLink="/home" class="logo">🚀 MobilityUp</a>
-    
-    <div class="nav-links">
-      <a routerLink="/home" class="nav-link">Accueil</a>
-      
-      <ng-container *ngIf="authService.isLoggedIn(); else notLoggedIn">
-        <span class="user-info">Bienvenue, {{ authService.getCurrentUser()?.username }}</span>
-        <button (click)="logout()" class="logout-btn">Déconnexion</button>
-      </ng-container>
-      
-      <ng-template #notLoggedIn>
-        <a routerLink="/login" class="nav-link">Connexion</a>
-        <a routerLink="/register" class="nav-link">Inscription</a>
-      </ng-template>
-    </div>
-  </nav>
-</header>
+ <header class="header">
+      <nav class="nav">
+        <div class="logo">
+          <a routerLink="/">MonApp</a>
+        </div>
+        
+        <div class="nav-links">
+          <a routerLink="/" class="nav-link">Accueil</a>
+          
+          <ng-container *ngIf="!isLoggedIn; else userMenu">
+            <a routerLink="/login" class="nav-link">Connexion</a>
+            <a routerLink="/register" class="nav-link button">Inscription</a>
+          </ng-container>
+          
+          <ng-template #userMenu>
+            <a routerLink="/dashboard" class="nav-link">Dashboard</a>
+            <a routerLink="/offers" class="nav-link">Offres</a>
+            <a routerLink="/bookings" class="nav-link">Réservations</a>
+            
+            <div class="user-menu">
+              <button class="user-btn" (click)="toggleMenu()">
+                👤 {{ currentUser?.username }}
+              </button>
+              
+              <div class="dropdown-menu" *ngIf="isMenuOpen">
+                <a routerLink="/profile" class="dropdown-item">Mon Profil</a>
+                <button (click)="logout()" class="dropdown-item logout">Déconnexion</button>
+              </div>
+            </div>
+          </ng-template>
+        </div>
+      </nav>
+    </header>

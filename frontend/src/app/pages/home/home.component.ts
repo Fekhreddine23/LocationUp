@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { OffersService, Offer } from '../../core/services/offers.service';
+import { OffersService } from '../../core/services/offers.service';
 
 
 @Component({
@@ -25,7 +25,7 @@ export class HomeComponent {
     this.loading = true;
     this.error = '';
 
-    this.offersService.getOffers().subscribe({
+    this.offersService.getAllOffers().subscribe({
       next: (offers) => {
         this.offers = offers;
         this.loading = false;

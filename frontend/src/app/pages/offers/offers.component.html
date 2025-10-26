@@ -1,0 +1,31 @@
+<div class="offers-page">
+  <div class="page-header">
+    <h1>Nos Offres de Mobilité</h1>
+    <p>Découvrez toutes nos solutions de transport disponibles</p>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="loading-state">
+    <div class="spinner"></div>
+    <p>Chargement des offres...</p>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="errorMessage" class="error-state">
+    <p>❌ {{ errorMessage }}</p>
+    <button (click)="loadOffers()" class="btn-retry">Réessayer</button>
+  </div>
+
+  <!-- Offers Grid -->
+  <div *ngIf="!isLoading && !errorMessage" class="offers-grid">
+    <app-offer-card 
+      *ngFor="let offer of offers"
+      [offer]="offer">
+    </app-offer-card>
+  </div>
+
+  <!-- Empty State -->
+  <div *ngIf="!isLoading && !errorMessage && offers.length === 0" class="empty-state">
+    <p>📭 Aucune offre disponible pour le moment</p>
+  </div>
+</div>

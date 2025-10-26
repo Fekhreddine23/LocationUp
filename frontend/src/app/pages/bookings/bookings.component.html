@@ -1,0 +1,103 @@
+<div class="bookings-page">
+  <!-- Section Tests (optionnelle pour debug) -->
+  <div class="test-section" *ngIf="false" style="padding: 1rem; background: #f5f5f5; margin-bottom: 2rem;">
+    <h3>🧪 Tests du Service</h3>
+    <button (click)="testGetBookings()" class="btn btn-primary">Test Get Bookings</button>
+    <button (click)="testCreateBooking()" class="btn btn-success">Test Create Booking</button>
+    <button (click)="testConfirmBooking()" class="btn btn-warning">Test Confirm Booking</button>
+    
+    <div *ngIf="testResults" style="margin-top: 1rem; padding: 1rem; background: white;">
+      <h4>Résultats du test:</h4>
+      <pre>{{ testResults | json }}</pre>
+    </div>
+  </div>
+
+  <div class="page-header">
+    <h1>Mes Réservations</h1>
+    <button class="btn-primary" routerLink="/offers">
+      Nouvelle Réservation
+    </button>
+  </div>
+
+  <!-- Loading State -->
+  @if (isLoading) {
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <p>Chargement des réservations...</p>
+    </div>
+  }
+
+  <!-- Error State -->
+  @if (errorMessage) {
+    <div class="error-state">
+      <p>❌ {{ errorMessage }}</p>
+      <button (click)="loadBookings()" class="btn-retry">Réessayer</button>
+    </div>
+  }
+
+  <!-- Bookings List -->
+  @if (!isLoading && !errorMessage) {
+    <div class="bookings-list">
+      @for (booking of bookings; track booking.reservationId) {
+        <div class="booking-card">
+          <div class="booking-header">
+            <h3>Réservation #{{ booking.reservationId }}</h3>
+            <span class="status-badge" [class]="getStatusBadgeClass(booking.status)">
+              {{ booking.status }}
+            </span>
+          </div>
+          
+          <div class="booking-details">
+            <p><strong>Utilisateur ID:</strong> {{ booking.userId }}</p>
+            <p><strong>Offre ID:</strong> {{ booking.offerId }}</p>
+            <p><strong>Date de réservation:</strong> {{ formatDate(booking.reservationDate) }}</p>
+            <p *ngIf="booking.createdAt"><strong>Créée le:</strong> {{ formatDate(booking.createdAt) }}</p>
+            <p *ngIf="booking.updatedAt && booking.updatedAt !== booking.createdAt">
+              <strong>Modifiée le:</strong> {{ formatDate(booking.updatedAt) }}
+            </p>
+          </div>
+
+          <div class="booking-actions">
+            <!-- Bouton Confirmer - seulement pour les réservations PENDING -->
+            @if (booking.status === 'PENDING') {
+              <button 
+                (click)="confirmBooking(booking.reservationId!)" 
+                class="btn-success"
+                title="Confirmer cette réservation">
+                ✅ Confirmer
+              </button>
+            }
+            
+            <!-- Bouton Annuler - pour PENDING et CONFIRMED -->
+            @if (booking.status === 'PENDING' || booking.status === 'CONFIRMED') {
+              <button 
+                (click)="cancelBooking(booking.reservationId!)" 
+                class="btn-warning"
+                title="Annuler cette réservation">
+                🚫 Annuler
+              </button>
+            }
+            
+            <!-- Bouton Supprimer - toujours visible -->
+            <button 
+              (click)="deleteBooking(booking.reservationId!)" 
+              class="btn-danger"
+              title="Supprimer cette réservation">
+              🗑️ Supprimer
+            </button>
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Empty State -->
+  @if (!isLoading && !errorMessage && bookings.length === 0) {
+    <div class="empty-state">
+      <p>📭 Aucune réservation trouvée</p>
+      <button routerLink="/offers" class="btn-primary">
+        Faire une première réservation
+      </button>
+    </div>
+  }
+</div>
