@@ -1,0 +1,42 @@
+<div *ngIf="isVisible" class="modal-overlay" (click)="onOverlayClick($event)">
+      <div class="modal-content">
+        
+        <div class="modal-header">
+          <h3 class="modal-title">
+            <span class="warning-icon">🗑️</span>
+            Confirmer la suppression
+          </h3>
+          <button class="close-button" (click)="onCancel()">×</button>
+        </div>
+
+        <div class="modal-body">
+          <p class="confirmation-message">
+            ⚠️ Cette action est irréversible. La réservation sera définitivement supprimée.
+          </p>
+          
+          <div class="booking-details" *ngIf="bookingDetails">
+            <div class="detail-item">
+              <strong>Réservation :</strong> #{{ bookingDetails.reservationId }}
+            </div>
+            <div class="detail-item" *ngIf="getOfferDetails(bookingDetails.offerId)">
+              <strong>Offre :</strong> {{ getOfferDetails(bookingDetails.offerId).description }}
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button 
+            class="btn btn-secondary"
+            (click)="onCancel()">
+            👈 Garder la réservation
+          </button>
+          
+          <button 
+            class="btn btn-danger"
+            (click)="onConfirm()">
+            🗑️ Supprimer définitivement
+          </button>
+        </div>
+
+      </div>
+    </div>

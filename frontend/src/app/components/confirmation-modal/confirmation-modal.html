@@ -1,0 +1,76 @@
+ <div *ngIf="isVisible" class="modal-overlay" (click)="onOverlayClick($event)">
+      <div class="modal-content">
+        
+        <!-- En-tête du modal -->
+        <div class="modal-header">
+          <h3 class="modal-title">
+            <span class="warning-icon">⚠️</span>
+            Confirmer l'annulation
+          </h3>
+          <button class="close-button" (click)="onCancel()">×</button>
+        </div>
+
+        <!-- Corps du modal -->
+        <div class="modal-body">
+          <p class="confirmation-message">{{ getMessage() }}</p>
+          
+          <!-- Raison d'annulation (optionnelle) -->
+          <div *ngIf="showReasonInput" class="reason-section">
+            <label for="cancelReason" class="reason-label">
+              Raison de l'annulation (optionnelle) :
+            </label>
+            <select 
+              id="cancelReason"
+              [(ngModel)]="selectedReason"
+              class="reason-select">
+              <option value="">-- Choisir une raison --</option>
+              <option value="changed_plans">Mes plans ont changé</option>
+              <option value="found_better">J'ai trouvé une meilleure offre</option>
+              <option value="too_expensive">Trop cher finalement</option>
+              <option value="emergency">Urgence personnelle</option>
+              <option value="other">Autre raison</option>
+            </select>
+            
+            <!-- Champ autre raison -->
+            <div *ngIf="selectedReason === 'other'" class="other-reason">
+              <textarea 
+                [(ngModel)]="customReason"
+                placeholder="Précisez votre raison..."
+                class="reason-textarea"
+                rows="3">
+              </textarea>
+            </div>
+          </div>
+
+          <!-- Détails de la réservation -->
+          <div class="booking-details" *ngIf="bookingDetails">
+            <div class="detail-item">
+              <strong>Réservation :</strong> #{{ bookingDetails.reservationId }}
+            </div>
+            <div class="detail-item" *ngIf="bookingDetails.offer">
+              <strong>Offre :</strong> {{ bookingDetails.offer.description }}
+            </div>
+            <div class="detail-item">
+              <strong>Date :</strong> {{ bookingDetails.reservationDate | date:'dd/MM/yyyy HH:mm' }}
+            </div>
+          </div>
+        </div>
+
+        <!-- Pied du modal -->
+        <div class="modal-footer">
+          <button 
+            class="btn btn-secondary"
+            (click)="onCancel()">
+            👈 Garder la réservation
+          </button>
+          
+          <button 
+            class="btn btn-danger"
+            (click)="onConfirm()"
+            [disabled]="isConfirming">
+            {{ isConfirming ? '⏳ Annulation...' : '❌ Confirmer l\'annulation' }}
+          </button>
+        </div>
+
+      </div>
+    </div>

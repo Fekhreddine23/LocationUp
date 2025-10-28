@@ -21,6 +21,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.http.HttpMethod; // ← AJOUTE CET IMPORT
+
 
 import com.mobility.mobility_backend.authentication.JwtAuthenticationFilter;
 
@@ -50,15 +52,22 @@ public class SecurityConfig {
 						.requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
 						.requestMatchers("/h2-console/**").permitAll()
 						.requestMatchers("/actuator/**").permitAll()
+						
+ 						.requestMatchers("/api/reservations/test-public").permitAll() // ⬅️ AJOUTE CETTE LIGNE test
+						.requestMatchers("/api/reservations/test-simple").permitAll() 
+						.requestMatchers("/api/test/**").permitAll()
+						.requestMatchers("/api/debug/**").permitAll()
 
 						// ✅ AJOUTEZ CETTE LIGNE - OFFRES ACCESSIBLES SANS AUTH
 						.requestMatchers("/api/offers/**").permitAll()
-						 .requestMatchers("/api/debug/**").permitAll() // ← AJOUTEZ CETTE LIGNE
+						
+						 .requestMatchers(HttpMethod.POST, "/api/reservations").authenticated()
 
 						// Routes protégées par rôle
 						.requestMatchers("/api/admin/**").hasRole("ADMIN")
 
 						// Routes nécessitant une authentification
+
 						.requestMatchers("/api/reservations/**").authenticated()
 						.requestMatchers("/api/users/**").authenticated()
 
@@ -80,10 +89,14 @@ public class SecurityConfig {
 		configuration.setAllowedOrigins(Arrays.asList(
 			"http://localhost:4200",
 			"http://127.0.0.1:4200",
-			"https://localhost:4200"
+
+			 "http://localhost:4200",
+			    //     "http://127.0.0.1:4200",
+			    //     "https://localhost:4200",
+			  "http://localhost:3000"
 		));
 		configuration.setAllowedMethods(Arrays.asList(
-			"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS" // ← AJOUT DE "PATCH" ICI
+			"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD" // ← AJOUT DE "PATCH" ICI
 		));
 		configuration.setAllowedHeaders(Arrays.asList(
 			"Authorization",
@@ -92,11 +105,13 @@ public class SecurityConfig {
 			"Origin",
 			"X-Requested-With",
 			"Access-Control-Request-Method",
-			"Access-Control-Request-Headers"
+			"Access-Control-Request-Headers",
+			"Cache-Control"
 		));
 		configuration.setExposedHeaders(Arrays.asList(
 			"Access-Control-Allow-Origin",
-			"Access-Control-Allow-Credentials"
+			"Access-Control-Allow-Credentials",
+			"Authorization"
 		));
 		configuration.setAllowCredentials(true);
 		configuration.setMaxAge(3600L); // Cache preflight requests for 1 hour

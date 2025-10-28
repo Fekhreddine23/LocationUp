@@ -1,0 +1,7 @@
+<div class="toast-container" *ngIf="toasts.length > 0">
+      <app-toast
+        *ngFor="let toast of toasts"
+        [toast]="toast"
+        (click)="removeToast(toast.id)">
+      </app-toast>
+    </div>

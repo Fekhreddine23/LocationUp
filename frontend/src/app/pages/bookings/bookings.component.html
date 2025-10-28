@@ -1,103 +1,211 @@
-<div class="bookings-page">
-  <!-- Section Tests (optionnelle pour debug) -->
-  <div class="test-section" *ngIf="false" style="padding: 1rem; background: #f5f5f5; margin-bottom: 2rem;">
-    <h3>🧪 Tests du Service</h3>
-    <button (click)="testGetBookings()" class="btn btn-primary">Test Get Bookings</button>
-    <button (click)="testCreateBooking()" class="btn btn-success">Test Create Booking</button>
-    <button (click)="testConfirmBooking()" class="btn btn-warning">Test Confirm Booking</button>
-    
-    <div *ngIf="testResults" style="margin-top: 1rem; padding: 1rem; background: white;">
-      <h4>Résultats du test:</h4>
-      <pre>{{ testResults | json }}</pre>
-    </div>
-  </div>
-
-  <div class="page-header">
+<div class="bookings-container">
+  <div class="bookings-header">
     <h1>Mes Réservations</h1>
-    <button class="btn-primary" routerLink="/offers">
-      Nouvelle Réservation
+    <button class="btn btn-primary" (click)="createNewBooking()">
+      + Nouvelle Réservation
     </button>
   </div>
 
   <!-- Loading State -->
-  @if (isLoading) {
-    <div class="loading-state">
-      <div class="spinner"></div>
-      <p>Chargement des réservations...</p>
-    </div>
-  }
+  <div *ngIf="isLoading && bookings.length === 0" class="loading-state">
+    <app-spinner text="Chargement de vos réservations..."></app-spinner>
+  </div>
 
-  <!-- Error State -->
-  @if (errorMessage) {
-    <div class="error-state">
-      <p>❌ {{ errorMessage }}</p>
-      <button (click)="loadBookings()" class="btn-retry">Réessayer</button>
-    </div>
-  }
+  <!-- Error Message -->
+  <div *ngIf="errorMessage" class="alert alert-error">
+    ❌ {{ errorMessage }}
+  </div>
+
+  <!-- Empty State -->
+  <div *ngIf="!isLoading && bookings.length === 0" class="empty-state">
+    <div class="empty-icon">📋</div>
+    <h3>Aucune réservation</h3>
+    <p>Vous n'avez pas encore de réservation.</p>
+    <button class="btn btn-primary" (click)="createNewBooking()">
+      Créer ma première réservation
+    </button>
+  </div>
 
   <!-- Bookings List -->
-  @if (!isLoading && !errorMessage) {
-    <div class="bookings-list">
-      @for (booking of bookings; track booking.reservationId) {
-        <div class="booking-card">
-          <div class="booking-header">
-            <h3>Réservation #{{ booking.reservationId }}</h3>
-            <span class="status-badge" [class]="getStatusBadgeClass(booking.status)">
-              {{ booking.status }}
+  <div *ngIf="!isLoading && bookings.length > 0" class="bookings-list">
+    
+    <!-- Filtres et statistiques -->
+    <div class="bookings-filters">
+      <div class="stats">
+        <span class="stat">
+          <strong>{{ bookings.length }}</strong> réservation(s)
+        </span>
+        <span class="stat">
+          <span class="status-badge status-pending">{{ getCountByStatus('PENDING') }}</span> En attente
+        </span>
+        <span class="stat">
+          <span class="status-badge status-confirmed">{{ getCountByStatus('CONFIRMED') }}</span> Confirmées
+        </span>
+        <span class="stat">
+          <span class="status-badge status-cancelled">{{ getCountByStatus('CANCELLED') }}</span> Annulées
+        </span>
+      </div>
+    </div>
+
+    <!-- Loading pendant le rechargement -->
+    <div *ngIf="isLoading && bookings.length > 0" class="loading-overlay">
+      <app-spinner size="small" text="Mise à jour..."></app-spinner>
+    </div>
+
+    <!-- Liste des réservations -->
+    <div class="booking-cards">
+      <div *ngFor="let booking of bookings" 
+           class="booking-card"
+           [class]="getStatusCardClass(booking.status)">
+        
+        <!-- En-tête de la carte -->
+        <div class="booking-header">
+          <div class="booking-info">
+            <h3 class="booking-title">
+              Réservation #{{ booking.reservationId }}
+            </h3>
+            <span class="booking-date">
+              Créée le {{ formatDate(booking.reservationDate) }}
             </span>
           </div>
+
+          <div class="booking-status">
+            <span [class]="'status-badge ' + getStatusBadgeClass(booking.status)">
+              {{ getStatusText(booking.status) }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Détails de l'offre (chargés dynamiquement) -->
+        <div *ngIf="getOfferDetails(booking.offerId)" class="offer-details">
+          <h4>{{ getOfferDetails(booking.offerId).description }}</h4>
+          <div class="offer-meta">
+            <span class="price">{{ getOfferDetails(booking.offerId).price | currency:'EUR' }}</span>
+            <span class="pickup-date">
+              📅 Disponible le {{ formatDate(getOfferDetails(booking.offerId).pickupDatetime) }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Détails de la réservation -->
+        <div class="booking-details">
+          <div class="detail-item">
+            <strong>ID Réservation:</strong> {{ booking.reservationId }}
+          </div>
+          <div class="detail-item">
+            <strong>ID Offre:</strong> {{ booking.offerId }}
+          </div>
+          <div class="detail-item">
+            <strong>Date de réservation:</strong> {{ formatDate(booking.reservationDate) }}
+          </div>
+          <div class="detail-item" *ngIf="booking.createdAt">
+            <strong>Créée le:</strong> {{ formatDate(booking.createdAt) }}
+          </div>
+        </div>
+
+        <!-- Actions par statut AVEC LOADING -->
+        <div class="booking-actions">
           
-          <div class="booking-details">
-            <p><strong>Utilisateur ID:</strong> {{ booking.userId }}</p>
-            <p><strong>Offre ID:</strong> {{ booking.offerId }}</p>
-            <p><strong>Date de réservation:</strong> {{ formatDate(booking.reservationDate) }}</p>
-            <p *ngIf="booking.createdAt"><strong>Créée le:</strong> {{ formatDate(booking.createdAt) }}</p>
-            <p *ngIf="booking.updatedAt && booking.updatedAt !== booking.createdAt">
-              <strong>Modifiée le:</strong> {{ formatDate(booking.updatedAt) }}
-            </p>
+          <!-- STATUT: PENDING -->
+          <div *ngIf="booking.status === 'PENDING'" class="action-buttons">
+            <!-- Bouton Confirmer avec loading -->
+            <button class="btn btn-success btn-sm" 
+                    (click)="confirmBooking(booking.reservationId!)"
+                    [disabled]="isLoadingAction(booking.reservationId!, 'confirm')"
+                    [class.loading]="isLoadingAction(booking.reservationId!, 'confirm')">
+              
+              <span *ngIf="!isLoadingAction(booking.reservationId!, 'confirm')">
+                ✅ Confirmer
+              </span>
+              <span *ngIf="isLoadingAction(booking.reservationId!, 'confirm')" class="btn-loading">
+                <app-spinner size="small"></app-spinner>
+                <span>Confirmation...</span>
+              </span>
+            </button>
+
+            <!-- Bouton Annuler avec loading -->
+            <button class="btn btn-warning btn-sm" 
+                    (click)="openCancelModal(booking)"
+                    [disabled]="isLoadingAction(booking.reservationId!, 'cancel')"
+                    [class.loading]="isLoadingAction(booking.reservationId!, 'cancel')">
+              
+              <span *ngIf="!isLoadingAction(booking.reservationId!, 'cancel')">
+                ❌ Annuler
+              </span>
+              <span *ngIf="isLoadingAction(booking.reservationId!, 'cancel')" class="btn-loading">
+                <app-spinner size="small"></app-spinner>
+                <span>Annulation...</span>
+              </span>
+            </button>
           </div>
 
-          <div class="booking-actions">
-            <!-- Bouton Confirmer - seulement pour les réservations PENDING -->
-            @if (booking.status === 'PENDING') {
-              <button 
-                (click)="confirmBooking(booking.reservationId!)" 
-                class="btn-success"
-                title="Confirmer cette réservation">
-                ✅ Confirmer
-              </button>
-            }
-            
-            <!-- Bouton Annuler - pour PENDING et CONFIRMED -->
-            @if (booking.status === 'PENDING' || booking.status === 'CONFIRMED') {
-              <button 
-                (click)="cancelBooking(booking.reservationId!)" 
-                class="btn-warning"
-                title="Annuler cette réservation">
-                🚫 Annuler
-              </button>
-            }
-            
-            <!-- Bouton Supprimer - toujours visible -->
-            <button 
-              (click)="deleteBooking(booking.reservationId!)" 
-              class="btn-danger"
-              title="Supprimer cette réservation">
-              🗑️ Supprimer
+          <!-- STATUT: CONFIRMED -->
+          <div *ngIf="booking.status === 'CONFIRMED'" class="action-buttons">
+            <!-- Bouton Annuler avec loading -->
+            <button class="btn btn-warning btn-sm" 
+                    (click)="openCancelModal(booking)"
+                    [disabled]="isLoadingAction(booking.reservationId!, 'cancel')"
+                    [class.loading]="isLoadingAction(booking.reservationId!, 'cancel')">
+              
+              <span *ngIf="!isLoadingAction(booking.reservationId!, 'cancel')">
+                ❌ Annuler
+              </span>
+              <span *ngIf="isLoadingAction(booking.reservationId!, 'cancel')" class="btn-loading">
+                <app-spinner size="small"></app-spinner>
+                <span>Annulation...</span>
+              </span>
+            </button>
+            <span class="action-info">✓ Réservation confirmée</span>
+          </div>
+
+          <!-- STATUT: CANCELLED -->
+          <div *ngIf="booking.status === 'CANCELLED'" class="action-info">
+            <span class="info-text">❌ Réservation annulée</span>
+            <!-- Bouton Supprimer avec loading -->
+            <button class="btn btn-danger btn-sm" 
+                    (click)="openDeleteModal(booking)"
+                    [disabled]="isLoadingAction(booking.reservationId!, 'delete')"
+                    [class.loading]="isLoadingAction(booking.reservationId!, 'delete')">
+              
+              <span *ngIf="!isLoadingAction(booking.reservationId!, 'delete')">
+                🗑️ Supprimer
+              </span>
+              <span *ngIf="isLoadingAction(booking.reservationId!, 'delete')" class="btn-loading">
+                <app-spinner size="small"></app-spinner>
+                <span>Suppression...</span>
+              </span>
+            </button>
+          </div>
+
+          <!-- STATUT: COMPLETED -->
+          <div *ngIf="booking.status === 'COMPLETED'" class="action-info">
+            <span class="info-text">✓ Réservation terminée</span>
+            <button class="btn btn-outline btn-sm" disabled>
+              Terminé
             </button>
           </div>
         </div>
-      }
+      </div>
     </div>
-  }
+  </div>
 
-  <!-- Empty State -->
-  @if (!isLoading && !errorMessage && bookings.length === 0) {
-    <div class="empty-state">
-      <p>📭 Aucune réservation trouvée</p>
-      <button routerLink="/offers" class="btn-primary">
-        Faire une première réservation
-      </button>
-    </div>
-  }
+   <!-- Modal d'annulation -->
+  <app-confirmation-modal
+    [isVisible]="showCancelModal"
+    [bookingStatus]="selectedBooking?.status || ''"
+    [bookingDetails]="selectedBooking"
+    [showReasonInput]="showCancelReason"
+    [isConfirming]="isCancelling"
+    (confirmed)="onCancelConfirmed($event)"
+    (cancelled)="onCancelCancelled()">
+  </app-confirmation-modal>
+
+  <!-- Modal de suppression -->
+  <app-delete-confirmation-modal
+    [isVisible]="showDeleteModal"
+    [bookingDetails]="bookingToDelete"
+    [getOfferDetails]="deleteModalGetOfferDetails"
+    (confirmed)="onDeleteConfirmed()"
+    (cancelled)="onDeleteCancelled()">
+  </app-delete-confirmation-modal>
 </div>

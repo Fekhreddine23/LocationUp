@@ -5,10 +5,11 @@ import { RouterOutlet } from '@angular/router';
 import { HeaderComponent } from '../../src/app/components/header/header.component';
 import { OffersService } from '../../src/app/core/services/offers.service'; // ← SERVICE CORRIGÉ
 import { Offer } from './core/models/offer.model';
+import { ToastContainer } from './components/toast-container/toast-container';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, CommonModule, HeaderComponent],
+  imports: [RouterOutlet, CommonModule, HeaderComponent, ToastContainer],
   templateUrl: './app.html',
   styleUrl: './app.scss'
 })

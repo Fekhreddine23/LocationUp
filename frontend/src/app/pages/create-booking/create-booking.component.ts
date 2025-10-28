@@ -26,8 +26,11 @@ export class CreateBookingComponent implements OnInit {
   currentUser: User | null = null;
   preselectedOffer: Offer | null = null;
   
+
+  selectedOffer: Offer | null = null; // ← Offre sélectionnée
+
   isLoading = false;
-  isLoadingOffers = false;
+  isLoadingOffer = false;
   errorMessage = '';
   successMessage = '';
 
@@ -45,8 +48,8 @@ export class CreateBookingComponent implements OnInit {
     this.currentUser = this.authService.currentUserValue;
     this.bookingRequest.userId = this.getCurrentUserId();
     
-    // Charger les offres
-    this.loadOffers();
+     // Charger uniquement l'offre spécifique depuis l'URL
+    this.loadSelectedOffer();
     
     // Vérifier l'offerId dans l'URL
     this.route.queryParams.subscribe(params => {
@@ -60,57 +63,43 @@ export class CreateBookingComponent implements OnInit {
     });
   }
 
-  private loadOffers(): void {
-    this.isLoadingOffers = true;
-    
-    this.offersService.getAllOffers().subscribe({
-      next: (offers) => {
-        this.offers = offers;
-        this.isLoadingOffers = false;
-        console.log('✅ Offers loaded:', this.offers);
-        
-        // Si une offre était présélectionnée, la trouver
-        if (this.bookingRequest.offerId > 0) {
-          this.preselectedOffer = this.offers.find(o => o.offerId === this.bookingRequest.offerId) || null;
-          console.log('🎯 Preselected offer found:', this.preselectedOffer);
+  private loadSelectedOffer(): void {
+    this.route.queryParams.subscribe(params => {
+      if (params['offerId']) {
+        const offerId = +params['offerId'];
+        if (offerId > 0) {
+          this.bookingRequest.offerId = offerId;
+          console.log('🎯 Offer ID from URL:', offerId);
+          this.loadOfferDetails(offerId);
+        } else {
+          this.errorMessage = 'ID d\'offre invalide';
         }
-        
-        // Sélectionner la première offre par défaut si aucune sélection
-        if (!this.bookingRequest.offerId && this.offers.length > 0) {
-          const availableOffer = this.offers.find(o => this.isOfferAvailable(o));
-          if (availableOffer) {
-            this.bookingRequest.offerId = availableOffer.offerId;
-          }
-        }
-      },
-      error: (error) => {
-        this.isLoadingOffers = false;
-        console.error('❌ Error loading offers:', error);
-        this.errorMessage = 'Erreur lors du chargement des offres disponibles';
+      } else {
+        this.errorMessage = 'Aucune offre sélectionnée';
       }
     });
   }
 
-  // Sélectionner une offre (pour la liste visuelle)
-  selectOffer(offer: Offer): void {
-    if (this.isOfferAvailable(offer)) {
-      this.bookingRequest.offerId = offer.offerId;
-      console.log('✅ Offer selected:', offer.offerId);
-    }
+
+private loadOfferDetails(offerId: number): void {
+    this.isLoadingOffer = true;
+    this.errorMessage = '';
+
+    this.offersService.getOfferById(offerId).subscribe({
+      next: (offer) => {
+        this.selectedOffer = offer;
+        this.isLoadingOffer = false;
+        console.log('✅ Offer loaded:', offer);
+      },
+      error: (error) => {
+        this.isLoadingOffer = false;
+        this.errorMessage = 'Erreur lors du chargement de l\'offre sélectionnée';
+        console.error('❌ Error loading offer:', error);
+      }
+    });
   }
 
-  // Obtenir l'offre sélectionnée
-  getSelectedOffer(): Offer | null {
-    return this.offers.find(o => o.offerId === this.bookingRequest.offerId) || null;
-  }
-
-  // Vérifier si une offre est disponible
-  isOfferAvailable(offer: Offer): boolean {
-    const now = new Date();
-    const pickupDate = new Date(offer.pickupDatetime);
-    return pickupDate > now;
-  }
-
+ 
   getMinDate(): string {
     const now = new Date();
     return now.toISOString().slice(0, 16);
@@ -132,6 +121,13 @@ export class CreateBookingComponent implements OnInit {
     this.errorMessage = '';
     this.successMessage = '';
 
+  console.log('=== 🧪 DEBUG BOOKING CREATION ===');
+  console.log('🔐 Current user:', this.authService.currentUserValue);
+  console.log('🔐 User ID in request:', this.bookingRequest.userId);
+  console.log('🔐 Token exists:', !!this.authService.getToken());
+  console.log('📦 Booking request:', this.bookingRequest);
+  console.log('=== 🧪 DEBUG END ===');
+
     console.log('📦 Creating reservation:', this.bookingRequest);
 
     this.bookingsService.createBooking(this.bookingRequest).subscribe({
@@ -148,11 +144,12 @@ export class CreateBookingComponent implements OnInit {
     });
   }
 
+  
   private isFormValid(): boolean {
     return this.bookingRequest.userId > 0 &&
            this.bookingRequest.offerId > 0 &&
            this.bookingRequest.reservationDate !== '' &&
-           this.getSelectedOffer() !== null;
+           this.selectedOffer !== null;
   }
 
   onCancel(): void {

@@ -1,8 +1,9 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable, of } from 'rxjs';
-import { delay, tap } from 'rxjs/operators';
+import { Observable, of, throwError } from 'rxjs';
+import { delay, tap, catchError } from 'rxjs/operators';
 import { AuthService } from './auth.service';
+import { LoadingService } from './loading.service';
 
 export interface Booking {
   reservationId?: number;
@@ -25,7 +26,7 @@ export interface CreateBookingRequest {
 })
 export class BookingsService {
   private apiUrl = 'http://localhost:8088/api/reservations';
-  private useMockData = false; // Passe à false quand le backend est prêt
+  private useMockData = false;
 
   private mockBookings: Booking[] = [
     {
@@ -50,7 +51,8 @@ export class BookingsService {
 
   constructor(
     private http: HttpClient,
-    private authService: AuthService
+    private authService: AuthService,
+    private loadingService: LoadingService 
   ) {}
 
   private getHeaders(): HttpHeaders {
@@ -66,12 +68,26 @@ export class BookingsService {
     return delay<T>(1000 + Math.random() * 1000);
   }
 
+  // Méthode générique pour gérer le loading
+  private withLoading<T>(key: string, observable: Observable<T>): Observable<T> {
+    this.loadingService.setLoading(key, true);
+    return observable.pipe(
+      tap(() => this.loadingService.setLoading(key, false)),
+      catchError(error => {
+        this.loadingService.setLoading(key, false);
+        return throwError(() => error);
+      })
+    );
+  }
+
   // Récupérer toutes les réservations
   getAllBookings(): Observable<Booking[]> {
     if (this.useMockData) {
       return of([...this.mockBookings]).pipe(this.simulateDelay());
     }
-    return this.http.get<Booking[]>(this.apiUrl, { headers: this.getHeaders() });
+    return this.withLoading('all-bookings', 
+      this.http.get<Booking[]>(this.apiUrl, { headers: this.getHeaders() })
+    );
   }
 
   // Récupérer les réservations d'un utilisateur
@@ -80,7 +96,9 @@ export class BookingsService {
       const userBookings = this.mockBookings.filter(booking => booking.userId === userId);
       return of(userBookings).pipe(this.simulateDelay());
     }
-    return this.http.get<Booking[]>(`${this.apiUrl}/user/${userId}`, { headers: this.getHeaders() });
+    return this.withLoading(`user-${userId}-bookings`,
+      this.http.get<Booking[]>(`${this.apiUrl}/user/${userId}`, { headers: this.getHeaders() })
+    );
   }
 
   // Récupérer mes réservations (utilisateur connecté)
@@ -89,8 +107,11 @@ export class BookingsService {
     if (!currentUser) {
       throw new Error('Utilisateur non connecté');
     }
-    // À adapter selon comment tu récupères l'userId
-    return this.getBookingsByUser(1); // Temporaire
+    
+    console.log('🔍 [BookingsService] Utilisateur connecté:', currentUser);
+    console.log('🔍 [BookingsService] ID utilisateur:', currentUser.id);
+    
+    return this.getBookingsByUser(currentUser.id);
   }
 
   // Récupérer une réservation par ID
@@ -102,7 +123,9 @@ export class BookingsService {
       }
       throw new Error('Booking not found');
     }
-    return this.http.get<Booking>(`${this.apiUrl}/${id}`, { headers: this.getHeaders() });
+    return this.withLoading(`booking-${id}`,
+      this.http.get<Booking>(`${this.apiUrl}/${id}`, { headers: this.getHeaders() })
+    );
   }
 
   // Créer une nouvelle réservation
@@ -119,7 +142,9 @@ export class BookingsService {
       this.mockBookings.push(newBooking);
       return of(newBooking).pipe(this.simulateDelay());
     }
-    return this.http.post<Booking>(this.apiUrl, bookingData, { headers: this.getHeaders() });
+    return this.withLoading('create-booking',
+      this.http.post<Booking>(this.apiUrl, bookingData, { headers: this.getHeaders() })
+    );
   }
 
   // Mettre à jour une réservation
@@ -133,7 +158,9 @@ export class BookingsService {
       }
       throw new Error('Booking not found');
     }
-    return this.http.put<Booking>(`${this.apiUrl}/${bookingId}`, bookingData, { headers: this.getHeaders() });
+    return this.withLoading(`update-${bookingId}`,
+      this.http.put<Booking>(`${this.apiUrl}/${bookingId}`, bookingData, { headers: this.getHeaders() })
+    );
   }
 
   // Confirmer une réservation
@@ -147,7 +174,9 @@ export class BookingsService {
       }
       throw new Error('Booking not found');
     }
-    return this.http.patch<Booking>(`${this.apiUrl}/${bookingId}/confirm`, {}, { headers: this.getHeaders() });
+    return this.withLoading(`confirm-${bookingId}`,
+      this.http.patch<Booking>(`${this.apiUrl}/${bookingId}/confirm`, {}, { headers: this.getHeaders() })
+    );
   }
 
   // Annuler une réservation
@@ -161,7 +190,9 @@ export class BookingsService {
       }
       throw new Error('Booking not found');
     }
-    return this.http.patch<Booking>(`${this.apiUrl}/${bookingId}/cancel`, {}, { headers: this.getHeaders() });
+    return this.withLoading(`cancel-${bookingId}`,
+      this.http.patch<Booking>(`${this.apiUrl}/${bookingId}/cancel`, {}, { headers: this.getHeaders() })
+    );
   }
 
   // Supprimer une réservation
@@ -170,7 +201,9 @@ export class BookingsService {
       this.mockBookings = this.mockBookings.filter(b => b.reservationId !== bookingId);
       return of(void 0).pipe(this.simulateDelay());
     }
-    return this.http.delete<void>(`${this.apiUrl}/${bookingId}`, { headers: this.getHeaders() });
+    return this.withLoading(`delete-${bookingId}`,
+      this.http.delete<void>(`${this.apiUrl}/${bookingId}`, { headers: this.getHeaders() })
+    );
   }
 
   // Méthode pour basculer entre mock et vrai backend

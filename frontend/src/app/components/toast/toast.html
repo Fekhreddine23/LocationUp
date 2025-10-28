@@ -1,0 +1,18 @@
+ <div *ngIf="toast" 
+         class="toast" 
+         [class]="getToastClass()"
+         (click)="onClick()">
+      
+      <div class="toast-icon">
+        {{ getIcon() }}
+      </div>
+      
+      <div class="toast-content">
+        <p class="toast-message">{{ toast.message }}</p>
+        <small class="toast-time">{{ getTimeAgo() }}</small>
+      </div>
+      
+      <button class="toast-close" (click)="onClose($event)">
+        ×
+      </button>
+    </div>

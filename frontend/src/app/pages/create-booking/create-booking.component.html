@@ -12,107 +12,36 @@
       ❌ {{ errorMessage }}
     </div>
 
-    <!-- Chargement des offres -->
-    <div *ngIf="isLoadingOffers" class="loading-offers">
+    <!-- Chargement de l'offre -->
+    <div *ngIf="isLoadingOffer" class="loading-offer">
       <div class="spinner"></div>
-      <p>Chargement des offres disponibles...</p>
+      <p>Chargement de l'offre sélectionnée...</p>
     </div>
 
-    <form (ngSubmit)="onSubmit()" #bookingForm="ngForm" *ngIf="!successMessage && !isLoadingOffers">
+    <form (ngSubmit)="onSubmit()" #bookingForm="ngForm" 
+          *ngIf="!successMessage && !isLoadingOffer && selectedOffer">
       
-      <!-- Sélection de l'offre -->
-      <div class="form-group">
-        <label for="offerSelect">Choisir une offre *</label>
-        
-        <!-- Offre présélectionnée depuis l'URL -->
-        <div *ngIf="bookingRequest.offerId > 0 && preselectedOffer" class="preselected-offer">
-          <div class="preselected-badge">
-            🎯 Offre présélectionnée
+      <!-- Offre présélectionnée (affichage seulement) -->
+      <div class="selected-offer-section">
+        <h3>🎯 Offre Sélectionnée</h3>
+        <div class="offer-card selected">
+          <div class="offer-header">
+            <h4>{{ selectedOffer.description }}</h4>
+            <span class="price-tag">{{ selectedOffer.price | currency:'EUR' }}</span>
           </div>
-          <div class="offer-card selected">
-            <h4>{{ preselectedOffer.description }}</h4>
-            <div class="offer-details">
-              <span class="price">{{ preselectedOffer.price | currency:'EUR' }}</span>
-              <span class="date">Disponible le {{ preselectedOffer.pickupDatetime | date:'dd/MM/yyyy HH:mm' }}</span>
-            </div>
-            <small>ID: {{ preselectedOffer.offerId }}</small>
+          
+          <div class="offer-details">
+            <p class="pickup-time">
+              <strong>📅 Disponible le:</strong> 
+              {{ selectedOffer.pickupDatetime | date:'dd/MM/yyyy à HH:mm' }}
+            </p>
+            <p class="offer-id">
+              <strong>ID Offre:</strong> {{ selectedOffer.offerId }}
+            </p>
           </div>
-        </div>
 
-        <!-- Liste déroulante des offres -->
-        <select 
-          *ngIf="!bookingRequest.offerId || !preselectedOffer"
-          id="offerSelect"
-          name="offerId"
-          [(ngModel)]="bookingRequest.offerId"
-          required
-          class="form-control"
-          [disabled]="isLoading">
-          <option value="">-- Sélectionnez une offre --</option>
-          <option 
-            *ngFor="let offer of offers" 
-            [value]="offer.offerId"
-            [disabled]="!isOfferAvailable(offer)">
-            {{ offer.description }} - {{ offer.price | currency:'EUR' }}
-            {{ !isOfferAvailable(offer) ? '(Indisponible)' : '' }}
-          </option>
-        </select>
-
-        <!-- Liste visuelle des offres (alternative) -->
-        <div *ngIf="offers.length > 0 && (!bookingRequest.offerId || !preselectedOffer)" class="offers-grid">
-          <div 
-            *ngFor="let offer of offers" 
-            class="offer-card" 
-            [class.selected]="bookingRequest.offerId === offer.offerId"
-            [class.unavailable]="!isOfferAvailable(offer)"
-            (click)="selectOffer(offer)">
-            
-            <div class="offer-header">
-              <h4>{{ offer.description }}</h4>
-              <span class="price-tag">{{ offer.price | currency:'EUR' }}</span>
-            </div>
-            
-            <div class="offer-details">
-              <p class="pickup-time">
-                📅 {{ offer.pickupDatetime | date:'dd/MM/yyyy HH:mm' }}
-              </p>
-              <p class="offer-id">
-                ID: {{ offer.offerId }}
-              </p>
-            </div>
-
-            <div class="offer-actions">
-              <span *ngIf="!isOfferAvailable(offer)" class="unavailable-badge">
-                Indisponible
-              </span>
-              <span *ngIf="isOfferAvailable(offer) && bookingRequest.offerId === offer.offerId" class="selected-badge">
-                ✅ Sélectionnée
-              </span>
-              <button 
-                *ngIf="isOfferAvailable(offer) && bookingRequest.offerId !== offer.offerId"
-                type="button" 
-                class="btn-select"
-                (click)="selectOffer(offer); $event.stopPropagation()">
-                Choisir
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <small class="form-help">
-          {{ offers.length }} offre(s) disponible(s)
-        </small>
-      </div>
-
-      <!-- Aperçu de l'offre sélectionnée -->
-      <div *ngIf="getSelectedOffer()" class="selected-offer-preview">
-        <h4>🎯 Offre sélectionnée :</h4>
-        <div class="offer-preview-card">
-          <h5>{{ getSelectedOffer()!.description }}</h5>
-          <div class="preview-details">
-            <p><strong>Prix :</strong> {{ getSelectedOffer()!.price | currency:'EUR' }}</p>
-            <p><strong>Disponible le :</strong> {{ getSelectedOffer()!.pickupDatetime | date:'dd/MM/yyyy HH:mm' }}</p>
-            <p><strong>ID offre :</strong> {{ getSelectedOffer()!.offerId }}</p>
+          <div class="offer-note">
+            <small>✅ Cette offre a été sélectionnée depuis le catalogue</small>
           </div>
         </div>
       </div>
@@ -131,13 +60,13 @@
           [min]="getMinDate()"
           [max]="getMaxDate()">
         <small class="form-help">
-          Sélectionnez une date entre aujourd'hui et {{ getMaxDate() | date:'dd/MM/yyyy HH:mm' }}
+          Sélectionnez la date et l'heure souhaitées pour votre réservation
         </small>
       </div>
 
       <!-- Informations de l'utilisateur -->
       <div class="form-group" *ngIf="bookingRequest.userId > 0">
-        <label>Utilisateur connecté</label>
+        <label>Utilisateur</label>
         <div class="user-info">
           <strong>ID:</strong> {{ bookingRequest.userId }}
           <span *ngIf="currentUser">({{ currentUser.username }})</span>
@@ -145,15 +74,15 @@
         <small class="form-help">Votre identifiant utilisateur</small>
       </div>
 
-      <!-- Aperçu final de la réservation -->
-      <div *ngIf="bookingRequest.reservationDate && getSelectedOffer()" class="preview-section">
+      <!-- Aperçu de la réservation -->
+      <div *ngIf="bookingRequest.reservationDate" class="preview-section">
         <h4>📋 Aperçu de la réservation :</h4>
         <div class="preview-details final-preview">
           <div class="preview-item">
-            <strong>Offre :</strong> {{ getSelectedOffer()!.description }}
+            <strong>Offre :</strong> {{ selectedOffer.description }}
           </div>
           <div class="preview-item">
-            <strong>Prix :</strong> {{ getSelectedOffer()!.price | currency:'EUR' }}
+            <strong>Prix :</strong> {{ selectedOffer.price | currency:'EUR' }}
           </div>
           <div class="preview-item">
             <strong>Date de réservation :</strong> {{ bookingRequest.reservationDate | date:'dd/MM/yyyy HH:mm' }}
@@ -177,11 +106,21 @@
         <button 
           type="submit" 
           class="btn btn-primary"
-          [disabled]="!bookingForm.form.valid || isLoading || !getSelectedOffer()">
+          [disabled]="!bookingForm.form.valid || isLoading">
           {{ isLoading ? '⏳ Création en cours...' : '✅ Confirmer la réservation' }}
         </button>
       </div>
     </form>
+
+    <!-- Message si aucune offre -->
+    <div *ngIf="!isLoadingOffer && !selectedOffer && !successMessage" class="no-offer-message">
+      <div class="warning-icon">⚠️</div>
+      <h3>Aucune offre sélectionnée</h3>
+      <p>Veuillez sélectionner une offre depuis le catalogue pour pouvoir réserver.</p>
+      <button class="btn btn-primary" (click)="onCancel()">
+        📋 Voir les offres disponibles
+      </button>
+    </div>
 
     <div *ngIf="successMessage" class="success-actions">
       <button 

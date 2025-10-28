@@ -43,6 +43,11 @@ export const routes: Routes = [
   canActivate: [AuthGuard]
 },
 
+
+  { path: 'offers/:id',
+  loadComponent:() => import('./pages/offre-detail/offre-detail').then(m => m.OffreDetail ),
+  },
+
   { path: '', redirectTo: '/home', pathMatch: 'full' },
   { path: '**', redirectTo: '/home' } // Route fallback
 ];

@@ -9,7 +9,7 @@ import { Offer } from '../../core/models/offer.model';
   standalone: true,
   imports: [CommonModule], // ← Ajouter CommonModule si besoin
   templateUrl: './offer-card.component.html',
-  styleUrl: './offer-card.component.scss' 
+  styleUrl: './offer-card.component.scss'
 })
 export class OfferCardComponent {
 
@@ -18,7 +18,7 @@ export class OfferCardComponent {
   constructor(
     private offersService: OffersService,
     private router: Router // ← Injecter Router
-  ) {}
+  ) { }
 
   formatPrice(price: number): string {
     return this.offersService.formatPrice(price);
@@ -35,8 +35,8 @@ export class OfferCardComponent {
     });
   }
 
-  onViewDetails(): void {
-    // Optionnel : navigation vers les détails de l'offre
-    this.router.navigate(['/offers', this.offer.offerId]);
+  
+  viewOfferDetails(offerId: number): void {
+    this.router.navigate(['/offers', offerId]);
   }
 }

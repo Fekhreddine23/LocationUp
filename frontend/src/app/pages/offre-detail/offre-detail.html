@@ -1,0 +1,125 @@
+<div class="offer-details-container">
+  <div class="back-button">
+    <button class="btn btn-outline" type="button" (click)="goBack()">
+      ← Retour aux offres
+    </button>
+  </div>
+
+  <ng-container *ngIf="isLoading; else loadedState">
+    <div class="loading-state" role="status" aria-live="polite">
+      <div class="spinner"></div>
+      <p>Chargement des détails de l'offre...</p>
+    </div>
+  </ng-container>
+
+  <ng-template #loadedState>
+    <div *ngIf="errorMessage" class="alert alert-error" role="alert" aria-live="assertive">
+      ❌ {{ errorMessage }}
+    </div>
+
+    <ng-container *ngIf="!errorMessage">
+      <ng-container *ngIf="offer as currentOffer; else noOffer">
+        <article class="offer-details-card">
+          <header class="offer-header">
+            <div class="offer-title-section">
+              <h1>{{ currentOffer.description }}</h1>
+              <div class="offer-meta">
+                <span class="offer-id">Offre #{{ currentOffer.offerId }}</span>
+                <span class="availability-badge" [class.available]="isOfferAvailable()">
+                  {{ isOfferAvailable() ? '🟢 Disponible' : '🔴 Indisponible' }}
+                </span>
+              </div>
+            </div>
+
+            <div class="offer-price">
+              <span class="price">{{ currentOffer.price | currency:'EUR' }}</span>
+              <small>prix total</small>
+            </div>
+          </header>
+
+          <section class="offer-content">
+            <div class="info-section">
+              <h3>📅 Disponibilité</h3>
+              <div class="info-grid">
+                <div class="info-item">
+                  <strong>Date de retrait :</strong>
+                  <span>{{ formatDate(currentOffer.pickupDatetime) }}</span>
+                </div>
+                <div class="info-item">
+                  <strong>Statut :</strong>
+                  <span [class]="isOfferAvailable() ? 'text-success' : 'text-danger'">
+                    {{ isOfferAvailable() ? 'Disponible à la réservation' : 'Non disponible' }}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div class="info-section">
+              <h3>📍 Localisation</h3>
+              <div class="info-grid">
+                <div class="info-item">
+                  <strong>Point de retrait :</strong>
+                  <span>Location #{{ currentOffer.pickupLocationId }}</span>
+                </div>
+                <div class="info-item">
+                  <strong>Point de retour :</strong>
+                  <span>Location #{{ currentOffer.returnLocationId }}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="info-section">
+              <h3>🔧 Informations techniques</h3>
+              <div class="info-grid">
+                <div class="info-item">
+                  <strong>Service de mobilité :</strong>
+                  <span>Service #{{ currentOffer.mobilityServiceId }}</span>
+                </div>
+                <div class="info-item">
+                  <strong>Gérée par :</strong>
+                  <span>Admin #{{ currentOffer.adminId }}</span>
+                </div>
+                <div class="info-item">
+                  <strong>Créée le :</strong>
+                  <span>{{ formatDate(currentOffer.createdAt) }}</span>
+                </div>
+                <div class="info-item">
+                  <strong>Mise à jour :</strong>
+                  <span>{{ formatDate(currentOffer.updatedAt) }}</span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <div class="offer-actions">
+            <button
+              class="btn btn-secondary"
+              type="button"
+              (click)="goBack()">
+              ← Retour aux offres
+            </button>
+
+            <button
+              class="btn btn-primary"
+              type="button"
+              (click)="reserveOffer()"
+              [disabled]="!isOfferAvailable()">
+              {{ isOfferAvailable() ? '✅ Réserver cette offre' : '❌ Indisponible' }}
+            </button>
+          </div>
+
+          <div *ngIf="!isOfferAvailable()" class="unavailable-note">
+            <div class="warning-icon">⚠️</div>
+            <p>Cette offre n'est plus disponible à la réservation. La date de retrait est passée.</p>
+          </div>
+        </article>
+      </ng-container>
+    </ng-container>
+  </ng-template>
+
+  <ng-template #noOffer>
+    <div class="alert alert-error" role="alert">
+      ❌ Aucun détail d'offre à afficher pour le moment.
+    </div>
+  </ng-template>
+</div>
