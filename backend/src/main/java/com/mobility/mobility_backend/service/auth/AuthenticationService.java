@@ -1,6 +1,7 @@
 package com.mobility.mobility_backend.service.auth;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -10,7 +11,10 @@ import org.springframework.stereotype.Service;
 import com.mobility.mobility_backend.dto.auth.AuthenticationRequest;
 import com.mobility.mobility_backend.dto.auth.AuthenticationResponse;
 import com.mobility.mobility_backend.dto.auth.RegisterRequest;
+import com.mobility.mobility_backend.entity.Admin;
+import com.mobility.mobility_backend.entity.Role;
 import com.mobility.mobility_backend.entity.User;
+import com.mobility.mobility_backend.repository.AdminRepository;
 import com.mobility.mobility_backend.repository.UserRepository;
 import com.mobility.mobility_backend.service.JwtService;
 import com.mobility.mobility_backend.service.UserService;
@@ -24,25 +28,29 @@ public class AuthenticationService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
-    private final UserRepository userRepository; // ← Ce champ était manquant dans le constructeur
+    private final UserRepository userRepository;
+    private final AdminRepository adminRepository;
 
     public AuthenticationService(UserService userService,
                                PasswordEncoder passwordEncoder,
                                JwtService jwtService,
                                AuthenticationManager authenticationManager,
-                               UserRepository userRepository) { // ← AJOUTEZ userRepository
+                               UserRepository userRepository,
+                               AdminRepository adminRepository) {
         this.userService = userService;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.authenticationManager = authenticationManager;
-        this.userRepository = userRepository; // ← Initialisez-le
+        this.userRepository = userRepository;
+        this.adminRepository = adminRepository;
     }
 
+    // ⭐ AJOUTEZ CETTE MÉTHODE MANQUANTE
     @Transactional
     public AuthenticationResponse register(RegisterRequest request) {
         System.out.println("🔵 [AuthService] Registering user: " + request.getUsername());
 
-        // VÉRIFICATION DIRECTE avec repository
+        // VÉRIFICATION des doublons
         if (userRepository.findByUsername(request.getUsername()).isPresent()) {
             System.out.println("🔴 [AuthService] Username already exists: " + request.getUsername());
             throw new RuntimeException("Username already exists");
@@ -52,41 +60,39 @@ public class AuthenticationService {
             throw new RuntimeException("Email already exists");
         }
 
-        // CRÉATION DIRECTE avec toutes les données nécessaires
+        // CRÉATION de l'utilisateur
         User user = new User();
         user.setUsername(request.getUsername());
         user.setEmail(request.getEmail());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
-        user.setRole(request.getRole());
+        user.setRole(request.getRole() != null ? request.getRole() : Role.ROLE_USER); // Rôle par défaut
         user.setCreatedAt(LocalDateTime.now());
         user.setUpdatedAt(LocalDateTime.now());
 
-        System.out.println("🟡 [AuthService] Saving user directly...");
+        System.out.println("🟡 [AuthService] Saving user...");
         User savedUser = userRepository.save(user);
         System.out.println("🟢 [AuthService] User saved with ID: " + savedUser.getId());
 
         // GÉNÉRATION DU TOKEN
         System.out.println("🟡 [AuthService] Generating JWT token...");
         String jwtToken = jwtService.generateToken(savedUser);
-        System.out.println("🟢 [AuthService] JWT Token length: " + (jwtToken != null ? jwtToken.length() : "NULL"));
 
-        // 🔥 CORRECTION ICI : Utiliser le NOUVEAU constructeur avec userId
+        // RÉPONSE
         AuthenticationResponse response = new AuthenticationResponse(
             jwtToken,
             savedUser.getUsername(),
             savedUser.getRole().name(),
-            savedUser.getId()  // ← AJOUTER userId ICI
+            savedUser.getId()
         );
 
-        System.out.println("✅ [AuthService] Registration SUCCESS - UserId: " + response.getUserId() + ", Token: " + (response.getToken() != null ? "PRESENT" : "MISSING"));
-
+        System.out.println("✅ [AuthService] Registration SUCCESS - UserId: " + response.getUserId());
         return response;
     }
 
     public AuthenticationResponse authenticate(AuthenticationRequest request) {
         System.out.println("🔐 Attempting authentication for: " + request.getUsername());
         try {
-            // Cette ligne doit appeler le UserDetailsService
+            // Authentication
             authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                     request.getUsername(),
@@ -96,18 +102,35 @@ public class AuthenticationService {
 
             System.out.println("✅ Authentication successful for: " + request.getUsername());
 
-            var user = userRepository.findByUsername(request.getUsername())
-                .orElseThrow();
+            // Chercher d'abord dans USERS
+            Optional<User> userOptional = userRepository.findByUsername(request.getUsername());
+            if (userOptional.isPresent()) {
+                User user = userOptional.get();
+                var jwtToken = jwtService.generateToken(user);
 
-            var jwtToken = jwtService.generateToken(user);
+                return new AuthenticationResponse(
+                    jwtToken,
+                    user.getUsername(),
+                    user.getRole().name(),
+                    user.getId()
+                );
+            }
 
-            // 🔥 CORRECTION ICI : Utiliser le NOUVEAU constructeur avec userId
-            return new AuthenticationResponse(
-                jwtToken,
-                user.getUsername(),
-                user.getRole().name(),
-                user.getId()  // ← AJOUTER userId ICI
-            );
+            // Si pas trouvé dans USERS, chercher dans ADMINS
+            Optional<Admin> adminOptional = adminRepository.findByUsername(request.getUsername());
+            if (adminOptional.isPresent()) {
+                Admin admin = adminOptional.get();
+                var jwtToken = jwtService.generateToken(admin.getUsername());
+
+                return new AuthenticationResponse(
+                    jwtToken,
+                    admin.getUsername(),
+                    admin.getRole(),
+                    admin.getAdminId()
+                );
+            }
+
+            throw new RuntimeException("User not found in database after successful authentication: " + request.getUsername());
 
         } catch (Exception e) {
             System.out.println("❌ Authentication failed for " + request.getUsername() + ": " + e.getMessage());

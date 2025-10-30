@@ -37,7 +37,7 @@ public class ReservationController {
 	public ReservationController(ReservationService reservationService) {
 		this.reservationService = reservationService;
 	}
-	
+
 	//tests
 		// ⚠️ ASSURE-TOI QUE CETTE MÉTHODE EXISTE BIEN
 	    @PostMapping("/test-public")
@@ -80,10 +80,10 @@ public class ReservationController {
 		        "timestamp", LocalDateTime.now().toString()
 		    ));
 		}
-	
-	
-	
-	
+
+
+
+
 
 	// Récupérer toutes les réservations
 	@GetMapping

@@ -5,6 +5,7 @@ import java.util.Arrays;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -14,15 +15,12 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import org.springframework.http.HttpMethod; // ← AJOUTE CET IMPORT
-
 
 import com.mobility.mobility_backend.authentication.JwtAuthenticationFilter;
 
@@ -52,22 +50,21 @@ public class SecurityConfig {
 						.requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
 						.requestMatchers("/h2-console/**").permitAll()
 						.requestMatchers("/actuator/**").permitAll()
-						
- 						.requestMatchers("/api/reservations/test-public").permitAll() // ⬅️ AJOUTE CETTE LIGNE test
-						.requestMatchers("/api/reservations/test-simple").permitAll() 
+
+ 						.requestMatchers("/api/reservations/test-public").permitAll()
+						.requestMatchers("/api/reservations/test-simple").permitAll()
 						.requestMatchers("/api/test/**").permitAll()
 						.requestMatchers("/api/debug/**").permitAll()
 
 						// ✅ AJOUTEZ CETTE LIGNE - OFFRES ACCESSIBLES SANS AUTH
 						.requestMatchers("/api/offers/**").permitAll()
-						
+
 						 .requestMatchers(HttpMethod.POST, "/api/reservations").authenticated()
 
 						// Routes protégées par rôle
 						.requestMatchers("/api/admin/**").hasRole("ADMIN")
 
 						// Routes nécessitant une authentification
-
 						.requestMatchers("/api/reservations/**").authenticated()
 						.requestMatchers("/api/users/**").authenticated()
 
@@ -89,14 +86,10 @@ public class SecurityConfig {
 		configuration.setAllowedOrigins(Arrays.asList(
 			"http://localhost:4200",
 			"http://127.0.0.1:4200",
-
-			 "http://localhost:4200",
-			    //     "http://127.0.0.1:4200",
-			    //     "https://localhost:4200",
-			  "http://localhost:3000"
+			"http://localhost:3000"
 		));
 		configuration.setAllowedMethods(Arrays.asList(
-			"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD" // ← AJOUT DE "PATCH" ICI
+			"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"
 		));
 		configuration.setAllowedHeaders(Arrays.asList(
 			"Authorization",
@@ -114,7 +107,7 @@ public class SecurityConfig {
 			"Authorization"
 		));
 		configuration.setAllowCredentials(true);
-		configuration.setMaxAge(3600L); // Cache preflight requests for 1 hour
+		configuration.setMaxAge(3600L);
 
 		UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
 		source.registerCorsConfiguration("/**", configuration);
@@ -136,6 +129,24 @@ public class SecurityConfig {
 
 	@Bean
 	public PasswordEncoder passwordEncoder() {
-	    return new BCryptPasswordEncoder();
+	    // ⚠️ TEMPORAIRE - PasswordEncoder simple pour debugger
+	    return new PasswordEncoder() {
+	        @Override
+	        public String encode(CharSequence rawPassword) {
+	            System.out.println("🔑 [TEMP] Encoding password: " + rawPassword);
+	            return rawPassword.toString(); // Retourne le mot de passe en clair
+	        }
+
+	        @Override
+	        public boolean matches(CharSequence rawPassword, String encodedPassword) {
+	            System.out.println("🔍 [TEMP] Comparing: '" + rawPassword + "' with stored: '" + encodedPassword + "'");
+	            boolean result = rawPassword.toString().equals(encodedPassword);
+	            System.out.println("✅ [TEMP] Match result: " + result);
+	            return result;
+	        }
+	    };
+
+	    // Pour revenir à BCrypt plus tard :
+	    // return new BCryptPasswordEncoder();
 	}
 }

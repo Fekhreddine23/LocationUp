@@ -12,8 +12,10 @@ import org.springframework.stereotype.Service;
 
 import com.mobility.mobility_backend.dto.UserDTO;
 import com.mobility.mobility_backend.dto.UserMapper;
+import com.mobility.mobility_backend.entity.Admin;
 import com.mobility.mobility_backend.entity.Role;
 import com.mobility.mobility_backend.entity.User;
+import com.mobility.mobility_backend.repository.AdminRepository;
 import com.mobility.mobility_backend.repository.UserRepository;
 
 @Service
@@ -22,71 +24,107 @@ public class UserServiceImpl implements UserService {
 	@Autowired
 	private UserRepository userRepository;
 
+	@Autowired
+	private AdminRepository adminRepository;
+
 	public UserServiceImpl(UserRepository userRepository) {
 		this.userRepository = userRepository;
 	}
 
 	// Implémentation de loadUserByUsername de UserDetailsService
-	 @Override
-	    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-	        System.out.println("🔍 UserDetailsService loading user: " + username);
+	@Override
+	public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+		System.out.println("🔍 [UserDetailsService] Loading user: " + username);
 
-	        User user = userRepository.findByUsername(username)
-	            .orElseThrow(() -> {
-	                System.out.println("❌ User not found in database: " + username);
-	                return new UsernameNotFoundException("User not found: " + username);
-	            });
+		// 1. Chercher d'abord dans la table users
+		Optional<User> user = userRepository.findByUsername(username);
+		if (user.isPresent()) {
+			System.out.println("✅ [UserDetailsService] Found in USERS table: " + username);
+			System.out.println("🔐 [UserDetailsService] Role: " + user.get().getRole());
+			return createUserDetailsFromUser(user.get());
+		}
 
-	        System.out.println("✅ User found: " + user.getUsername());
-	        System.out.println("🔐 Password hash: " + user.getPassword());
-	        System.out.println("🎭 Role: " + user.getRole());
+		// 2. Chercher dans admins
+		Optional<Admin> admin = adminRepository.findByUsername(username);
+		if (admin.isPresent()) {
 
-	        // ⚠️ CORRECTION CRITIQUE : Convertir le rôle correctement
-	        String role = user.getRole().name(); // "ROLE_USER"
-	        String simpleRole = role.startsWith("ROLE_") ? role.substring(5) : role; // "USER"
+			// 1. Chercher d'abord dans ADMINS
+			System.out.println("🟡 [UserDetailsService] Searching in ADMINS table...");
 
-	        System.out.println("👤 Creating UserDetails with role: " + simpleRole);
+			System.out.println("🟡 [UserDetailsService] Admin found: " + admin.isPresent());
 
-	        return org.springframework.security.core.userdetails.User.builder()
-	            .username(user.getUsername())
-	            .password(user.getPassword()) // Le hash BCrypt
-	            .roles(simpleRole) // "USER" sans le préfixe ROLE_
-	            .build();
-	    }
+			System.out.println("✅ [UserDetailsService] Found in ADMINS table: " + username);
+			System.out.println("🔐 [UserDetailsService] Role: " + admin.get().getRole());
 
-	 @Override
-	 public User createUser(User user) {
-	     System.out.println("🔵 [UserServiceImpl] Creating user: " + user.getUsername());
+			System.out.println("🔐 [UserDetailsService] Password hash: " + admin.get().getPassword());
 
-	     // Vérifier si username ou email existe déjà
-	     if (userRepository.existsByUsername(user.getUsername())) {
-	         System.out.println("🔴 [UserServiceImpl] Username already exists: " + user.getUsername());
-	         throw new IllegalArgumentException("Username already exists");
-	     }
-	     if (userRepository.existsByEmail(user.getEmail())) {
-	         System.out.println("🔴 [UserServiceImpl] Email already exists: " + user.getEmail());
-	         throw new IllegalArgumentException("Email already exists");
-	     }
+			return createUserDetailsFromAdmin(admin.get());
+		}
 
-	     // Vérifier les dates
-	     System.out.println("🟡 [UserServiceImpl] User createdAt: " + user.getCreatedAt());
-	     System.out.println("🟡 [UserServiceImpl] User updatedAt: " + user.getUpdatedAt());
+		System.out.println("❌ [UserDetailsService] User not found: " + username);
+		throw new UsernameNotFoundException("Utilisateur non trouvé: " + username);
+	}
 
-	     // S'assurer que les dates sont définies
-	     if (user.getCreatedAt() == null) {
-	         user.setCreatedAt(LocalDateTime.now());
-	         System.out.println("🟡 [UserServiceImpl] Set createdAt to now");
-	     }
-	     if (user.getUpdatedAt() == null) {
-	         user.setUpdatedAt(LocalDateTime.now());
-	         System.out.println("🟡 [UserServiceImpl] Set updatedAt to now");
-	     }
+	// Méthode pour créer UserDetails (Spring Security) à partir d'un User (votre
+	// entité)
+	private UserDetails createUserDetailsFromUser(User user) {
+		String role = user.getRole().name(); // "ROLE_USER"
+		String simpleRole = role.startsWith("ROLE_") ? role.substring(5) : role; // "USER"
 
-	     User savedUser = userRepository.save(user);
-	     System.out.println("🟢 [UserServiceImpl] User created with ID: " + savedUser.getId());
+		System.out.println("👤 Creating UserDetails with role: " + simpleRole);
 
-	     return savedUser;
-	 }
+		// Utilise le UserBuilder de Spring Security
+		return org.springframework.security.core.userdetails.User.builder().username(user.getUsername())
+				.password(user.getPassword()).roles(simpleRole).build();
+	}
+
+	// Méthode pour créer UserDetails (Spring Security) à partir d'un Admin (votre
+	// entité)
+	private UserDetails createUserDetailsFromAdmin(Admin admin) {
+		String role = admin.getRole(); // "ROLE_ADMIN"
+		String simpleRole = role.startsWith("ROLE_") ? role.substring(5) : role; // "ADMIN"
+
+		System.out.println("👤 Creating Admin UserDetails with role: " + simpleRole);
+
+		// Utilise le UserBuilder de Spring Security
+		return org.springframework.security.core.userdetails.User.builder().username(admin.getUsername())
+				.password(admin.getPassword()).roles(simpleRole).build();
+	}
+
+	// Le reste de votre code reste inchangé
+	@Override
+	public User createUser(User user) {
+		System.out.println("🔵 [UserServiceImpl] Creating user: " + user.getUsername());
+
+		// Vérifier si username ou email existe déjà
+		if (userRepository.existsByUsername(user.getUsername())) {
+			System.out.println("🔴 [UserServiceImpl] Username already exists: " + user.getUsername());
+			throw new IllegalArgumentException("Username already exists");
+		}
+		if (userRepository.existsByEmail(user.getEmail())) {
+			System.out.println("🔴 [UserServiceImpl] Email already exists: " + user.getEmail());
+			throw new IllegalArgumentException("Email already exists");
+		}
+
+		// Vérifier les dates
+		System.out.println("🟡 [UserServiceImpl] User createdAt: " + user.getCreatedAt());
+		System.out.println("🟡 [UserServiceImpl] User updatedAt: " + user.getUpdatedAt());
+
+		// S'assurer que les dates sont définies
+		if (user.getCreatedAt() == null) {
+			user.setCreatedAt(LocalDateTime.now());
+			System.out.println("🟡 [UserServiceImpl] Set createdAt to now");
+		}
+		if (user.getUpdatedAt() == null) {
+			user.setUpdatedAt(LocalDateTime.now());
+			System.out.println("🟡 [UserServiceImpl] Set updatedAt to now");
+		}
+
+		User savedUser = userRepository.save(user);
+		System.out.println("🟢 [UserServiceImpl] User created with ID: " + savedUser.getId());
+
+		return savedUser;
+	}
 
 	@Override
 	public User updateUser(Integer id, User user) {
@@ -141,7 +179,7 @@ public class UserServiceImpl implements UserService {
 	@Override
 	public UserDTO createUser(String username, String email, String password) {
 		// Créer l'entité avec un rôle par défaut
-		User user = new User(username, email, password, Role.ROLE_USER); // ← AJOUTER ROLE_USER
+		User user = new User(username, email, password, Role.ROLE_USER);
 
 		// Réutiliser l'implémentation existante qui vérifie et sauve
 		User saved = createUser(user);
@@ -168,5 +206,4 @@ public class UserServiceImpl implements UserService {
 		User user = new User(username, email, password, role);
 		return userRepository.save(user);
 	}
-
 }

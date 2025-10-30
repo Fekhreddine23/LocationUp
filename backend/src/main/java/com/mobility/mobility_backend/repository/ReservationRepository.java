@@ -19,4 +19,9 @@ public interface ReservationRepository extends JpaRepository<Reservation, Intege
 	@Query("SELECT r FROM Reservation r WHERE r.offer.id = :offerId")
 	List<Reservation> findByOfferId(@Param("offerId") Integer offerId);
 
+	long countByStatus(Reservation.ReservationStatus status);
+    List<Reservation> findTop10ByOrderByReservationDateDesc();
+
+  
 }
+
