@@ -6,12 +6,13 @@ import { BookingsService, CreateBookingRequest } from '../../core/services/booki
 import { AuthService } from '../../core/services/auth.service';
 import { OffersService } from '../../core/services/offers.service';
 import { User } from '../../core/models/auth.models';
-import { Offer } from '../../core/models/offer.model'; 
+import { Offer } from '../../core/models/offer.model';
+import { Breadcrumbs } from "../../components/breadcrumbs/breadcrumbs"; 
 
 @Component({
   selector: 'app-create-booking',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, Breadcrumbs],
   templateUrl: './create-booking.component.html',
   styleUrl: './create-booking.component.scss'
 })
@@ -180,4 +181,10 @@ private loadOfferDetails(offerId: number): void {
     
     throw new Error('Utilisateur non authentifié');
   }
+
+  breadcrumbItems = [ //breadcrumbs statiques navigation
+  { label: 'Mes Réservations', url: '/bookings' },
+  { label: 'Nouvelle Réservation', url: '/bookings/new', active: true }
+];
+
 }

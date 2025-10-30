@@ -1,3 +1,5 @@
+export type OfferStatus = 'ACTIVE' | 'INACTIVE' | 'EXPIRED';
+
 export interface Offer {
   offerId: number;
   description: string;
@@ -10,6 +12,11 @@ export interface Offer {
   mobilityServiceId: number;
   pickupLocationId: number;
   returnLocationId: number;
+  status?: OfferStatus;
+  mobilityService?: string;
+  pickupLocation?: string;
+  returnLocation?: string;
+  adminName?: string;
 }
 
 export interface CreateOfferRequest {
@@ -20,5 +27,6 @@ export interface CreateOfferRequest {
   mobilityServiceId: number;
   pickupLocationId: number;
   returnLocationId: number;
+  status?: OfferStatus;
   // version n'est pas requis pour la création
 }

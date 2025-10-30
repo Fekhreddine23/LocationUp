@@ -1,0 +1,13 @@
+<nav class="breadcrumb-nav" *ngIf="items?.length">
+  <div class="breadcrumb-container">
+    <span *ngFor="let item of items; let last = last" class="breadcrumb-item">
+      <a *ngIf="item.url && !last" [routerLink]="item.url" class="breadcrumb-link">
+        {{ item.label }}
+      </a>
+      <span *ngIf="last || !item.url" class="breadcrumb-current">
+        {{ item.label }}
+      </span>
+      <span *ngIf="!last" class="breadcrumb-separator"> / </span>
+    </span>
+  </div>
+</nav>

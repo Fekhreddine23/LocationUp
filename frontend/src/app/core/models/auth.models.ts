@@ -17,8 +17,11 @@ export interface AuthResponse {
 }
 
 export interface User {
-  id: number; 
+  id: number;
   username: string;
   role: string;
+  email?: string;
   token?: string;
+  createdAt?: string;
+  bookingCount?: number;
 }

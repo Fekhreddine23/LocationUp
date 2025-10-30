@@ -1,5 +1,4 @@
 import { Router, RouterModule } from "@angular/router";
-import { ReservationDTO } from "../../core/models/reservation.model";
 import { OffersService } from "../../core/services/offers.service";
 import { Observable } from "rxjs/internal/Observable";
 import { Component, OnInit } from "@angular/core";
@@ -11,13 +10,15 @@ import { BookingsService, Booking } from '../../core/services/bookings'; // ← 
 import { NotificationService } from "../../core/services/notification.service";
 import { LoadingService } from "../../core/services/loading.service";
 import { Spinner } from "../../components/spinner/spinner";
+import { BreadcrumbService } from "../../core/services/breadcrumb";
+import { Breadcrumbs } from "../../components/breadcrumbs/breadcrumbs";
 
 
 
 @Component({
   selector: 'app-bookings',
   standalone: true,
-  imports: [CommonModule, RouterModule, ConfirmationModal, DeleteConfirmationModal, Spinner], // ← AJOUT
+  imports: [CommonModule, RouterModule, ConfirmationModal, DeleteConfirmationModal, Spinner, Breadcrumbs], // ← AJOUT
   templateUrl: './bookings.component.html',
   styleUrl: './bookings.component.scss'
 })
@@ -48,13 +49,15 @@ export class BookingsComponent implements OnInit {
   showDeleteModal = false;
   bookingToDelete: Booking | null = null;
 
+
   constructor(
     private bookingsService: BookingsService,
     private authService: AuthService,
     private offersService: OffersService,
     private router: Router,
     private notificationService: NotificationService,
-    private loadingService: LoadingService 
+    private loadingService: LoadingService,
+
   ) { }
 
   ngOnInit(): void {
@@ -70,9 +73,14 @@ export class BookingsComponent implements OnInit {
     // NOUVEAU : Écouter les états de loading spécifiques aux réservations
     this.loadingService.getLoading('bookings').subscribe(loading => {
       this.loadingStates['bookings'] = loading;
-    });
+    })
 
   }
+
+  breadcrumbItems = [
+    { label: 'Tableau de Bord', url: '/dashboard' }, // ← Changer "Accueil" par "Dashboard"
+    { label: 'Mes Réservations', url: '/bookings', active: true }
+  ];
 
   loadBookings(): void {
     this.isLoading = true;
@@ -94,7 +102,7 @@ export class BookingsComponent implements OnInit {
     });
   }
 
-   
+
 
 
   // NOUVELLE MÉTHODE : Vérifier si une action est en cours de chargement
@@ -102,7 +110,7 @@ export class BookingsComponent implements OnInit {
     return this.loadingStates[`${action}-${bookingId}`] || false;
   }
 
-   // NOUVELLE MÉTHODE : Écouter le loading d'une action spécifique
+  // NOUVELLE MÉTHODE : Écouter le loading d'une action spécifique
   private setupActionLoading(bookingId: number, action: string): void {
     this.loadingService.getLoading(`${action}-${bookingId}`).subscribe(loading => {
       this.loadingStates[`${action}-${bookingId}`] = loading;
@@ -230,11 +238,11 @@ export class BookingsComponent implements OnInit {
     this.isCancelling = false;
   }
 
-   
+
 
   // SUPPRIMER 
   deleteBooking(reservationId: number): void {
-     if (confirm('Êtes-vous sûr de vouloir supprimer cette réservation ? Cette action est irréversible.')) {
+    if (confirm('Êtes-vous sûr de vouloir supprimer cette réservation ? Cette action est irréversible.')) {
       console.log('Suppression de la réservation:', reservationId);
 
       // NOUVEAU : Configurer l'écoute du loading pour la suppression

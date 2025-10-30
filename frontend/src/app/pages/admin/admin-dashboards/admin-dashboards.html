@@ -1,0 +1,160 @@
+<!-- admin-dashboards.html -->
+<div class="admin-dashboard-container">
+  <app-breadcrumbs [items]="breadcrumbItems"></app-breadcrumbs>
+
+  <div class="dashboard-header">
+    <div class="header-content">
+      <h1>Tableau de Bord Administrateur</h1>
+      <p class="subtitle">Vue d'ensemble de votre espace de coworking</p>
+    </div>
+    <button (click)="refreshData()" class="refresh-btn" [disabled]="isLoading">
+      🔄 Actualiser
+    </button>
+  </div>
+
+  <!-- Loading State -->
+  <app-spinner *ngIf="isLoading"></app-spinner>
+
+  <!-- Error Message -->
+  <div *ngIf="errorMessage && !isLoading" class="error-message">
+    <div class="error-content">
+      <span>⚠️</span>
+      <span>{{ errorMessage }}</span>
+      <button (click)="loadAdminData()" class="retry-btn">Réessayer</button>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div *ngIf="!isLoading && !errorMessage" class="dashboard-content">
+    
+    <!-- Statistics Cards -->
+    <div class="dashboard-section">
+      <h2>Statistiques Globales</h2>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon">👤</div>
+          <div class="stat-content">
+            <div class="stat-number">{{ formatNumber(adminStats.totalUsers) }}</div>
+            <div class="stat-label">Utilisateurs Totaux</div>
+            <div class="stat-trend">{{ adminStats.activeUsers }} actifs</div>
+          </div>
+        </div>
+
+        <div class="stat-card warning-card" *ngIf="adminStats.pendingReservations > 0">
+          <div class="stat-icon">📋</div>
+          <div class="stat-content">
+            <div class="stat-number">{{ formatNumber(adminStats.pendingReservations) }}</div>
+            <div class="stat-label">En Attente</div>
+            <div class="stat-trend warning">Action requise</div>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon">🚗</div>
+          <div class="stat-content">
+            <div class="stat-number">{{ formatNumber(adminStats.totalOffers) }}</div>
+            <div class="stat-label">Offres Actives</div>
+            <div class="stat-trend">Disponibles</div>
+          </div>
+        </div>
+
+        <div class="stat-card revenue-card">
+          <div class="stat-icon">💰</div>
+          <div class="stat-content">
+            <div class="stat-number">{{ formatCurrency(adminStats.totalRevenue) }}</div>
+            <div class="stat-label">Revenu Total</div>
+            <div class="stat-trend">CA mensuel</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="dashboard-section">
+      <h2>Actions Rapides</h2>
+      <div class="actions-grid">
+        <button (click)="goToUserManagement()" class="action-btn">
+          <span class="action-icon">👥</span>
+          <div class="action-content">
+           
+            <div class="action-title"  [routerLink]="['/admin/users']"  >Gérer les Utilisateurs</div>
+            <div class="action-description">Voir et gérer tous les utilisateurs</div>
+          </div>
+          <small>{{ adminStats.totalUsers }} utilisateurs</small>
+        </button>
+
+        <button (click)="goToBookingManagement()" class="action-btn">
+          <span class="action-icon">📅</span>
+          <div class="action-content">
+            <div class="action-title">Voir les Réservations</div>
+            <div class="action-description">Superviser toutes les réservations</div>
+          </div>
+          <small>{{ adminStats.totalReservations }} réservations</small>
+        </button>
+
+        <button (click)="goToOfferManagement()" class="action-btn">
+          <span class="action-icon">🚗</span>
+          <div class="action-content">
+            <div class="action-title">Gérer les Offres</div>
+            <div class="action-description">Modifier les offres disponibles</div>
+          </div>
+          <small>{{ adminStats.totalOffers }} offres</small>
+        </button>
+      </div>
+    </div>
+
+    <!-- Recent Activity & Users -->
+    <div class="dashboard-grid">
+      
+      <!-- Utilisateurs Récents -->
+      <div class="dashboard-card">
+        <div class="card-header">
+          <h3>Utilisateurs Récents</h3>
+          <button (click)="goToUserManagement()" class="see-all-btn">
+            Voir tout →
+          </button>
+        </div>
+        <div class="card-content">
+          <div *ngFor="let user of recentUsers" class="user-item">
+            <div class="user-avatar">
+              {{ getUserInitials(user) }}
+            </div>
+            <div class="user-info">
+              <strong>{{ getUserDisplayName(user) }}</strong>
+              <span class="user-email">{{ user.email }}</span>
+              <span class="user-date">
+                Inscrit le {{ formatDate(user.createdAt) }}
+              </span>
+            </div>
+            <div class="user-stats">
+              <span class="booking-count">{{ user.bookingCount }} réservations</span>
+              <span [class]="'role-badge ' + getRoleClass(user.role)">
+                {{ getRoleText(user.role) }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Activité Récente -->
+      <div class="dashboard-card">
+        <div class="card-header">
+          <h3>Activité Récente</h3>
+        </div>
+        <div class="card-content">
+          <div *ngFor="let activity of recentActivity" class="activity-item">
+            <span class="activity-icon">
+              {{ getActivityIcon(activity.type) }}
+            </span>
+          <div class="activity-content">
+            <p>{{ getActivityDescription(activity) }}</p>
+            <span class="activity-time">
+              {{ getTimeAgo(activity.timestamp) }}
+            </span>
+          </div>
+        </div>
+      </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -4,12 +4,13 @@ import { Router } from '@angular/router';
 import { OffersService } from '../../core/services/offers.service';
 import { OfferCardComponent } from '../../components/offer-card/offer-card';
 import { Offer } from '../../core/models/offer.model';
+import { Breadcrumbs } from "../../components/breadcrumbs/breadcrumbs";
 
 
 @Component({
   selector: 'app-offers',
   standalone: true,
-  imports: [CommonModule, OfferCardComponent], // ← Importer OfferCardComponent
+  imports: [CommonModule, OfferCardComponent, Breadcrumbs], // ← Importer OfferCardComponent
   templateUrl: './offers.component.html',
   styleUrl: './offers.component.scss'
 })
@@ -55,4 +56,9 @@ export class OffersComponent implements OnInit {
     // La navigation est maintenant gérée directement dans offer-card
     console.log('View details:', offerId);
   }
+
+  breadcrumbItems = [ //breadcrumbs statiques navigation
+  { label: 'Tableau de Bord', url: '/dashboard' },
+  { label: 'Offres Disponibles', url: '/offers', active: true }
+];
 }

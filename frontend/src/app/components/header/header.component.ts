@@ -37,4 +37,12 @@ export class HeaderComponent {
     this.isMenuOpen = false;
     this.router.navigate(['/']);
   }
+
+  get isAdmin(): boolean {
+    return this.currentUser?.role === 'ROLE_ADMIN';
+  }
+
+  get dashboardRoute(): string {
+    return this.isAdmin ? '/admin' : '/dashboard';
+  }
 }

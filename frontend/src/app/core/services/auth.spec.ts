@@ -1,17 +1,26 @@
+import { HttpClient } from '@angular/common/http';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 
-import { environment } from '../../../environments/environment';
-import { AuthResponse,LoginRequest, RegisterRequest } from '../models/auth.models';
+import { AuthResponse, LoginRequest, RegisterRequest, User } from '../models/auth.models';
 import { AuthService } from './auth.service';
 
 describe('AuthService', () => {
   let service: AuthService;
   let httpMock: HttpTestingController;
+  const apiUrl = 'http://localhost:8088/api/auth';
   const mockAuthResponse: AuthResponse = {
     token: 'fake-jwt-token',
     username: 'testuser',
-    role: 'user'
+    role: 'user',
+    userId: 0
+  };
+
+  const expectedUser: User = {
+    id: mockAuthResponse.userId,
+    username: mockAuthResponse.username,
+    role: mockAuthResponse.role,
+    token: mockAuthResponse.token
   };
 
   beforeEach(() => {
@@ -23,12 +32,11 @@ describe('AuthService', () => {
     service = TestBed.inject(AuthService);
     httpMock = TestBed.inject(HttpTestingController);
     
-    // Clear localStorage before each test
     localStorage.clear();
   });
 
   afterEach(() => {
-    httpMock.verify(); // Vérifie qu'aucune requête non traitée
+    httpMock.verify();
     localStorage.clear();
   });
 
@@ -37,7 +45,7 @@ describe('AuthService', () => {
   });
 
   describe('login', () => {
-    it('should send login request and store user data', () => {
+    it('should send login request and persist user', (done) => {
       const loginRequest: LoginRequest = {
         username: 'testuser',
         password: 'password123'
@@ -45,19 +53,20 @@ describe('AuthService', () => {
 
       service.login(loginRequest).subscribe(response => {
         expect(response).toEqual(mockAuthResponse);
-        expect(localStorage.getItem('token')).toBe('fake-jwt-token');
-        expect(localStorage.getItem('username')).toBe('testuser');
-        expect(localStorage.getItem('role')).toBe('user');
+        expect(localStorage.getItem('token')).toBe(mockAuthResponse.token);
+        expect(JSON.parse(localStorage.getItem('currentUser') || 'null')).toEqual(expectedUser);
+        expect(service.currentUserValue).toEqual(expectedUser);
+        done();
       });
 
-      const req = httpMock.expectOne(`${environment.apiUrl}/auth/login`);
+      const req = httpMock.expectOne(`${apiUrl}/login`);
       expect(req.request.method).toBe('POST');
       req.flush(mockAuthResponse);
     });
   });
 
   describe('register', () => {
-    it('should send register request and store user data', () => {
+    it('should send register request and persist user', (done) => {
       const registerRequest: RegisterRequest = {
         username: 'newuser',
         password: 'password123',
@@ -66,80 +75,83 @@ describe('AuthService', () => {
 
       service.register(registerRequest).subscribe(response => {
         expect(response).toEqual(mockAuthResponse);
+        expect(localStorage.getItem('token')).toBe(mockAuthResponse.token);
+        expect(JSON.parse(localStorage.getItem('currentUser') || 'null')).toEqual(expectedUser);
+        expect(service.currentUserValue).toEqual(expectedUser);
+        done();
       });
 
-      const req = httpMock.expectOne(`${environment.apiUrl}/auth/register`);
+      const req = httpMock.expectOne(`${apiUrl}/register`);
       expect(req.request.method).toBe('POST');
       req.flush(mockAuthResponse);
     });
   });
 
   describe('logout', () => {
-    it('should clear user data from localStorage and BehaviorSubject', () => {
-      // Simuler un utilisateur connecté
-      localStorage.setItem('token', 'fake-token');
-      localStorage.setItem('username', 'testuser');
-      localStorage.setItem('role', 'user');
-      
+    it('should clear local storage and emit null user', () => {
+      localStorage.setItem('token', expectedUser.token!);
+      localStorage.setItem('currentUser', JSON.stringify(expectedUser));
+      (service as any).currentUserSubject.next(expectedUser);
+
+      const emissions: Array<User | null> = [];
+      const subscription = service.currentUser.subscribe(user => emissions.push(user));
+
+      expect(emissions).toEqual([expectedUser]);
       service.logout();
 
       expect(localStorage.getItem('token')).toBeNull();
-      expect(localStorage.getItem('username')).toBeNull();
-      expect(localStorage.getItem('role')).toBeNull();
-      
-      service.currentUser$.subscribe(user => {
-        expect(user).toBeNull();
-      });
+      expect(localStorage.getItem('currentUser')).toBeNull();
+      expect(emissions).toEqual([expectedUser, null]);
+
+      subscription.unsubscribe();
     });
   });
 
   describe('isLoggedIn', () => {
-    it('should return true when token exists', () => {
-      localStorage.setItem('token', 'fake-token');
+    it('should return true when current user has a token', () => {
+      (service as any).currentUserSubject.next(expectedUser);
       expect(service.isLoggedIn()).toBeTrue();
     });
 
-    it('should return false when no token exists', () => {
+    it('should return false when current user is null', () => {
+      (service as any).currentUserSubject.next(null);
       expect(service.isLoggedIn()).toBeFalse();
     });
   });
 
-  describe('getCurrentUser', () => {
+  describe('currentUserValue', () => {
     it('should return current user data when logged in', () => {
-      localStorage.setItem('token', 'fake-token');
-      localStorage.setItem('username', 'testuser');
-      localStorage.setItem('role', 'admin');
-
-      const user = service.getCurrentUser();
-      expect(user).toEqual({
-        username: 'testuser',
-        role: 'admin',
-        token: 'fake-token'
-      });
+      (service as any).currentUserSubject.next(expectedUser);
+      expect(service.currentUserValue).toEqual(expectedUser);
     });
 
     it('should return null when not logged in', () => {
-      const user = service.getCurrentUser();
-      expect(user).toBeNull();
+      (service as any).currentUserSubject.next(null);
+      expect(service.currentUserValue).toBeNull();
     });
   });
 
   describe('initialization', () => {
     it('should initialize with user data from localStorage', () => {
-      localStorage.setItem('token', 'existing-token');
-      localStorage.setItem('username', 'existing-user');
-      localStorage.setItem('role', 'existing-role');
+      const storedUser: User = {
+        id: 42,
+        username: 'existing-user',
+        role: 'existing-role',
+        token: 'existing-token'
+      };
 
-      // Recréer le service pour simuler le redémarrage de l'app
-      const newService = TestBed.inject(AuthService);
+      localStorage.setItem('currentUser', JSON.stringify(storedUser));
+      localStorage.setItem('token', storedUser.token!);
 
-      newService.currentUser$.subscribe(user => {
-        expect(user).toEqual({
-          username: 'existing-user',
-          role: 'existing-role',
-          token: 'existing-token'
-        });
-      });
+      const http = TestBed.inject(HttpClient);
+      const newService = new AuthService(http);
+
+      expect(newService.currentUserValue).toEqual(storedUser);
+
+      let observed: User | null | undefined;
+      const subscription = newService.currentUser.subscribe(user => observed = user);
+      expect(observed).toEqual(storedUser);
+      subscription.unsubscribe();
     });
   });
 });

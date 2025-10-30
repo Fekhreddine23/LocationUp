@@ -1,1 +1,169 @@
-<p>profile works!</p>
+<!-- profile.component.html (version mise à jour) -->
+<app-breadcrumbs [items]="breadcrumbItems"></app-breadcrumbs>
+
+<div class="profile-container">
+  <div class="profile-header">
+    <h1>Mon Profil</h1>
+    <p>Gérez vos informations personnelles et vos préférences</p>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="loading-state">
+    <div class="spinner"></div>
+    <p>Chargement de votre profil...</p>
+  </div>
+
+  <!-- Error Message -->
+  <div *ngIf="errorMessage" class="alert alert-error">
+    ❌ {{ errorMessage }}
+  </div>
+
+  <!-- Profile Content -->
+  <div *ngIf="!isLoading && user" class="profile-content">
+    
+    <!-- Section Informations Personnelles -->
+    <div class="profile-section">
+      <h2>Informations Personnelles</h2>
+      <div class="profile-info-grid">
+        
+        <!-- Photo de Profil -->
+        <div class="profile-photo-section">
+          <div class="profile-avatar">
+            <div class="avatar-placeholder">
+              {{ getInitials() }}
+            </div>
+          </div>
+          <button class="btn btn-outline btn-sm" disabled>
+            📷 Changer la photo
+          </button>
+        </div>
+
+        <!-- MODE LECTURE -->
+        <div *ngIf="!isEditing" class="profile-details">
+          <div class="info-item">
+            <label>Nom d'utilisateur</label>
+            <div class="info-value">{{ user.username }}</div>
+          </div>
+
+          <div class="info-item">
+            <label>Email</label>
+            <div class="info-value">{{ user.email || 'Non spécifié' }}</div>
+          </div>
+
+          <div class="info-item">
+            <label>Rôle</label>
+            <div class="info-value">
+              <span class="role-badge" [class]="getRoleClass()">
+                {{ getRoleText() }}
+              </span>
+            </div>
+          </div>
+
+          <div class="info-item">
+            <label>Membre depuis</label>
+            <div class="info-value">{{ getMemberSince() }}</div>
+          </div>
+
+          <div class="info-item">
+            <label>ID Utilisateur</label>
+            <div class="info-value">{{ user.id }}</div>
+          </div>
+        </div>
+
+        <!-- MODE ÉDITION -->
+        <div *ngIf="isEditing" class="profile-details">
+          <div class="info-item">
+            <label for="username">Nom d'utilisateur</label>
+            <input 
+              id="username"
+              type="text" 
+              [(ngModel)]="editForm.username"
+              class="form-input"
+              placeholder="Votre nom d'utilisateur">
+          </div>
+
+          <div class="info-item">
+            <label for="email">Email</label>
+            <input 
+              id="email"
+              type="email" 
+              [(ngModel)]="editForm.email"
+              class="form-input"
+              placeholder="votre@email.com">
+          </div>
+
+          <div class="info-item">
+            <label>Rôle</label>
+            <div class="info-value">
+              <span class="role-badge" [class]="getRoleClass()">
+                {{ getRoleText() }}
+              </span>
+              <small class="text-muted">(Non modifiable)</small>
+            </div>
+          </div>
+
+          <div class="info-item">
+            <label>Membre depuis</label>
+            <div class="info-value">{{ getMemberSince() }}</div>
+          </div>
+
+          <div class="info-item">
+            <label>ID Utilisateur</label>
+            <div class="info-value">{{ user.id }}</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Section Statistiques -->
+    <div class="profile-section">
+      <h2>Statistiques</h2>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-number">{{ userStats.totalBookings }}</div>
+          <div class="stat-label">Réservations totales</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number">{{ userStats.activeBookings }}</div>
+          <div class="stat-label">Réservations actives</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number">{{ userStats.cancelledBookings }}</div>
+          <div class="stat-label">Réservations annulées</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number">{{ userStats.completedBookings }}</div>
+          <div class="stat-label">Réservations terminées</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="profile-actions">
+      <!-- Mode Lecture -->
+      <div *ngIf="!isEditing" class="action-buttons">
+        <button class="btn btn-primary" (click)="editProfile()">
+          ✏️ Modifier le profil
+        </button>
+        <button class="btn btn-outline" (click)="goToBookings()">
+          📋 Voir mes réservations
+        </button>
+        <button class="btn btn-outline" (click)="goToDashboard()">
+          📊 Tableau de bord
+        </button>
+      </div>
+
+      <!-- Mode Édition -->
+      <div *ngIf="isEditing" class="action-buttons">
+        <button class="btn btn-success" (click)="saveProfile()" [disabled]="isLoading">
+          💾 Sauvegarder
+        </button>
+        <button class="btn btn-outline" (click)="cancelEdit()" [disabled]="isLoading">
+          ❌ Annuler
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>

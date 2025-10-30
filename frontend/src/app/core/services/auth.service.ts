@@ -29,7 +29,8 @@ export class AuthService {
             id: response.userId,  // ← DIRECT depuis la réponse API
             username: response.username,
             role: response.role,
-            token: response.token
+            token: response.token,
+            email: '' // Ajouter l'email si nécessaire
           };
           
           console.log('✅ [AuthService] User created:', user);
@@ -51,7 +52,8 @@ export class AuthService {
             id: response.userId,  // ← DIRECT depuis la réponse API
             username: response.username,
             role: response.role,
-            token: response.token
+            token: response.token,
+            email:'',
           };
           
           console.log('✅ [AuthService] User created:', user);
@@ -79,4 +81,18 @@ export class AuthService {
   get currentUserValue(): User | null {
     return this.currentUserSubject.value;
   }
+
+
+
+  updateCurrentUser(updatedUser: User): void {
+  // Mettre à jour l'utilisateur courant
+  this.currentUserSubject.next(updatedUser);
+  
+  // Mettre à jour le localStorage si présent
+  if (typeof localStorage !== 'undefined') {
+    localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+  }
+  
+  console.log('✅ Utilisateur mis à jour:', updatedUser);
+} 
 }

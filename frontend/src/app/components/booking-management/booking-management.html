@@ -1,0 +1,328 @@
+<!-- booking-management.html -->
+<div class="booking-management-container">
+  <app-breadcrumbs [items]="breadcrumbItems"></app-breadcrumbs>
+
+  <div class="page-header">
+    <div class="header-content">
+      <h1>Gestion des Réservations</h1>
+      <p>Supervisez et géz toutes les réservations du système</p>
+    </div>
+    <button (click)="goBackToDashboard()" class="back-btn">
+      ← Retour au Dashboard
+    </button>
+  </div>
+
+  <!-- Messages -->
+  <div *ngIf="successMessage" class="alert alert-success">
+    ✅ {{ successMessage }}
+  </div>
+  <div *ngIf="errorMessage" class="alert alert-error">
+    ❌ {{ errorMessage }}
+  </div>
+
+  <!-- Statistiques -->
+  <div class="stats-section" *ngIf="bookingStats.totalBookings">
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon">📊</div>
+        <div class="stat-content">
+          <div class="stat-number">{{ bookingStats.totalBookings }}</div>
+          <div class="stat-label">Total Réservations</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">⏳</div>
+        <div class="stat-content">
+          <div class="stat-number">{{ bookingStats.pendingBookings }}</div>
+          <div class="stat-label">En Attente</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">✅</div>
+        <div class="stat-content">
+          <div class="stat-number">{{ bookingStats.confirmedBookings }}</div>
+          <div class="stat-label">Confirmées</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">💰</div>
+        <div class="stat-content">
+          <div class="stat-number">{{ formatCurrency(bookingStats.totalRevenue) }}</div>
+          <div class="stat-label">Revenu Total</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Barre de recherche et filtres -->
+  <div class="filters-section">
+    <div class="search-bar">
+      <input 
+        type="text" 
+        [(ngModel)]="searchQuery" 
+        (input)="searchBookings()"
+        placeholder="Rechercher une réservation, utilisateur..."
+        class="search-input">
+      <button (click)="searchBookings()" class="search-btn">
+        🔍 Rechercher
+      </button>
+    </div>
+
+    <div class="filter-controls">
+      <select [(ngModel)]="statusFilter" (change)="applyFilters()" class="filter-select">
+        <option value="ALL">Tous les statuts</option>
+        <option value="PENDING">En attente</option>
+        <option value="CONFIRMED">Confirmées</option>
+        <option value="CANCELLED">Annulées</option>
+        <option value="COMPLETED">Terminées</option>
+      </select>
+
+      <input 
+        type="date" 
+        [(ngModel)]="dateFilter" 
+        (change)="applyFilters()"
+        class="filter-input">
+
+      <button (click)="loadBookings()" class="refresh-btn">
+        🔄 Actualiser
+      </button>
+    </div>
+  </div>
+
+  <!-- Tableau des réservations -->
+  <div class="bookings-table-container">
+    <div class="table-header">
+      <div class="table-stats">
+        {{ totalElements }} réservation(s) trouvée(s)
+      </div>
+    </div>
+
+    <div *ngIf="isLoading" class="loading-state">
+      Chargement des réservations...
+    </div>
+
+    <div *ngIf="!isLoading && filteredBookings.length === 0" class="empty-state">
+      Aucune réservation trouvée
+    </div>
+
+    <table *ngIf="!isLoading && filteredBookings.length > 0" class="bookings-table">
+      <thead>
+        <tr>
+          <th>Réservation</th>
+          <th>Utilisateur</th>
+          <th>Service</th>
+          <th>Date</th>
+          <th>Prix</th>
+          <th>Statut</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let booking of filteredBookings" class="booking-row">
+          <td class="booking-info">
+            <div class="booking-id">#{{ booking.reservationId }}</div>
+            <div class="booking-date">
+              Créée le {{ formatShortDate(booking.createdAt) }}
+            </div>
+          </td>
+          <td class="user-info">
+            <div class="user-avatar">
+              {{ booking.user?.username?.charAt(0)?.toUpperCase() || '?' }}
+            </div>
+            <div class="user-details">
+              <strong>{{ booking.user?.username || 'Utilisateur inconnu' }}</strong>
+              <span class="user-email">{{ booking.user?.email || 'Email non disponible' }}</span>
+            </div>
+          </td>
+          <td class="service-info">
+            <div class="service-name">{{ booking.offer?.mobilityService || 'Service inconnu' }}</div>
+            <div class="service-location">{{ booking.offer?.pickupLocation || 'Lieu non disponible' }}</div>
+          </td>
+          <td class="reservation-date">
+            {{ formatDate(booking.reservationDate) }}
+          </td>
+          <td class="booking-price">
+            {{ formatCurrency(booking.totalPrice ?? booking.offer?.price) }}
+          </td>
+          <td>
+            <span [class]="'status-badge ' + getStatusClass(booking.status)">
+              {{ getStatusText(booking.status) }}
+            </span>
+          </td>
+          <td class="actions">
+            <button (click)="viewBookingDetails(booking)" class="btn-view" title="Détails">
+              👁️
+            </button>
+            <button 
+              *ngIf="canConfirm(booking)"
+              (click)="confirmBooking(booking)" 
+              class="btn-confirm" 
+              title="Confirmer">
+              ✅
+            </button>
+            <button 
+              *ngIf="canCancel(booking)"
+              (click)="cancelBooking(booking)" 
+              class="btn-cancel" 
+              title="Annuler">
+              ❌
+            </button>
+            <button 
+              *ngIf="canComplete(booking)"
+              (click)="completeBooking(booking)" 
+              class="btn-complete" 
+              title="Terminer">
+              🏁
+            </button>
+            <button (click)="confirmDelete(booking)" class="btn-delete" title="Supprimer">
+              🗑️
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Pagination -->
+    <div *ngIf="totalPages > 1" class="pagination">
+      <button 
+        (click)="goToPage(currentPage - 1)" 
+        [disabled]="currentPage === 0"
+        class="pagination-btn">
+        ← Précédent
+      </button>
+      
+      <span class="pagination-info">
+        Page {{ currentPage + 1 }} sur {{ totalPages }}
+      </span>
+      
+      <button 
+        (click)="goToPage(currentPage + 1)" 
+        [disabled]="currentPage >= totalPages - 1"
+        class="pagination-btn">
+        Suivant →
+      </button>
+    </div>
+  </div>
+
+  <!-- Modal de détails -->
+  <div *ngIf="isDetailModalOpen" class="modal-overlay">
+    <div class="modal large-modal">
+      <div class="modal-header">
+        <h3>Détails de la Réservation #{{ selectedBooking?.reservationId }}</h3>
+        <button (click)="isDetailModalOpen = false" class="close-btn">×</button>
+      </div>
+      <div class="modal-content" *ngIf="selectedBooking">
+        <div class="detail-grid">
+          <div class="detail-section">
+            <h4>Informations Utilisateur</h4>
+            <div class="detail-item">
+              <span class="detail-label">Nom d'utilisateur:</span>
+              <span class="detail-value">{{ selectedBooking.user?.username || 'Utilisateur inconnu' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Email:</span>
+              <span class="detail-value">{{ selectedBooking.user?.email || 'Non communiqué' }}</span>
+            </div>
+            <button 
+              (click)="viewUserBookings(selectedBooking.user?.id)"
+              class="btn-link">
+              Voir toutes les réservations de cet utilisateur
+            </button>
+          </div>
+
+          <div class="detail-section">
+            <h4>Détails de l'Offre</h4>
+            <div class="detail-item">
+              <span class="detail-label">Service:</span>
+              <span class="detail-value">{{ selectedBooking.offer?.mobilityService || 'Service inconnu' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Lieu de départ:</span>
+              <span class="detail-value">{{ selectedBooking.offer?.pickupLocation || 'Lieu non disponible' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Prix:</span>
+              <span class="detail-value price">{{ formatCurrency(selectedBooking.offer?.price) }}</span>
+            </div>
+          </div>
+
+          <div class="detail-section">
+            <h4>Détails de la Réservation</h4>
+            <div class="detail-item">
+              <span class="detail-label">Date de réservation:</span>
+              <span class="detail-value">{{ formatDate(selectedBooking.reservationDate) }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Statut:</span>
+              <span [class]="'status-badge ' + getStatusClass(selectedBooking.status)">
+                {{ getStatusText(selectedBooking.status) }}
+              </span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Date de création:</span>
+              <span class="detail-value">{{ formatDate(selectedBooking.createdAt) }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Prix total:</span>
+              <span class="detail-value price-large">
+                {{ formatCurrency(selectedBooking.totalPrice ?? selectedBooking.offer?.price) }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button (click)="isDetailModalOpen = false" class="btn-cancel">
+          Fermer
+        </button>
+        <div class="action-buttons" *ngIf="selectedBooking">
+          <button 
+            *ngIf="canConfirm(selectedBooking)"
+            (click)="confirmBooking(selectedBooking)" 
+            class="btn-confirm">
+            ✅ Confirmer
+          </button>
+          <button 
+            *ngIf="canCancel(selectedBooking)"
+            (click)="cancelBooking(selectedBooking)" 
+            class="btn-cancel-action">
+            ❌ Annuler
+          </button>
+          <button 
+            *ngIf="canComplete(selectedBooking)"
+            (click)="completeBooking(selectedBooking)" 
+            class="btn-complete">
+            🏁 Terminer
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de confirmation de suppression -->
+  <div *ngIf="isDeleteModalOpen" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Confirmer la suppression</h3>
+        <button (click)="isDeleteModalOpen = false" class="close-btn">×</button>
+      </div>
+      <div class="modal-content" *ngIf="selectedBooking">
+        <p>Êtes-vous sûr de vouloir supprimer la réservation <strong>#{{ selectedBooking.reservationId }}</strong> ?</p>
+        <p class="warning-text">Cette action est irréversible et supprimera définitivement la réservation.</p>
+        <div class="booking-preview">
+          <strong>{{ selectedBooking.user?.username || 'Utilisateur inconnu' }}</strong> - 
+          {{ selectedBooking.offer?.mobilityService || 'Service inconnu' }} - 
+          {{ formatDate(selectedBooking.reservationDate) }}
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button (click)="isDeleteModalOpen = false" class="btn-cancel">
+          Annuler
+        </button>
+        <button (click)="deleteBooking()" class="btn-danger">
+          🗑️ Supprimer
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

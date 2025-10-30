@@ -1,11 +1,15 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, signal } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, signal } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
+import { Observable } from 'rxjs';
 
 import { HeaderComponent } from '../../src/app/components/header/header.component';
 import { OffersService } from '../../src/app/core/services/offers.service'; // ← SERVICE CORRIGÉ
 import { Offer } from './core/models/offer.model';
 import { ToastContainer } from './components/toast-container/toast-container';
+import { BreadcrumbService } from './core/services/breadcrumb';
+import { BreadcrumbItem } from './core/models/BreadcrumbItem.model';
+
 
 @Component({
   selector: 'app-root',
@@ -18,12 +22,17 @@ export class App implements OnInit {
   offers: Offer[] = []; // ← TYPAGE CORRIGÉ
   error: string = '';
   loading: boolean = true;
+  breadcrumbs: any[] = [];
 
   // ⚠️ CORRECTION : Utiliser OffersService au lieu de HttpClient direct
-  constructor(private offersService: OffersService) {}
+  constructor(private offersService: OffersService
+) {}
+
+  
 
   ngOnInit() {
     this.loadOffers();
+    
   }
 
   loadOffers() {
@@ -56,6 +65,8 @@ export class App implements OnInit {
         console.error('❌ Erreur chargement offres:', err);
       }
     });
+
+   
   }
 
   // Méthode de fallback avec données mockées

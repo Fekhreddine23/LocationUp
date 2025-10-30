@@ -1,0 +1,319 @@
+<!-- offer-management.html -->
+<div class="offer-management-container">
+  <app-breadcrumbs [items]="breadcrumbItems"></app-breadcrumbs>
+
+  <div class="page-header">
+    <div class="header-content">
+      <h1>Gestion des Offres</h1>
+      <p>Créez et gérez les offres de mobilité disponibles</p>
+    </div>
+    <button (click)="goBackToDashboard()" class="back-btn">
+      ← Retour au Dashboard
+    </button>
+  </div>
+
+  <!-- Messages -->
+  <div *ngIf="successMessage" class="alert alert-success">
+    ✅ {{ successMessage }}
+  </div>
+  <div *ngIf="errorMessage" class="alert alert-error">
+    ❌ {{ errorMessage }}
+  </div>
+
+  <!-- Barre d'actions -->
+  <div class="actions-section">
+    <button (click)="createOffer()" class="btn-primary">
+      ➕ Nouvelle Offre
+    </button>
+  </div>
+
+  <!-- Barre de recherche et filtres -->
+  <div class="filters-section">
+    <div class="search-bar">
+      <input 
+        type="text" 
+        [(ngModel)]="searchQuery" 
+        (input)="searchOffers()"
+        placeholder="Rechercher une offre..."
+        class="search-input">
+      <button (click)="searchOffers()" class="search-btn">
+        🔍 Rechercher
+      </button>
+    </div>
+
+    <div class="filter-controls">
+      <select [(ngModel)]="statusFilter" (change)="applyFilters()" class="filter-select">
+        <option value="ALL">Tous les statuts</option>
+        <option value="ACTIVE">Actives</option>
+        <option value="INACTIVE">Inactives</option>
+        <option value="EXPIRED">Expirées</option>
+      </select>
+
+      <input 
+        type="text" 
+        [(ngModel)]="locationFilter" 
+        (input)="applyFilters()"
+        placeholder="Lieu..."
+        class="filter-input">
+
+      <button (click)="loadOffers()" class="refresh-btn">
+        🔄 Actualiser
+      </button>
+    </div>
+  </div>
+
+  <!-- Tableau des offres -->
+  <div class="offers-table-container">
+    <div class="table-header">
+      <div class="table-stats">
+        {{ totalElements }} offre(s) trouvée(s)
+      </div>
+    </div>
+
+    <div *ngIf="isLoading" class="loading-state">
+      Chargement des offres...
+    </div>
+
+    <div *ngIf="!isLoading && filteredOffers.length === 0" class="empty-state">
+      Aucune offre trouvée
+    </div>
+
+    <div *ngIf="!isLoading && filteredOffers.length > 0" class="offers-grid">
+      <div *ngFor="let offer of filteredOffers" class="offer-card">
+        <div class="offer-header">
+          <h3 class="offer-title">{{ offer.mobilityService }}</h3>
+          <span [class]="'status-badge ' + getStatusClass(offer.status)">
+            {{ getStatusText(offer.status) }}
+          </span>
+        </div>
+        
+        <div class="offer-content">
+          <div class="offer-info">
+            <div class="info-item">
+              <span class="info-label">📍 Départ:</span>
+              <span class="info-value">{{ offer.pickupLocation }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">🎯 Retour:</span>
+              <span class="info-value">{{ offer.returnLocation }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">📅 Date:</span>
+              <span class="info-value">{{ formatDate(offer.pickupDatetime) }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">💰 Prix:</span>
+              <span class="info-value price">{{ formatCurrency(offer.price) }}</span>
+            </div>
+          </div>
+          
+          <div *ngIf="offer.description" class="offer-description">
+            {{ offer.description }}
+          </div>
+        </div>
+
+        <div class="offer-actions">
+          <button (click)="editOffer(offer)" class="btn-edit" title="Modifier">
+            ✏️ Modifier
+          </button>
+          <button 
+            (click)="toggleOfferStatus(offer)" 
+            [class]="offer.status === 'ACTIVE' ? 'btn-deactivate' : 'btn-activate'"
+            [title]="offer.status === 'ACTIVE' ? 'Désactiver' : 'Activer'">
+            {{ offer.status === 'ACTIVE' ? '⏸️ Désactiver' : '▶️ Activer' }}
+          </button>
+          <button (click)="confirmDelete(offer)" class="btn-delete" title="Supprimer">
+            🗑️ Supprimer
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pagination -->
+    <div *ngIf="totalPages > 1" class="pagination">
+      <button 
+        (click)="goToPage(currentPage - 1)" 
+        [disabled]="currentPage === 0"
+        class="pagination-btn">
+        ← Précédent
+      </button>
+      
+      <span class="pagination-info">
+        Page {{ currentPage + 1 }} sur {{ totalPages }}
+      </span>
+      
+      <button 
+        (click)="goToPage(currentPage + 1)" 
+        [disabled]="currentPage >= totalPages - 1"
+        class="pagination-btn">
+        Suivant →
+      </button>
+    </div>
+  </div>
+
+  <!-- Modal de création -->
+  <div *ngIf="isCreateModalOpen" class="modal-overlay">
+    <div class="modal large-modal">
+      <div class="modal-header">
+        <h3>Créer une nouvelle offre</h3>
+        <button (click)="isCreateModalOpen = false" class="close-btn">×</button>
+      </div>
+      <div class="modal-content">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Lieu de départ *</label>
+            <input 
+              type="text" 
+              [(ngModel)]="newOffer.pickupLocation" 
+              class="form-input"
+              placeholder="Ex: Paris Centre">
+          </div>
+          <div class="form-group">
+            <label>Lieu de retour *</label>
+            <input 
+              type="text" 
+              [(ngModel)]="newOffer.returnLocation" 
+              class="form-input"
+              placeholder="Ex: Paris Centre">
+          </div>
+          <div class="form-group">
+            <label>Service de mobilité *</label>
+            <select [(ngModel)]="newOffer.mobilityService" class="form-input">
+              <option value="">Sélectionnez un service</option>
+              <option value="Voiture électrique">Voiture électrique</option>
+              <option value="Scooter électrique">Scooter électrique</option>
+              <option value="Vélo électrique">Vélo électrique</option>
+              <option value="Voiture thermique">Voiture thermique</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Date et heure de pickup *</label>
+            <input 
+              type="datetime-local" 
+              [(ngModel)]="newOffer.pickupDatetime" 
+              class="form-input">
+          </div>
+          <div class="form-group">
+            <label>Prix (€) *</label>
+            <input 
+              type="number" 
+              [(ngModel)]="newOffer.price" 
+              class="form-input"
+              min="0"
+              step="0.01">
+          </div>
+          <div class="form-group full-width">
+            <label>Description</label>
+            <textarea 
+              [(ngModel)]="newOffer.description" 
+              class="form-textarea"
+              placeholder="Description de l'offre..."
+              rows="3"></textarea>
+          </div>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button (click)="isCreateModalOpen = false" class="btn-cancel">
+          Annuler
+        </button>
+        <button 
+          (click)="submitNewOffer()" 
+          [disabled]="!isValidOffer()"
+          class="btn-confirm">
+          Créer l'offre
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal d'édition -->
+  <div *ngIf="isEditModalOpen" class="modal-overlay">
+    <div class="modal large-modal">
+      <div class="modal-header">
+        <h3>Modifier l'offre</h3>
+        <button (click)="isEditModalOpen = false" class="close-btn">×</button>
+      </div>
+      <div class="modal-content" *ngIf="selectedOffer">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Lieu de départ</label>
+            <input 
+              type="text" 
+              [(ngModel)]="selectedOffer.pickupLocation" 
+              class="form-input">
+          </div>
+          <div class="form-group">
+            <label>Lieu de retour</label>
+            <input 
+              type="text" 
+              [(ngModel)]="selectedOffer.returnLocation" 
+              class="form-input">
+          </div>
+          <div class="form-group">
+            <label>Service de mobilité</label>
+            <select [(ngModel)]="selectedOffer.mobilityService" class="form-input">
+              <option value="Voiture électrique">Voiture électrique</option>
+              <option value="Scooter électrique">Scooter électrique</option>
+              <option value="Vélo électrique">Vélo électrique</option>
+              <option value="Voiture thermique">Voiture thermique</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Date et heure</label>
+            <input 
+              type="datetime-local" 
+              [value]="selectedOffer.pickupDatetime | date:'yyyy-MM-ddTHH:mm'"
+              (input)="selectedOffer.pickupDatetime = $event.target.value"
+              class="form-input">
+          </div>
+          <div class="form-group">
+            <label>Prix (€)</label>
+            <input 
+              type="number" 
+              [(ngModel)]="selectedOffer.price" 
+              class="form-input"
+              min="0"
+              step="0.01">
+          </div>
+          <div class="form-group full-width">
+            <label>Description</label>
+            <textarea 
+              [(ngModel)]="selectedOffer.description" 
+              class="form-textarea"
+              rows="3"></textarea>
+          </div>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button (click)="isEditModalOpen = false" class="btn-cancel">
+          Annuler
+        </button>
+        <button (click)="updateOffer()" class="btn-confirm">
+          Enregistrer
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de confirmation de suppression -->
+  <div *ngIf="isDeleteModalOpen" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Confirmer la suppression</h3>
+        <button (click)="isDeleteModalOpen = false" class="close-btn">×</button>
+      </div>
+      <div class="modal-content" *ngIf="selectedOffer">
+        <p>Êtes-vous sûr de vouloir supprimer l'offre <strong>{{ selectedOffer.mobilityService }}</strong> ?</p>
+        <p class="warning-text">Cette action est irréversible.</p>
+      </div>
+      <div class="modal-actions">
+        <button (click)="isDeleteModalOpen = false" class="btn-cancel">
+          Annuler
+        </button>
+        <button (click)="deleteOffer()" class="btn-danger">
+          Supprimer
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

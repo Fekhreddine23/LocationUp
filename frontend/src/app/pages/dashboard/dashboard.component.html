@@ -1,1 +1,130 @@
-<p>dashboard works!</p>
+<app-breadcrumbs [items]="breadcrumbItems"></app-breadcrumbs>
+
+ 
+
+<div class="dashboard-container">
+  <!-- En-tête -->
+  <div class="dashboard-header">
+    <h1>Tableau de Bord</h1>
+    <p class="welcome-message" *ngIf="user">
+      Bonjour, <strong>{{ user.username }}</strong> ! 👋
+    </p>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="loading-state">
+    <app-spinner text="Chargement de votre tableau de bord..."></app-spinner>
+  </div>
+
+  <!-- Error Message -->
+  <div *ngIf="errorMessage" class="alert alert-error">
+    ❌ {{ errorMessage }}
+  </div>
+
+  <!-- Contenu du Dashboard -->
+  <div *ngIf="!isLoading && user" class="dashboard-content">
+    
+    <!-- Section Actions Rapides -->
+    <div class="dashboard-section">
+      <h2>Actions Rapides</h2>
+      <div class="quick-actions-grid">
+        <button class="quick-action-card" (click)="createNewBooking()">
+          <div class="action-icon">➕</div>
+          <div class="action-title">Nouvelle Réservation</div>
+          <div class="action-description">Réserver un véhicule</div>
+        </button>
+
+        <button class="quick-action-card" (click)="goToBookings()">
+          <div class="action-icon">📋</div>
+          <div class="action-title">Mes Réservations</div>
+          <div class="action-description">Voir toutes mes réservations</div>
+        </button>
+
+        <button class="quick-action-card" (click)="goToOffers()">
+          <div class="action-icon">🚗</div>
+          <div class="action-title">Offres Disponibles</div>
+          <div class="action-description">Parcourir les véhicules</div>
+        </button>
+
+        <button class="quick-action-card" (click)="goToProfile()">
+          <div class="action-icon">👤</div>
+          <div class="action-title">Mon Profil</div>
+          <div class="action-description">Gérer mes informations</div>
+        </button>
+      </div>
+    </div>
+
+    <!-- Section Statistiques -->
+    <div class="dashboard-section">
+      <h2>Vue d'Ensemble</h2>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon">📊</div>
+          <div class="stat-content">
+            <div class="stat-number">{{ userStats.totalBookings }}</div>
+            <div class="stat-label">Réservations Totales</div>
+          </div>
+        </div>
+
+        <div class="stat-card stat-active">
+          <div class="stat-icon">🟢</div>
+          <div class="stat-content">
+            <div class="stat-number">{{ userStats.activeBookings }}</div>
+            <div class="stat-label">Réservations Actives</div>
+          </div>
+        </div>
+
+        <div class="stat-card stat-completed">
+          <div class="stat-icon">✅</div>
+          <div class="stat-content">
+            <div class="stat-number">{{ userStats.completedBookings }}</div>
+            <div class="stat-label">Réservations Terminées</div>
+          </div>
+        </div>
+
+        <div class="stat-card stat-cancelled">
+          <div class="stat-icon">❌</div>
+          <div class="stat-content">
+            <div class="stat-number">{{ userStats.cancelledBookings }}</div>
+            <div class="stat-label">Réservations Annulées</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section Réservations Récentes -->
+    <div class="dashboard-section" *ngIf="recentBookings.length > 0">
+      <div class="section-header">
+        <h2>Réservations Récentes</h2>
+        <button class="btn btn-outline btn-sm" (click)="goToBookings()">
+          Voir tout →
+        </button>
+      </div>
+      
+      <div class="recent-bookings">
+        <div *ngFor="let booking of recentBookings" class="recent-booking-card">
+          <div class="booking-info">
+            <div class="booking-id">#{{ booking.reservationId }}</div>
+            <div class="booking-date">{{ formatDate(booking.reservationDate) }}</div>
+          </div>
+          <div class="booking-status">
+            <span [class]="'status-badge ' + getStatusClass(booking.status)">
+              {{ getStatusText(booking.status) }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Message si pas de réservations -->
+    <div *ngIf="recentBookings.length === 0" class="empty-state">
+      <div class="empty-icon">📋</div>
+      <h3>Aucune réservation</h3>
+      <p>Vous n'avez pas encore de réservation.</p>
+      <button class="btn btn-primary" (click)="createNewBooking()">
+        Créer ma première réservation
+      </button>
+    </div>
+
+  </div>
+</div>

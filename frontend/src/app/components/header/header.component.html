@@ -13,7 +13,9 @@
           </ng-container>
           
           <ng-template #userMenu>
-            <a routerLink="/dashboard" class="nav-link">Dashboard</a>
+            <a [routerLink]="dashboardRoute" class="nav-link">
+              {{ isAdmin ? 'Admin' : 'Dashboard' }}
+            </a>
             <a routerLink="/offers" class="nav-link">Offres</a>
             <a routerLink="/bookings" class="nav-link">Réservations</a>
             
