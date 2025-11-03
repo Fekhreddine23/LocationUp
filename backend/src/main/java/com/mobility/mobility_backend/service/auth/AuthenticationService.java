@@ -5,6 +5,7 @@ import java.util.Optional;
 
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -45,7 +46,6 @@ public class AuthenticationService {
         this.adminRepository = adminRepository;
     }
 
-    // ⭐ AJOUTEZ CETTE MÉTHODE MANQUANTE
     @Transactional
     public AuthenticationResponse register(RegisterRequest request) {
         System.out.println("🔵 [AuthService] Registering user: " + request.getUsername());
@@ -102,35 +102,38 @@ public class AuthenticationService {
 
             System.out.println("✅ Authentication successful for: " + request.getUsername());
 
+            // ✅ UTILISEZ UserService pour obtenir UserDetails
+            UserDetails userDetails = userService.loadUserByUsername(request.getUsername());
+            var jwtToken = jwtService.generateToken(userDetails);
+
+            // ✅ POUR RÉCUPÉRER L'ID ET LE RÔLE, FAITES DES REQUÊTES DIRECTES
+            Integer userId = null;
+            String role = "";
+
             // Chercher d'abord dans USERS
             Optional<User> userOptional = userRepository.findByUsername(request.getUsername());
             if (userOptional.isPresent()) {
                 User user = userOptional.get();
-                var jwtToken = jwtService.generateToken(user);
-
-                return new AuthenticationResponse(
-                    jwtToken,
-                    user.getUsername(),
-                    user.getRole().name(),
-                    user.getId()
-                );
+                userId = user.getId();
+                role = user.getRole().name();
+            } else {
+                // Si pas trouvé dans USERS, chercher dans ADMINS
+                Optional<Admin> adminOptional = adminRepository.findByUsername(request.getUsername());
+                if (adminOptional.isPresent()) {
+                    Admin admin = adminOptional.get();
+                    userId = admin.getAdminId();
+                    role = admin.getRole();
+                } else {
+                    throw new RuntimeException("User not found in database after successful authentication: " + request.getUsername());
+                }
             }
 
-            // Si pas trouvé dans USERS, chercher dans ADMINS
-            Optional<Admin> adminOptional = adminRepository.findByUsername(request.getUsername());
-            if (adminOptional.isPresent()) {
-                Admin admin = adminOptional.get();
-                var jwtToken = jwtService.generateToken(admin.getUsername());
-
-                return new AuthenticationResponse(
-                    jwtToken,
-                    admin.getUsername(),
-                    admin.getRole(),
-                    admin.getAdminId()
-                );
-            }
-
-            throw new RuntimeException("User not found in database after successful authentication: " + request.getUsername());
+            return new AuthenticationResponse(
+                jwtToken,
+                request.getUsername(),
+                role,
+                userId
+            );
 
         } catch (Exception e) {
             System.out.println("❌ Authentication failed for " + request.getUsername() + ": " + e.getMessage());

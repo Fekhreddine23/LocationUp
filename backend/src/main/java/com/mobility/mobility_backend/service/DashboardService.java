@@ -1,6 +1,6 @@
 package com.mobility.mobility_backend.service;
 
-import java.time.LocalDateTime;
+
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -43,11 +43,11 @@ public class DashboardService {
         long totalReservations = reservationRepository.count();
         long pendingReservations = reservationRepository.countByStatus(Reservation.ReservationStatus.PENDING);
         long totalOffers = offerRepository.count();
-        
+
         // Revenue - version simplifiée pour démarrer
         double totalRevenue = calculateMockRevenue();
 
-        return new AdminStatsDTO(totalUsers, activeUsers, totalReservations, 
+        return new AdminStatsDTO(totalUsers, activeUsers, totalReservations,
                                pendingReservations, totalOffers, totalRevenue);
     }
 
@@ -60,14 +60,14 @@ public class DashboardService {
         // Récupérer les réservations récentes
         List<Reservation> recentReservations = reservationRepository
             .findTop10ByOrderByReservationDateDesc();
-        
+
         return recentReservations.stream()
             .map(reservation -> new RecentActivityDTO(
                 reservation.getReservationId().longValue(),
                 "RESERVATION",
                 "Nouvelle réservation créée par " + reservation.getUser().getUsername(),
                 reservation.getReservationDate(),
-                new UserInfoDTO( // ✅ Utilise UserInfoDTO 
+                new UserInfoDTO( // ✅ Utilise UserInfoDTO
                     reservation.getUser().getId().longValue(),
                     reservation.getUser().getUsername(),
                     reservation.getUser().getEmail()
@@ -75,8 +75,8 @@ public class DashboardService {
             ))
             .collect(Collectors.toList());
     }
-    
-    
+
+
     private double calculateMockRevenue() {
         // Pour l'instant, retourne une valeur mockée
         // Plus tard, tu pourras implémenter la vraie logique

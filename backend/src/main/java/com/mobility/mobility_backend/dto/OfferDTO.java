@@ -3,189 +3,160 @@ package com.mobility.mobility_backend.dto;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+import com.mobility.mobility_backend.entity.Offer; // Assure-toi que le chemin est correct
+
 public class OfferDTO {
-	private Integer offerId;
-	private Integer pickupLocationId; // Doit être Integer
-	private Integer returnLocationId; // Doit être Integer
-	private Integer mobilityServiceId; // Doit être Integer
-	private Integer adminId; // Doit être Integer
-	private LocalDateTime pickupDatetime;
-	private String description;
-	private BigDecimal price;
-	private LocalDateTime createdAt;
-	private LocalDateTime updatedAt;
 
-	// Constructeur complet
-	public OfferDTO(Integer offerId, Integer pickupLocationId, Integer returnLocationId, Integer mobilityServiceId,
-			Integer adminId, LocalDateTime pickupDatetime, String description, BigDecimal price,
-			LocalDateTime createdAt, LocalDateTime updatedAt) {
-		this.offerId = offerId;
-		this.pickupLocationId = pickupLocationId;
-		this.returnLocationId = returnLocationId;
-		this.mobilityServiceId = mobilityServiceId;
-		this.adminId = adminId;
-		this.pickupDatetime = pickupDatetime;
-		this.description = description;
-		this.price = price;
-		this.createdAt = createdAt;
-		this.updatedAt = updatedAt;
-	}
+    private Integer offerId;
+    private Integer pickupLocationId;
+    private Integer returnLocationId;
+    private Integer mobilityServiceId;
+    private Integer adminId;
+    private LocalDateTime pickupDatetime;
+    private String description;
+    private BigDecimal price;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+    private boolean active;
+    private Offer.OfferStatus status;
 
-	// Constructeur vide
-	public OfferDTO() {
-	}
+    // Champs ajoutés pour l'affichage
+    private String pickupLocationName;
+    private String returnLocationName;
+    private String mobilityServiceName;
+    private String adminName;
 
-	// Builder
-	public static Builder builder() {
-		return new Builder();
-	}
+    // Constructeurs (tu peux en ajouter selon besoin)
+    public OfferDTO() {}
 
-	public static class Builder {
-		private Integer offerId;
-		private Integer pickupLocationId;
-		private Integer returnLocationId;
-		private Integer mobilityServiceId;
-		private Integer adminId;
-		private LocalDateTime pickupDatetime;
-		private String description;
-		private BigDecimal price;
-		private LocalDateTime createdAt;
-		private LocalDateTime updatedAt;
+    // Getters et Setters existants (générés ou manuels)
+    public Integer getOfferId() {
+        return offerId;
+    }
 
-		public Builder offerId(Integer offerId) {
-			this.offerId = offerId;
-			return this;
-		}
+    public void setOfferId(Integer offerId) {
+        this.offerId = offerId;
+    }
 
-		public Builder pickupLocationId(Integer pickupLocationId) {
-			this.pickupLocationId = pickupLocationId;
-			return this;
-		}
+    public Integer getPickupLocationId() {
+        return pickupLocationId;
+    }
 
-		public Builder returnLocationId(Integer returnLocationId) {
-			this.returnLocationId = returnLocationId;
-			return this;
-		}
+    public void setPickupLocationId(Integer pickupLocationId) {
+        this.pickupLocationId = pickupLocationId;
+    }
 
-		public Builder mobilityServiceId(Integer mobilityServiceId) {
-			this.mobilityServiceId = mobilityServiceId;
-			return this;
-		}
+    public Integer getReturnLocationId() {
+        return returnLocationId;
+    }
 
-		public Builder adminId(Integer adminId) {
-			this.adminId = adminId;
-			return this;
-		}
+    public void setReturnLocationId(Integer returnLocationId) {
+        this.returnLocationId = returnLocationId;
+    }
 
-		public Builder pickupDatetime(LocalDateTime pickupDatetime) {
-			this.pickupDatetime = pickupDatetime;
-			return this;
-		}
+    public Integer getMobilityServiceId() {
+        return mobilityServiceId;
+    }
 
-		public Builder description(String description) {
-			this.description = description;
-			return this;
-		}
+    public void setMobilityServiceId(Integer mobilityServiceId) {
+        this.mobilityServiceId = mobilityServiceId;
+    }
 
-		public Builder price(BigDecimal price) {
-			this.price = price;
-			return this;
-		}
+    public Integer getAdminId() {
+        return adminId;
+    }
 
-		public Builder createdAt(LocalDateTime createdAt) {
-			this.createdAt = createdAt;
-			return this;
-		}
+    public void setAdminId(Integer adminId) {
+        this.adminId = adminId;
+    }
 
-		public Builder updatedAt(LocalDateTime updatedAt) {
-			this.updatedAt = updatedAt;
-			return this;
-		}
+    public LocalDateTime getPickupDatetime() {
+        return pickupDatetime;
+    }
 
-		public OfferDTO build() {
-			return new OfferDTO(offerId, pickupLocationId, returnLocationId, mobilityServiceId, adminId, pickupDatetime,
-					description, price, createdAt, updatedAt);
-		}
-	}
+    public void setPickupDatetime(LocalDateTime pickupDatetime) {
+        this.pickupDatetime = pickupDatetime;
+    }
 
-	// Getters et Setters
-	public Integer getOfferId() {
-		return offerId;
-	}
+    public String getDescription() {
+        return description;
+    }
 
-	public void setOfferId(Integer offerId) {
-		this.offerId = offerId;
-	}
+    public void setDescription(String description) {
+        this.description = description;
+    }
 
-	public Integer getPickupLocationId() {
-		return pickupLocationId;
-	}
+    public BigDecimal getPrice() {
+        return price;
+    }
 
-	public void setPickupLocationId(Integer pickupLocationId) {
-		this.pickupLocationId = pickupLocationId;
-	}
+    public void setPrice(BigDecimal price) {
+        this.price = price;
+    }
 
-	public Integer getReturnLocationId() {
-		return returnLocationId;
-	}
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
 
-	public void setReturnLocationId(Integer returnLocationId) {
-		this.returnLocationId = returnLocationId;
-	}
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
 
-	public Integer getMobilityServiceId() {
-		return mobilityServiceId;
-	}
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
 
-	public void setMobilityServiceId(Integer mobilityServiceId) {
-		this.mobilityServiceId = mobilityServiceId;
-	}
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
+    }
 
-	public Integer getAdminId() {
-		return adminId;
-	}
+    public boolean isActive() {
+        return active;
+    }
 
-	public void setAdminId(Integer adminId) {
-		this.adminId = adminId;
-	}
+    public void setActive(boolean active) {
+        this.active = active;
+    }
 
-	public LocalDateTime getPickupDatetime() {
-		return pickupDatetime;
-	}
+    public Offer.OfferStatus getStatus() {
+        return status;
+    }
 
-	public void setPickupDatetime(LocalDateTime pickupDatetime) {
-		this.pickupDatetime = pickupDatetime;
-	}
+    public void setStatus(Offer.OfferStatus status) {
+        this.status = status;
+    }
 
-	public String getDescription() {
-		return description;
-	}
+    // Getters et Setters pour les champs d'affichage
 
-	public void setDescription(String description) {
-		this.description = description;
-	}
+    public String getPickupLocationName() {
+        return pickupLocationName;
+    }
 
-	public BigDecimal getPrice() {
-		return price;
-	}
+    public void setPickupLocationName(String pickupLocationName) {
+        this.pickupLocationName = pickupLocationName;
+    }
 
-	public void setPrice(BigDecimal price) {
-		this.price = price;
-	}
+    public String getReturnLocationName() {
+        return returnLocationName;
+    }
 
-	public LocalDateTime getCreatedAt() {
-		return createdAt;
-	}
+    public void setReturnLocationName(String returnLocationName) {
+        this.returnLocationName = returnLocationName;
+    }
 
-	public void setCreatedAt(LocalDateTime createdAt) {
-		this.createdAt = createdAt;
-	}
+    public String getMobilityServiceName() {
+        return mobilityServiceName;
+    }
 
-	public LocalDateTime getUpdatedAt() {
-		return updatedAt;
-	}
+    public void setMobilityServiceName(String mobilityServiceName) {
+        this.mobilityServiceName = mobilityServiceName;
+    }
 
-	public void setUpdatedAt(LocalDateTime updatedAt) {
-		this.updatedAt = updatedAt;
-	}
+    public String getAdminName() {
+        return adminName;
+    }
+
+    public void setAdminName(String adminName) {
+        this.adminName = adminName;
+    }
 }

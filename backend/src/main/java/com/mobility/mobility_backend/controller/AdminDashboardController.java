@@ -35,7 +35,7 @@ public class AdminDashboardController {
         return ResponseEntity.ok(stats);
     }
 
-    @GetMapping("/users")
+    @GetMapping("/dashboard/stats")
     public ResponseEntity<Page<User>> getUsers(Pageable pageable) {
         Page<User> users = dashboardService.getUsers(pageable);
         return ResponseEntity.ok(users);

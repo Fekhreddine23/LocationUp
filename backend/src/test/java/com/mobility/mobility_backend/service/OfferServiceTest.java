@@ -19,9 +19,16 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.context.ActiveProfiles;
 
+import com.mobility.mobility_backend.dto.CreateOfferDTO;
 import com.mobility.mobility_backend.dto.OfferDTO;
 import com.mobility.mobility_backend.dto.OfferMapper;
+import com.mobility.mobility_backend.entity.Admin;
+import com.mobility.mobility_backend.entity.City;
+import com.mobility.mobility_backend.entity.MobilityService;
 import com.mobility.mobility_backend.entity.Offer;
+import com.mobility.mobility_backend.repository.AdminRepository;
+import com.mobility.mobility_backend.repository.CityRepository;
+import com.mobility.mobility_backend.repository.MobilityServiceRepository;
 import com.mobility.mobility_backend.repository.OfferRepository;
 
 @ExtendWith(MockitoExtension.class)
@@ -33,6 +40,15 @@ public class OfferServiceTest {
 
 	@Mock
 	private OfferMapper offerMapper;
+
+	@Mock
+	private CityRepository cityRepository;
+
+	@Mock
+	private MobilityServiceRepository mobilityServiceRepository;
+
+	@Mock
+	private AdminRepository adminRepository;
 
 	@InjectMocks
 	private OfferService offerService;
@@ -108,46 +124,50 @@ public class OfferServiceTest {
 	}
 
 	/*
-	 * En résumé, ce test simule la création d'une offre valide, vérifie que
-	 * l'entité est correctement sauvegardée via le repository et mappée en DTO, et
-	 * confirme que le service retourne les données attendues, validant ainsi le
-	 * flux de création.
+	 * CORRECTION : Ce test simule la création d'une offre valide avec CreateOfferDTO
 	 */
 	@Test
 	void whenCreateValidOffer_thenOfferIsSaved() {
 		// Given
+		CreateOfferDTO createOfferDTO = createValidCreateOfferDTO();
 		OfferDTO offerDTO = createValidOfferDTO();
 		Offer offer = new Offer();
 		Offer savedOffer = new Offer();
 
-		when(offerMapper.toEntity(offerDTO)).thenReturn(offer);
-		when(offerRepository.save(offer)).thenReturn(savedOffer);
+		// Mock des repositories pour les relations
+		City pickupCity = new City();
+		City returnCity = new City();
+		MobilityService mobilityService = new MobilityService();
+		Admin admin = new Admin();
+
+		when(cityRepository.findById(1)).thenReturn(Optional.of(pickupCity));
+		when(cityRepository.findById(2)).thenReturn(Optional.of(returnCity));
+		when(mobilityServiceRepository.findById(1)).thenReturn(Optional.of(mobilityService));
+		when(adminRepository.findAll()).thenReturn(List.of(admin));
+
+		when(offerRepository.save(any(Offer.class))).thenReturn(savedOffer);
 		when(offerMapper.toDTO(savedOffer)).thenReturn(offerDTO);
 
 		// When
-		OfferDTO result = offerService.createOffer(offerDTO);
+		OfferDTO result = offerService.createOffer(createOfferDTO);
 
 		// Then
 		assertThat(result).isEqualTo(offerDTO);
-		verify(offerRepository, times(1)).save(offer);
+		verify(offerRepository, times(1)).save(any(Offer.class));
 	}
 
 	/*
-	 * ce test simule la mise à jour d'une offre existante, vérifie que l'entité est
-	 * correctement sauvegardée via le repository et mappée en DTO, et confirme que
-	 * le service retourne un Optional contenant les données mises à jour, validant
-	 * ainsi le flux de mise à jour.
+	 * CORRECTION : Ce test simule la mise à jour d'une offre existante
 	 */
 	@Test
 	void whenUpdateExistingOffer_thenOfferIsUpdated() {
 		// Given
 		Integer offerId = 1;
 		OfferDTO offerDTO = createValidOfferDTO();
-		Offer offer = new Offer();
+		Offer existingOffer = new Offer();
 		Offer updatedOffer = new Offer();
 
-		when(offerRepository.existsById(offerId)).thenReturn(true);
-		when(offerMapper.toEntity(offerDTO)).thenReturn(offer);
+		when(offerRepository.findById(offerId)).thenReturn(Optional.of(existingOffer));
 		when(offerRepository.save(any(Offer.class))).thenReturn(updatedOffer);
 		when(offerMapper.toDTO(updatedOffer)).thenReturn(offerDTO);
 
@@ -156,7 +176,7 @@ public class OfferServiceTest {
 
 		// Then
 		assertThat(result).isPresent();
-		verify(offerRepository, times(1)).save(any(Offer.class));
+		verify(offerRepository, times(1)).save(existingOffer);
 	}
 
 	/*
@@ -180,12 +200,27 @@ public class OfferServiceTest {
 		verify(offerRepository, times(1)).deleteById(offerId);
 	}
 
+	// CORRECTION : Ajoutez cette méthode pour CreateOfferDTO
+	private CreateOfferDTO createValidCreateOfferDTO() {
+		CreateOfferDTO dto = new CreateOfferDTO();
+		dto.setPickupLocationName("paris");
+		dto.setReturnLocationName("lyon");
+		dto.setMobilityServiceId(null);
+		dto.setPickupDatetime(LocalDateTime.now().plusDays(1));
+		dto.setPrice(new BigDecimal("25.50"));
+		dto.setDescription("Test offer");
+		dto.setStatus(Offer.OfferStatus.PENDING);
+		dto.setActive(true);
+		return dto;
+	}
+
 	private OfferDTO createValidOfferDTO() {
 		OfferDTO dto = new OfferDTO();
 		dto.setPickupDatetime(LocalDateTime.now().plusDays(1));
 		dto.setPrice(new BigDecimal("25.50"));
 		dto.setDescription("Test offer");
+		dto.setStatus(Offer.OfferStatus.PENDING);
+		dto.setActive(true);
 		return dto;
 	}
-
 }

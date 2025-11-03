@@ -22,6 +22,6 @@ public interface ReservationRepository extends JpaRepository<Reservation, Intege
 	long countByStatus(Reservation.ReservationStatus status);
     List<Reservation> findTop10ByOrderByReservationDateDesc();
 
-  
+
 }
 

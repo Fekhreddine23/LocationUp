@@ -9,6 +9,8 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -78,8 +80,17 @@ public class Offer {
 	@Column(name = "updated_at")
 	private LocalDateTime updatedAt;
 
+
+	@Column(name = "status", nullable = false)
+	@Enumerated(EnumType.STRING)
+	private OfferStatus status = OfferStatus.PENDING; // Valeur par défaut
+
 	@Version
 	private Long version;
+
+
+    @Column(name = "active", nullable = false)
+    private boolean active = true; // Valeur par défaut
 
 	// Constructeurs
 	public Offer() {
@@ -270,4 +281,29 @@ public class Offer {
 				+ (description != null ? description.substring(0, Math.min(50, description.length())) + "..." : "null")
 				+ '\'' + '}';
 	}
+
+
+	//gestion administrateur
+	public OfferStatus getStatus() {
+		return status;
+	}
+
+	public void setStatus(OfferStatus status) {
+		this.status = status;
+	}
+
+	public enum OfferStatus {
+		PENDING, CONFIRMED, CANCELLED, COMPLETED
+	}
+
+	public void setActive(boolean active) {
+		 this.active = active;
+
+	}
+
+	public boolean getActive(boolean active) {
+		return active;
+	}
+
+
 }

@@ -38,7 +38,7 @@ public class UserControllerTest {
 	@Test
 	public void testCreateUser() throws Exception {
 		// Given
-		UserDTO userDTO = new UserDTO(1, "john_doe", "john@example.com");
+		UserDTO userDTO = new UserDTO(1, "john_doe", "john@example.com", null, null, null, null);
 		when(userService.createUser(anyString(), anyString(), anyString())).thenReturn(userDTO);
 
 		// When & Then
@@ -52,8 +52,8 @@ public class UserControllerTest {
 	@Test
 	public void testGetAllUsers() throws Exception {
 		// Given
-		UserDTO user1 = new UserDTO(1, "john_doe", "john@example.com");
-		UserDTO user2 = new UserDTO(2, "jane_smith", "jane@example.com");
+		UserDTO user1 = new UserDTO(1, "john_doe", "john@example.com", null, null, null, null);
+		UserDTO user2 = new UserDTO(2, "jane_smith", "jane@example.com", null, null, null, null);
 		when(userService.getAllUsers()).thenReturn(Arrays.asList(user1, user2));
 
 		// When & Then
@@ -65,7 +65,7 @@ public class UserControllerTest {
 	@Test
 	public void testGetUserById() throws Exception {
 		// Given
-		UserDTO userDTO = new UserDTO(1, "john_doe", "john@example.com");
+		UserDTO userDTO = new UserDTO(1, "john_doe", "john@example.com", null, null, null, null);
 		when(userService.getUserById(1)).thenReturn(Optional.of(userDTO));
 
 		// When & Then
@@ -85,7 +85,7 @@ public class UserControllerTest {
 	@Test
 	public void testGetUserByUsername() throws Exception {
 		// Given
-		UserDTO userDTO = new UserDTO(1, "john_doe", "john@example.com");
+		UserDTO userDTO = new UserDTO(1, "john_doe", "john@example.com", null, null, null, null);
 		when(userService.getUserByUsername("john_doe")).thenReturn(Optional.of(userDTO));
 
 		// When & Then

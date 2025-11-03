@@ -25,6 +25,7 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mobility.mobility_backend.dto.CreateOfferDTO;
 import com.mobility.mobility_backend.dto.OfferDTO;
 import com.mobility.mobility_backend.service.OfferService;
 
@@ -78,7 +79,7 @@ public class OfferControllerTest {
 		OfferDTO offerDTO = createOfferDTO(null);
 		OfferDTO createdOffer = createOfferDTO(1);
 
-		when(offerService.createOffer(any(OfferDTO.class))).thenReturn(createdOffer);
+		when(offerService.createOffer(any(CreateOfferDTO.class))).thenReturn(createdOffer);
 
 		// When & Then
 		mockMvc.perform(post("/api/offers").contentType(MediaType.APPLICATION_JSON)

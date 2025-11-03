@@ -1,63 +1,54 @@
 package com.mobility.mobility_backend.dto;
 
+// OfferMapper.java - Version avec noms
+
 import org.springframework.stereotype.Component;
 
 import com.mobility.mobility_backend.entity.Offer;
 
+
+
 @Component
 public class OfferMapper {
 
-	public OfferDTO toDTO(Offer offer) {
-		if (offer == null) {
-			return null;
-		}
+    public OfferDTO toDTO(Offer offer) {
+        if (offer == null) {
+            return null;
+        }
 
-		OfferDTO dto = new OfferDTO();
-		dto.setOfferId(offer.getOfferId());
-		dto.setPickupLocationId(
-				offer.getPickupLocation() != null ? offer.getPickupLocation().getCityId().intValue() : null);
-		dto.setReturnLocationId(
-				offer.getReturnLocation() != null ? offer.getReturnLocation().getCityId().intValue() : null);
-		dto.setMobilityServiceId(
-				offer.getMobilityService() != null ? offer.getMobilityService().getServiceId().intValue() : null);
-		dto.setAdminId(offer.getAdmin() != null ? offer.getAdmin().getAdminId().intValue() : null);
-		dto.setPickupDatetime(offer.getPickupDatetime());
-		dto.setDescription(offer.getDescription());
-		dto.setPrice(offer.getPrice());
-		dto.setCreatedAt(offer.getCreatedAt());
-		dto.setUpdatedAt(offer.getUpdatedAt());
+        OfferDTO offerDTO = new OfferDTO();
+        offerDTO.setOfferId(offer.getOfferId());
+        offerDTO.setPickupDatetime(offer.getPickupDatetime());
+        offerDTO.setDescription(offer.getDescription());
+        offerDTO.setPrice(offer.getPrice());
+        offerDTO.setStatus(offer.getStatus());
+        offerDTO.setActive(offer.getActive(true));
+        offerDTO.setCreatedAt(offer.getCreatedAt());
+        offerDTO.setUpdatedAt(offer.getUpdatedAt());
 
-		return dto;
-	}
+        // IDs des relations
+        if (offer.getPickupLocation() != null) {
+            offerDTO.setPickupLocationId(offer.getPickupLocation().getCityId());
+            offerDTO.setPickupLocationName(offer.getPickupLocation().getName()); // Ajoutez le nom
+        }
+        if (offer.getReturnLocation() != null) {
+            offerDTO.setReturnLocationId(offer.getReturnLocation().getCityId());
+            offerDTO.setReturnLocationName(offer.getReturnLocation().getName());
+        }
+        if (offer.getMobilityService() != null) {
+            offerDTO.setMobilityServiceId(offer.getMobilityService().getServiceId());
+            offerDTO.setMobilityServiceName(offer.getMobilityService().getName());
+        }
+        if (offer.getAdmin() != null) {
+            offerDTO.setAdminId(offer.getAdmin().getAdminId());
+            offerDTO.setAdminName(offer.getAdmin().getUsername());
+        }
 
-	public Offer toEntity(OfferDTO offerDTO) {
-		if (offerDTO == null) {
-			return null;
-		}
+        return offerDTO;
+    }
 
-		// Note: Les relations ne sont pas définies ici, seulement les champs simples
-		Offer offer = new Offer();
-		offer.setOfferId(offerDTO.getOfferId());
-		offer.setPickupDatetime(offerDTO.getPickupDatetime());
-		offer.setDescription(offerDTO.getDescription());
-		offer.setPrice(offerDTO.getPrice());
+    // ... reste des méthodes inchangé
 
-		return offer;
-	}
 
-	public void updateEntityFromDTO(OfferDTO offerDTO, Offer offer) {
-		if (offerDTO == null || offer == null) {
-			return;
-		}
 
-		if (offerDTO.getPickupDatetime() != null) {
-			offer.setPickupDatetime(offerDTO.getPickupDatetime());
-		}
-		if (offerDTO.getDescription() != null) {
-			offer.setDescription(offerDTO.getDescription());
-		}
-		if (offerDTO.getPrice() != null) {
-			offer.setPrice(offerDTO.getPrice());
-		}
-	}
 }

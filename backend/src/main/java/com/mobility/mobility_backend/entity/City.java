@@ -16,11 +16,11 @@ public class City {
 	@Column(name = "city_id") // ✅ Ajouter cette annotation
 	private Integer cityId; // ✅ CHANGER Long → Integer
 
-	@Column(nullable = false, unique = true)
+	@Column(nullable = false, unique = false)
 	private String name;
 
 
-	@Column(nullable = false, unique = true)
+	@Column(nullable = true, unique = false)
 	private String postalCode;
 
 	public String getPostalCode() {

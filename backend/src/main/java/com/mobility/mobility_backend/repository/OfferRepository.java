@@ -5,6 +5,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -74,4 +76,17 @@ public interface OfferRepository extends JpaRepository<Offer, Integer> {
 	List<Offer> findByOrderByPickupDatetimeDesc();
 
 	List<Offer> findByOrderByCreatedAtDesc();
+
+	  // ✅ Méthodes pour les statistiques d'activation
+    long countByActiveTrue();
+    long countByActiveFalse();
+
+    // ✅ Méthodes pour les statistiques de statut (si votre entité Offer a un champ "status")
+    long countByStatus(Offer.OfferStatus status);
+
+    // ✅ Méthode pour pagination
+    @Override
+	Page<Offer> findAll(Pageable pageable);
+
+
 }

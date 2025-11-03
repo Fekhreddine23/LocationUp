@@ -1,9 +1,9 @@
 package com.mobility.mobility_backend.dto;
 
 public class UserInfoDTO {
-	
+
 	// DTO simplifié pour les infos utilisateur
-	 
+
 	    private Long id;
 	    private String username;
 	    private String email;
