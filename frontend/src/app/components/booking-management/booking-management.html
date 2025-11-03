@@ -89,11 +89,53 @@
     </div>
   </div>
 
+
+
+
+  <!-- 🆕 SECTION FILTRES ACTIFS - AJOUTE ICI -->
+  <div class="active-filters" *ngIf="hasActiveFilters()">
+    <div class="active-filter" *ngIf="getActiveUserFilter() as userFilter">
+      <span class="filter-label">👤 Utilisateur:</span>
+      <span class="filter-value">{{ userFilter.name }}</span>
+      <button (click)="clearUserFilter()" class="btn-clear-filter" title="Supprimer le filtre">
+        ×
+      </button>
+    </div>
+    
+    <div class="active-filter" *ngIf="statusFilter !== 'ALL'">
+      <span class="filter-label">📊 Statut:</span>
+      <span class="filter-value">{{ getStatusText(statusFilter) }}</span>
+      <button (click)="clearStatusFilter()" class="btn-clear-filter" title="Supprimer le filtre">
+        ×
+      </button>
+    </div>
+    
+    <div class="active-filter" *ngIf="dateFilter">
+      <span class="filter-label">📅 Date:</span>
+      <span class="filter-value">{{ formatDisplayDate(dateFilter) }}</span>
+      <button (click)="clearDateFilter()" class="btn-clear-filter" title="Supprimer le filtre">
+        ×
+      </button>
+    </div>
+    
+    <button *ngIf="hasMultipleFilters()" (click)="clearAllFilters()" class="btn-clear-all">
+      🗑️ Supprimer tous les filtres
+    </button>
+  </div>
+
+
+
+
+
+
+
+
+
   <!-- Tableau des réservations -->
   <div class="bookings-table-container">
     <div class="table-header">
       <div class="table-stats">
-        {{ totalElements }} réservation(s) trouvée(s)
+        {{ displayedBookingsCount }} réservation(s) trouvée(s)
       </div>
     </div>
 

@@ -27,6 +27,34 @@
     </button>
   </div>
 
+  <!-- Statistiques des offres -->
+  <div *ngIf="stats" class="stats-section">
+    <div class="stat-card">
+      <span class="stat-label">Offres totales</span>
+      <span class="stat-value">{{ stats.total || 0 }}</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">En attente</span>
+      <span class="stat-value">{{ stats.pending || 0 }}</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">Confirmées</span>
+      <span class="stat-value">{{ stats.confirmed || 0 }}</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">Annulées</span>
+      <span class="stat-value">{{ stats.cancelled || 0 }}</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">Terminées</span>
+      <span class="stat-value">{{ stats.completed || 0 }}</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">Taux de confirmation</span>
+      <span class="stat-value">{{ (stats.confirmationRate || 0) | number:'1.0-2' }}%</span>
+    </div>
+  </div>
+
   <!-- Barre de recherche et filtres -->
   <div class="filters-section">
     <div class="search-bar">
@@ -44,9 +72,10 @@
     <div class="filter-controls">
       <select [(ngModel)]="statusFilter" (change)="applyFilters()" class="filter-select">
         <option value="ALL">Tous les statuts</option>
-        <option value="ACTIVE">Actives</option>
-        <option value="INACTIVE">Inactives</option>
-        <option value="EXPIRED">Expirées</option>
+        <option value="PENDING">En attente</option>
+        <option value="CONFIRMED">Confirmées</option>
+        <option value="CANCELLED">Annulées</option>
+        <option value="COMPLETED">Terminées</option>
       </select>
 
       <input 
@@ -81,7 +110,7 @@
     <div *ngIf="!isLoading && filteredOffers.length > 0" class="offers-grid">
       <div *ngFor="let offer of filteredOffers" class="offer-card">
         <div class="offer-header">
-          <h3 class="offer-title">{{ offer.mobilityService }}</h3>
+           {{ offer.mobilityService || offer.mobilityService || 'Service non précisé' }}
           <span [class]="'status-badge ' + getStatusClass(offer.status)">
             {{ getStatusText(offer.status) }}
           </span>
@@ -91,11 +120,11 @@
           <div class="offer-info">
             <div class="info-item">
               <span class="info-label">📍 Départ:</span>
-              <span class="info-value">{{ offer.pickupLocation }}</span>
+              <span class="info-value"> {{ offer.pickupLocationName || offer.pickupLocation || 'Lieu non précisé' }}</span>
             </div>
             <div class="info-item">
               <span class="info-label">🎯 Retour:</span>
-              <span class="info-value">{{ offer.returnLocation }}</span>
+              <span class="info-value">{{ offer.returnLocationName || offer.returnLocation || 'Lieu non précisé' }}</span>
             </div>
             <div class="info-item">
               <span class="info-label">📅 Date:</span>
@@ -104,6 +133,10 @@
             <div class="info-item">
               <span class="info-label">💰 Prix:</span>
               <span class="info-value price">{{ formatCurrency(offer.price) }}</span>
+            </div>
+            <div class="info-item" *ngIf="offer.adminName">
+              <span class="info-label">👤 Admin:</span>
+              <span class="info-value">{{ offer.adminName }}</span>
             </div>
           </div>
           
@@ -118,9 +151,10 @@
           </button>
           <button 
             (click)="toggleOfferStatus(offer)" 
-            [class]="offer.status === 'ACTIVE' ? 'btn-deactivate' : 'btn-activate'"
-            [title]="offer.status === 'ACTIVE' ? 'Désactiver' : 'Activer'">
-            {{ offer.status === 'ACTIVE' ? '⏸️ Désactiver' : '▶️ Activer' }}
+            [class]="isOfferConfirmed(offer) ? 'btn-deactivate' : 'btn-activate'"
+            [title]="isOfferConfirmed(offer) ? 'Annuler l\'offre' : 'Confirmer l\'offre'"
+            [disabled]="!canToggleStatus(offer)">
+            {{ isOfferConfirmed(offer) ? '⏹️ Annuler' : '✅ Confirmer' }}
           </button>
           <button (click)="confirmDelete(offer)" class="btn-delete" title="Supprimer">
             🗑️ Supprimer
@@ -160,52 +194,110 @@
       </div>
       <div class="modal-content">
         <div class="form-grid">
-          <div class="form-group">
-            <label>Lieu de départ *</label>
-            <input 
-              type="text" 
-              [(ngModel)]="newOffer.pickupLocation" 
-              class="form-input"
-              placeholder="Ex: Paris Centre">
+          <div class="form-row">
+            <div class="form-group half">
+              <label>Lieu de départ *</label>
+              <input 
+                type="text" 
+                [(ngModel)]="newOffer.pickupLocation" 
+                name="newPickupLocation"
+                class="form-input"
+                placeholder="Adresse de départ">
+            </div>
+            <div class="form-group half">
+              <label>Ville de départ *</label>
+              <input 
+                type="text" 
+                [(ngModel)]="newOffer.pickupLocationCity" 
+                name="newPickupCity"
+                class="form-input"
+                placeholder="Ex: Paris">
+            </div>
           </div>
-          <div class="form-group">
-            <label>Lieu de retour *</label>
-            <input 
-              type="text" 
-              [(ngModel)]="newOffer.returnLocation" 
-              class="form-input"
-              placeholder="Ex: Paris Centre">
+
+          <div class="form-row">
+            <div class="form-group half">
+              <label>Lieu de retour *</label>
+              <input 
+                type="text" 
+                [(ngModel)]="newOffer.returnLocation" 
+                name="newReturnLocation"
+                class="form-input"
+                placeholder="Adresse de retour">
+            </div>
+            <div class="form-group half">
+              <label>Ville de retour *</label>
+              <input 
+                type="text" 
+                [(ngModel)]="newOffer.returnLocationCity" 
+                name="newReturnCity"
+                class="form-input"
+                placeholder="Ex: Marseille">
+            </div>
           </div>
+
+
           <div class="form-group">
-            <label>Service de mobilité *</label>
-            <select [(ngModel)]="newOffer.mobilityService" class="form-input">
-              <option value="">Sélectionnez un service</option>
-              <option value="Voiture électrique">Voiture électrique</option>
-              <option value="Scooter électrique">Scooter électrique</option>
-              <option value="Vélo électrique">Vélo électrique</option>
-              <option value="Voiture thermique">Voiture thermique</option>
+            <label>Catégorie de mobilité *</label>
+            <select 
+              [(ngModel)]="newOffer.mobilityService" 
+              name="newMobilityService"
+              class="form-input"
+              [disabled]="isLoadingServices">
+              <option value="">Sélectionnez une catégorie</option>
+              <option *ngFor="let category of mobilityCategories" [value]="category">
+                {{ category }}
+              </option>
             </select>
           </div>
+
           <div class="form-group">
-            <label>Date et heure de pickup *</label>
+            <label>ID administrateur *</label>
+            <input 
+              type="number" 
+              [(ngModel)]="newOffer.adminId" 
+              name="newAdminId"
+              class="form-input"
+              min="1"
+              step="1"
+              placeholder="Ex: 12">
+          </div>
+
+          <div class="form-group">
+            <label>Date et heure de prise en charge *</label>
             <input 
               type="datetime-local" 
               [(ngModel)]="newOffer.pickupDatetime" 
+              name="newPickupDatetime"
               class="form-input">
           </div>
+
           <div class="form-group">
             <label>Prix (€) *</label>
             <input 
               type="number" 
               [(ngModel)]="newOffer.price" 
+              name="newPrice"
               class="form-input"
-              min="0"
+              min="0.01"
               step="0.01">
           </div>
+
+          <div class="form-group">
+            <label>Statut *</label>
+            <select [(ngModel)]="newOffer.status" name="newStatus" class="form-input">
+              <option value="PENDING">En attente</option>
+              <option value="CONFIRMED">Confirmée</option>
+              <option value="CANCELLED">Annulée</option>
+              <option value="COMPLETED">Terminée</option>
+            </select>
+          </div>
+
           <div class="form-group full-width">
             <label>Description</label>
             <textarea 
               [(ngModel)]="newOffer.description" 
+              name="newDescription"
               class="form-textarea"
               placeholder="Description de l'offre..."
               rows="3"></textarea>
@@ -218,9 +310,9 @@
         </button>
         <button 
           (click)="submitNewOffer()" 
-          [disabled]="!isValidOffer()"
+          [disabled]="!isValidOffer() || isLoadingServices"
           class="btn-confirm">
-          Créer l'offre
+          {{ isLoadingServices ? 'Chargement...' : 'Créer l\'offre' }}
         </button>
       </div>
     </div>
@@ -235,46 +327,97 @@
       </div>
       <div class="modal-content" *ngIf="selectedOffer">
         <div class="form-grid">
-          <div class="form-group">
-            <label>Lieu de départ</label>
-            <input 
-              type="text" 
-              [(ngModel)]="selectedOffer.pickupLocation" 
-              class="form-input">
+          <div class="form-row">
+            <div class="form-group half">
+              <label>Lieu de départ</label>
+              <input 
+                type="text" 
+                [(ngModel)]="selectedOffer.pickupLocation" 
+                name="editPickupLocation"
+                class="form-input">
+            </div>
+            <div class="form-group half">
+              <label>Ville de départ</label>
+              <input 
+                type="text" 
+                [(ngModel)]="selectedOffer.pickupLocationCity" 
+                name="editPickupCity"
+                class="form-input">
+            </div>
           </div>
-          <div class="form-group">
-            <label>Lieu de retour</label>
-            <input 
-              type="text" 
-              [(ngModel)]="selectedOffer.returnLocation" 
-              class="form-input">
+
+          <div class="form-row">
+            <div class="form-group half">
+              <label>Lieu de retour</label>
+              <input 
+                type="text" 
+                [(ngModel)]="selectedOffer.returnLocation" 
+                name="editReturnLocation"
+                class="form-input">
+            </div>
+            <div class="form-group half">
+              <label>Ville de retour</label>
+              <input 
+                type="text" 
+                [(ngModel)]="selectedOffer.returnLocationCity" 
+                name="editReturnCity"
+                class="form-input">
+            </div>
           </div>
+
+
           <div class="form-group">
-            <label>Service de mobilité</label>
-            <select [(ngModel)]="selectedOffer.mobilityService" class="form-input">
-              <option value="Voiture électrique">Voiture électrique</option>
-              <option value="Scooter électrique">Scooter électrique</option>
-              <option value="Vélo électrique">Vélo électrique</option>
-              <option value="Voiture thermique">Voiture thermique</option>
+            <label>Catégorie de mobilité</label>
+            <select 
+              [(ngModel)]="selectedOffer.mobilityService" 
+              class="form-input"
+              [disabled]="isLoadingServices">
+              <option value="">Sélectionnez une catégorie</option>
+              <option *ngFor="let category of mobilityCategories" [value]="category">
+                {{ category }}
+              </option>
             </select>
           </div>
+
+          <div class="form-group">
+            <label>ID administrateur</label>
+            <input 
+              type="number" 
+              [(ngModel)]="selectedOffer.adminId" 
+              class="form-input"
+              min="1"
+              step="1">
+          </div>
+
           <div class="form-group">
             <label>Date et heure</label>
             <input 
               type="datetime-local" 
               [value]="selectedOffer.pickupDatetime | date:'yyyy-MM-ddTHH:mm'"
-              (input)="selectedOffer.pickupDatetime = $event.target.value"
+              (input)="selectedOffer.pickupDatetime = $any($event.target).value"
               class="form-input">
           </div>
+
           <div class="form-group">
             <label>Prix (€)</label>
             <input 
               type="number" 
               [(ngModel)]="selectedOffer.price" 
               class="form-input"
-              min="0"
+              min="0.01"
               step="0.01">
           </div>
+
+          <div class="form-group">
+            <label>Statut</label>
+            <select [(ngModel)]="selectedOffer.status" class="form-input">
+              <option value="PENDING">En attente</option>
+              <option value="CONFIRMED">Confirmée</option>
+              <option value="CANCELLED">Annulée</option>
+              <option value="COMPLETED">Terminée</option>
+            </select>
+          </div>
+
           <div class="form-group full-width">
             <label>Description</label>
             <textarea 
@@ -303,7 +446,7 @@
         <button (click)="isDeleteModalOpen = false" class="close-btn">×</button>
       </div>
       <div class="modal-content" *ngIf="selectedOffer">
-        <p>Êtes-vous sûr de vouloir supprimer l'offre <strong>{{ selectedOffer.mobilityService }}</strong> ?</p>
+        <p>Êtes-vous sûr de vouloir supprimer l'offre <strong>{{ selectedOffer.mobilityService || 'Service non précisé' }}</strong> ?</p>
         <p class="warning-text">Cette action est irréversible.</p>
       </div>
       <div class="modal-actions">

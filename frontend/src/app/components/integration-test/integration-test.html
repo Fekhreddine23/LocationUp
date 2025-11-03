@@ -1,0 +1,19 @@
+<div class="integration-test">
+      <h2>🔧 Test d'Intégration Backend</h2>
+      
+      <div class="test-section">
+        <button (click)="testStats()" [disabled]="testing">📊 Tester Stats</button>
+        <button (click)="testUsers()" [disabled]="testing">👥 Tester Utilisateurs</button>
+        <button (click)="testOffers()" [disabled]="testing">🚗 Tester Offres</button>
+        <button (click)="testBookings()" [disabled]="testing">📅 Tester Réservations</button>
+      </div>
+
+      <div *ngIf="loading" class="loading">Chargement...</div>
+
+      <div *ngIf="testResult" class="result" [class.success]="testResult.success" [class.error]="!testResult.success">
+        <h3>{{ testResult.success ? '✅ Succès' : '❌ Erreur' }}</h3>
+        <pre>{{ testResult.data | json }}</pre>
+        <p *ngIf="testResult.error">Erreur: {{ testResult.error }}</p>
+      </div>
+    </div>
+  `,

@@ -21,8 +21,9 @@ import { Breadcrumbs } from '../breadcrumbs/breadcrumbs';
 })
 export class UserManagement implements OnInit {
 
-   users: AdminUser[] = [];
+  users: AdminUser[] = [];
   filteredUsers: AdminUser[] = [];
+  displayedUsersCount = 0;
   selectedUser: AdminUser | null = null;
 
   // Pagination
@@ -63,10 +64,10 @@ export class UserManagement implements OnInit {
     this.isLoading = true;
     this.adminService.getAllUsers(this.currentPage, this.pageSize).subscribe({
       next: (response: UserResponse) => {
-        this.users = response.content;
-        this.filteredUsers = [...this.users];
-        this.totalElements = response.totalElements;
-        this.totalPages = response.totalPages;
+        this.users = response.content ?? [];
+        this.updateFilteredUsers([...this.users]);
+        this.totalElements = this.resolveTotalElements(response.totalElements, this.users.length);
+        this.totalPages = response.totalPages ?? Math.max(1, Math.ceil(this.totalElements / this.pageSize));
         this.isLoading = false;
       },
       error: (error) => {
@@ -82,9 +83,10 @@ export class UserManagement implements OnInit {
       this.isLoading = true;
       this.adminService.searchUsers(this.searchQuery, this.currentPage, this.pageSize).subscribe({
         next: (response: UserResponse) => {
-          this.filteredUsers = response.content;
-          this.totalElements = response.totalElements;
-          this.totalPages = response.totalPages;
+          const results = response.content ?? [];
+          this.updateFilteredUsers(results);
+          this.totalElements = this.resolveTotalElements(response.totalElements, results.length);
+          this.totalPages = response.totalPages ?? Math.max(1, Math.ceil(this.totalElements / this.pageSize));
           this.isLoading = false;
         },
         error: (error) => {
@@ -94,7 +96,8 @@ export class UserManagement implements OnInit {
         }
       });
     } else {
-      this.filteredUsers = [...this.users];
+      this.updateFilteredUsers([...this.users]);
+      this.totalElements = this.resolveTotalElements(this.totalElements, this.filteredUsers.length);
     }
   }
 
@@ -113,7 +116,7 @@ export class UserManagement implements OnInit {
       filtered = filtered.filter(user => user.role === this.roleFilter);
     }
 
-    this.filteredUsers = filtered;
+    this.updateFilteredUsers(filtered);
   }
 
   // Actions sur les utilisateurs
@@ -125,15 +128,18 @@ export class UserManagement implements OnInit {
   updateUser(): void {
     if (!this.selectedUser) return;
 
-    this.adminService.updateUser(this.selectedUser.id, this.selectedUser).subscribe({
+    const payload = this.buildUserUpdatePayload(this.selectedUser);
+
+    this.adminService.updateUser(this.selectedUser.id, payload).subscribe({
       next: (updatedUser) => {
         const index = this.users.findIndex(u => u.id === updatedUser.id);
         if (index !== -1) {
           this.users[index] = updatedUser;
-          this.filteredUsers = [...this.users];
+          this.updateFilteredUsers([...this.users]);
         }
         this.successMessage = 'Utilisateur mis à jour avec succès';
         this.isEditModalOpen = false;
+        this.selectedUser = null;
         this.clearMessagesAfterDelay();
       },
       error: (error) => {
@@ -155,7 +161,7 @@ export class UserManagement implements OnInit {
     this.adminService.deleteUser(this.selectedUser.id).subscribe({
       next: () => {
         this.users = this.users.filter(u => u.id !== this.selectedUser!.id);
-        this.filteredUsers = this.filteredUsers.filter(u => u.id !== this.selectedUser!.id);
+        this.updateFilteredUsers(this.filteredUsers.filter(u => u.id !== this.selectedUser!.id));
         this.successMessage = 'Utilisateur supprimé avec succès';
         this.isDeleteModalOpen = false;
         this.clearMessagesAfterDelay();
@@ -234,10 +240,68 @@ export class UserManagement implements OnInit {
   }
 
   getUserInitials(user: AdminUser): string {
-    if (user.firstName && user.lastName) {
-      return `${user.firstName.charAt(0)}${user.lastName.charAt(0)}`.toUpperCase();
+    const firstNameInitial = user.firstName?.trim()?.charAt(0);
+    const lastNameInitial = user.lastName?.trim()?.charAt(0);
+    if (firstNameInitial && lastNameInitial) {
+      return `${firstNameInitial}${lastNameInitial}`.toUpperCase();
     }
-    return user.username.charAt(0).toUpperCase();
+
+    const usernameInitial = user.username?.trim()?.charAt(0);
+    if (usernameInitial) {
+      return usernameInitial.toUpperCase();
+    }
+
+    const emailInitial = user.email?.trim()?.charAt(0);
+    if (emailInitial) {
+      return emailInitial.toUpperCase();
+    }
+
+    return '?';
+  }
+
+  private updateFilteredUsers(users: AdminUser[]): void {
+    this.filteredUsers = users;
+    this.displayedUsersCount = users.length;
+  }
+
+  private buildUserUpdatePayload(user: AdminUser): Record<string, unknown> {
+    const sanitize = (value?: string | null): string | undefined => {
+      if (value === null || value === undefined) {
+        return undefined;
+      }
+      const trimmed = value.trim();
+      return trimmed.length > 0 ? trimmed : undefined;
+    };
+
+    const email = sanitize(user.email ?? undefined);
+    const username = sanitize(user.username) ?? (email ? email.split('@')[0] : 'Utilisateur');
+
+    const payload: Record<string, unknown> = {
+      username,
+      email,
+      firstName: sanitize(user.firstName),
+      lastName: sanitize(user.lastName),
+      role: sanitize(user.role),
+      status: sanitize(user.status)
+    };
+
+    Object.keys(payload).forEach(key => {
+      if (payload[key] === undefined) {
+        delete payload[key];
+      }
+    });
+
+    return payload;
+  }
+
+  private resolveTotalElements(total: number | undefined | null, fallback: number): number {
+    if (total === undefined || total === null) {
+      return fallback;
+    }
+    if (total === 0 && fallback > 0) {
+      return fallback;
+    }
+    return total;
   }
 
   clearMessagesAfterDelay(): void {
@@ -251,11 +315,14 @@ export class UserManagement implements OnInit {
   goBackToDashboard(): void {
     this.router.navigate(['/admin']);
   }
+  
 
   viewUserReservations(user: AdminUser): void {
-    this.router.navigate(['/admin/reservations'], { 
-      queryParams: { userId: user.id } 
-    });
-  }
+  // Au lieu de naviguer vers toutes les réservations,
+  // on va filtrer par utilisateur
+  this.router.navigate(['/admin/bookings'], { 
+    queryParams: { userId: user.id, userName: user.username } 
+  });
+}
 
 }

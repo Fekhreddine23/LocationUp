@@ -1,4 +1,4 @@
-export type OfferStatus = 'ACTIVE' | 'INACTIVE' | 'EXPIRED';
+export type OfferStatus = 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED';
 
 export interface Offer {
   offerId: number;
@@ -8,25 +8,43 @@ export interface Offer {
   createdAt: string;
   updatedAt: string;
   version: number; // ← Doit être présent et obligatoire
-  adminId: number;
-  mobilityServiceId: number;
-  pickupLocationId: number;
-  returnLocationId: number;
+  adminId?: number;
+  mobilityServiceId?: number;
+  pickupLocationId?: number;
+  returnLocationId?: number;
+  pickupLocationName?: string;
+  returnLocationName?: string;
+  pickupLocationCity?: string;
+  returnLocationCity?: string;
   status?: OfferStatus;
   mobilityService?: string;
   pickupLocation?: string;
   returnLocation?: string;
   adminName?: string;
+
+
 }
 
 export interface CreateOfferRequest {
-  description: string;
-  price: number;
+  // CHAMPS OBLIGATOIRES pour le backend
+  pickupLocationName: string;        // ← OBLIGATOIRE - anciennement pickupLocation
+  returnLocationName: string;        // ← OBLIGATOIRE - anciennement returnLocation
+  mobilityServiceId: number;         // ← OBLIGATOIRE - ID numérique, pas le nom
+  
+  // Champs existants
   pickupDatetime: string;
-  adminId: number;
-  mobilityServiceId: number;
-  pickupLocationId: number;
-  returnLocationId: number;
+  price: number;
+  description: string;
+  
+  // Champs optionnels
+  adminId?: number;
   status?: OfferStatus;
-  // version n'est pas requis pour la création
+  active?: boolean;
+  
+  // SUPPRIMEZ ces champs - ils ne sont pas dans le DTO backend
+  // mobilityService?: string;        // ❌ SUPPRIMER
+  // pickupLocation?: string;         // ❌ SUPPRIMER  
+  // returnLocation?: string;         // ❌ SUPPRIMER
+  // pickupLocationCity?: string;     // ❌ SUPPRIMER
+  // returnLocationCity?: string;     // ❌ SUPPRIMER
 }

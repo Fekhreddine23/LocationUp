@@ -1,10 +1,12 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { Breadcrumbs } from '../breadcrumbs/breadcrumbs';
 import { AdminBooking, BookingResponse } from '../../core/models/AdminBooking.model';
 import { AdminService } from '../../core/services/admin.service';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 
 type BookingStatus = AdminBooking['status'] | 'ALL';
 
@@ -15,10 +17,11 @@ type BookingStatus = AdminBooking['status'] | 'ALL';
   templateUrl: './booking-management.html',
   styleUrl: './booking-management.scss'
 })
-export class BookingManagement implements OnInit {
+export class BookingManagement implements OnInit, OnDestroy {
 
   bookings: AdminBooking[] = [];
   filteredBookings: AdminBooking[] = [];
+  displayedBookingsCount = 0;
   selectedBooking: AdminBooking | null = null;
   
   // Pagination
@@ -43,6 +46,10 @@ export class BookingManagement implements OnInit {
 
   // Statistiques
   bookingStats: any = {};
+  
+  // Filtre utilisateur actif
+  private activeUserFilter: { id: number, name: string } | null = null;
+  private readonly destroy$ = new Subject<void>();
 
   breadcrumbItems = [
     { label: 'Administration', url: '/admin' },
@@ -51,7 +58,8 @@ export class BookingManagement implements OnInit {
 
   constructor(
     private adminService: AdminService,
-    private router: Router
+    private router: Router,
+    private route: ActivatedRoute
   ) {}
 
   private static normalizeStatus(status?: string | null): AdminBooking['status'] {
@@ -66,16 +74,22 @@ export class BookingManagement implements OnInit {
   ngOnInit(): void {
     this.loadBookings();
     this.loadBookingStats();
+    this.checkUrlFilter();
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   loadBookings(): void {
     this.isLoading = true;
     this.adminService.getAllBookings(this.currentPage, this.pageSize).subscribe({
       next: (response: BookingResponse) => {
-        this.bookings = response.content;
-        this.filteredBookings = [...this.bookings];
-        this.totalElements = response.totalElements;
-        this.totalPages = response.totalPages;
+        this.bookings = response.content ?? [];
+        this.totalElements = response.totalElements ?? this.bookings.length;
+        this.totalPages = response.totalPages ?? Math.max(1, Math.ceil(this.totalElements / this.pageSize));
+        this.applyFilters(); // Applique les filtres après chargement
         this.isLoading = false;
       },
       error: (error) => {
@@ -102,9 +116,10 @@ export class BookingManagement implements OnInit {
       this.isLoading = true;
       this.adminService.searchBookings(this.searchQuery, this.currentPage, this.pageSize).subscribe({
         next: (response: BookingResponse) => {
-          this.filteredBookings = response.content;
-          this.totalElements = response.totalElements;
-          this.totalPages = response.totalPages;
+          this.bookings = response.content ?? [];
+          this.totalElements = response.totalElements ?? this.bookings.length;
+          this.totalPages = response.totalPages ?? Math.max(1, Math.ceil(this.totalElements / this.pageSize));
+          this.applyFilters(); // Applique les filtres après recherche
           this.isLoading = false;
         },
         error: (error) => {
@@ -114,26 +129,66 @@ export class BookingManagement implements OnInit {
         }
       });
     } else {
-      this.filteredBookings = [...this.bookings];
+      // Si recherche vide, recharge toutes les réservations
+      this.loadBookings();
     }
   }
 
+  // 🆕 MÉTHODE CORRIGÉE : Applique tous les filtres
   applyFilters(): void {
     let filtered = [...this.bookings];
 
+    // Filtre par utilisateur (si actif)
+    if (this.activeUserFilter) {
+      filtered = filtered.filter(booking => 
+        booking.user?.id === this.activeUserFilter!.id
+      );
+    }
+
     // Filtre par statut
     if (this.statusFilter !== 'ALL') {
-      filtered = filtered.filter(booking => BookingManagement.normalizeStatus(booking.status) === this.statusFilter);
+      filtered = filtered.filter(booking => 
+        BookingManagement.normalizeStatus(booking.status) === this.statusFilter
+      );
     }
 
     // Filtre par date
     if (this.dateFilter) {
       filtered = filtered.filter(booking => 
-        booking.reservationDate.includes(this.dateFilter)
+        booking.reservationDate && booking.reservationDate.includes(this.dateFilter)
       );
     }
 
-    this.filteredBookings = filtered;
+    this.commitFilteredBookings(filtered);
+  }
+
+  // 🆕 MÉTHODE : Applique le filtre utilisateur spécifique
+  applyUserFilter(userId: number): void {
+    this.commitFilteredBookings(this.bookings.filter(booking =>
+      booking.user?.id === userId
+    ));
+  }
+
+  private commitFilteredBookings(bookings: AdminBooking[]): void {
+    this.filteredBookings = bookings;
+    this.displayedBookingsCount = bookings.length;
+  }
+
+  // 🆕 MÉTHODE : Vérifie les filtres dans l'URL
+  checkUrlFilter(): void {
+    this.route.queryParams
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(params => {
+        if (params['userId']) {
+          const userId = parseInt(params['userId']);
+          const userName = params['userName'] || `Utilisateur #${userId}`;
+          this.activeUserFilter = { id: userId, name: userName };
+          // Applique le filtre une fois les données chargées
+          setTimeout(() => this.applyFilters(), 100);
+        } else {
+          this.activeUserFilter = null;
+        }
+      });
   }
 
   // Actions sur les réservations
@@ -144,8 +199,11 @@ export class BookingManagement implements OnInit {
 
   confirmBooking(booking: AdminBooking): void {
     if (!booking.reservationId) {
+      this.errorMessage = 'ID de réservation manquant';
+      this.clearMessagesAfterDelay();
       return;
     }
+    
     this.adminService.updateBookingStatus(booking.reservationId, 'CONFIRMED').subscribe({
       next: (updatedBooking) => {
         booking.status = BookingManagement.normalizeStatus(updatedBooking.status);
@@ -163,8 +221,11 @@ export class BookingManagement implements OnInit {
 
   cancelBooking(booking: AdminBooking): void {
     if (!booking.reservationId) {
+      this.errorMessage = 'ID de réservation manquant';
+      this.clearMessagesAfterDelay();
       return;
     }
+    
     this.adminService.cancelBooking(booking.reservationId).subscribe({
       next: (updatedBooking) => {
         booking.status = BookingManagement.normalizeStatus(updatedBooking.status);
@@ -182,8 +243,11 @@ export class BookingManagement implements OnInit {
 
   completeBooking(booking: AdminBooking): void {
     if (!booking.reservationId) {
+      this.errorMessage = 'ID de réservation manquant';
+      this.clearMessagesAfterDelay();
       return;
     }
+    
     this.adminService.updateBookingStatus(booking.reservationId, 'COMPLETED').subscribe({
       next: (updatedBooking) => {
         booking.status = BookingManagement.normalizeStatus(updatedBooking.status);
@@ -205,16 +269,17 @@ export class BookingManagement implements OnInit {
   }
 
   deleteBooking(): void {
-    if (!this.selectedBooking) return;
-    const reservationId = this.selectedBooking.reservationId;
-    if (!reservationId) {
+    if (!this.selectedBooking?.reservationId) {
+      this.errorMessage = 'ID de réservation manquant';
+      this.clearMessagesAfterDelay();
       return;
     }
 
-    this.adminService.deleteBooking(reservationId).subscribe({
+    this.adminService.deleteBooking(this.selectedBooking.reservationId).subscribe({
       next: () => {
-        this.bookings = this.bookings.filter(b => b.reservationId !== reservationId);
-        this.filteredBookings = this.filteredBookings.filter(b => b.reservationId !== reservationId);
+        this.bookings = this.bookings.filter(b => b.reservationId !== this.selectedBooking!.reservationId);
+        this.totalElements = Math.max(0, this.totalElements - 1);
+        this.applyFilters();
         this.successMessage = 'Réservation supprimée avec succès';
         this.isDeleteModalOpen = false;
         this.clearMessagesAfterDelay();
@@ -281,6 +346,15 @@ export class BookingManagement implements OnInit {
     return new Date(dateString).toLocaleDateString('fr-FR');
   }
 
+  // 🆕 MÉTHODE : Format date pour l'affichage des filtres
+  formatDisplayDate(dateString: string): string {
+    return new Date(dateString).toLocaleDateString('fr-FR', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    });
+  }
+
   canConfirm(booking: AdminBooking): boolean {
     return BookingManagement.normalizeStatus(booking.status) === 'PENDING';
   }
@@ -323,4 +397,48 @@ export class BookingManagement implements OnInit {
     });
   }
 
+  // 🆕 MÉTHODES POUR LES FILTRES ACTIFS
+  hasActiveFilters(): boolean {
+    return this.activeUserFilter !== null || 
+           this.statusFilter !== 'ALL' || 
+           this.dateFilter !== '';
+  }
+
+  getActiveUserFilter(): { id: number, name: string } | null {
+    return this.activeUserFilter;
+  }
+
+  hasMultipleFilters(): boolean {
+    let count = 0;
+    if (this.activeUserFilter) count++;
+    if (this.statusFilter !== 'ALL') count++;
+    if (this.dateFilter) count++;
+    return count > 1;
+  }
+
+  // Méthodes pour effacer les filtres
+  clearUserFilter(): void {
+    this.activeUserFilter = null;
+    this.router.navigate(['/admin/bookings']);
+    this.applyFilters();
+  }
+
+  clearStatusFilter(): void {
+    this.statusFilter = 'ALL';
+    this.applyFilters();
+  }
+
+  clearDateFilter(): void {
+    this.dateFilter = '';
+    this.applyFilters();
+  }
+
+  clearAllFilters(): void {
+    this.activeUserFilter = null;
+    this.statusFilter = 'ALL';
+    this.dateFilter = '';
+    this.searchQuery = '';
+    this.router.navigate(['/admin/bookings']);
+    this.applyFilters();
+  }
 }

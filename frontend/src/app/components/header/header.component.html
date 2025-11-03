@@ -16,8 +16,8 @@
             <a [routerLink]="dashboardRoute" class="nav-link">
               {{ isAdmin ? 'Admin' : 'Dashboard' }}
             </a>
-            <a routerLink="/offers" class="nav-link">Offres</a>
-            <a routerLink="/bookings" class="nav-link">Réservations</a>
+            <a [routerLink]="offersRoute" class="nav-link">Offres</a>
+            <a [routerLink]="bookingsRoute" class="nav-link">Réservations</a>
             
             <div class="user-menu">
               <button class="user-btn" (click)="toggleMenu()">

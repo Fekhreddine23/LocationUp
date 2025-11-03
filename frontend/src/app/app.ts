@@ -9,11 +9,12 @@ import { Offer } from './core/models/offer.model';
 import { ToastContainer } from './components/toast-container/toast-container';
 import { BreadcrumbService } from './core/services/breadcrumb';
 import { BreadcrumbItem } from './core/models/BreadcrumbItem.model';
+import { IntegrationTest } from "./components/integration-test/integration-test";
 
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, CommonModule, HeaderComponent, ToastContainer],
+  imports: [RouterOutlet, CommonModule, HeaderComponent, ToastContainer, IntegrationTest],
   templateUrl: './app.html',
   styleUrl: './app.scss'
 })

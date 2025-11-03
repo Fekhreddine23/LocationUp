@@ -7,7 +7,7 @@ import { AdminUser } from '../models/AdminUser.model';
 import { RecentActivity } from '../models/RecentActivity.model';
 import { UserResponse } from '../models/UserResponse.model';
 import { OfferResponse } from '../models/OfferReponse.model';
-import { Offer, OfferStatus } from '../models/offer.model';
+import { CreateOfferRequest, Offer, OfferStatus } from '../models/offer.model';
 import { AdminBooking, BookingResponse } from '../models/AdminBooking.model';
 
 
@@ -47,11 +47,8 @@ export class AdminService {
       .set('page', page.toString())
       .set('size', size.toString());
 
-    return this.http.get<UserResponse>(`${this.apiUrl}/users`, { params }).pipe(
-      map(response => ({
-        ...response,
-        content: response.content.map(user => this.transformUser(user))
-      })),
+    return this.http.get<any>(`${this.apiUrl}/users-management`, { params }).pipe(
+      map(response => this.normalizeUserResponse(response)),
       catchError(error => {
         console.error('Erreur API users:', error);
         return of(this.getMockUserResponse());
@@ -75,19 +72,100 @@ export class AdminService {
   // ==================== MÉTHODES UTILITAIRES ====================
 
   /**
+   * Normalise les réponses utilisateur venant d'API hétérogènes
+   */
+  private normalizeUserResponse(response: any): UserResponse {
+    const rawList = this.extractUserList(response);
+    const content = rawList.map(user => this.transformUser(user));
+
+    const totalElements = this.resolveTotalElementsValue(response?.totalElements, content.length);
+    const size = this.resolvePageSize(response?.size, content.length);
+    const totalPages = this.resolveTotalPages(response?.totalPages, totalElements, size);
+    const number = typeof response?.number === 'number' ? response.number : 0;
+
+    return {
+      content,
+      totalElements,
+      totalPages,
+      size,
+      number
+    };
+  }
+
+  private extractUserList(response: any): any[] {
+    if (Array.isArray(response)) {
+      return response;
+    }
+    if (Array.isArray(response?.content)) {
+      return response.content;
+    }
+    if (Array.isArray(response?.users)) {
+      return response.users;
+    }
+    if (Array.isArray(response?.data)) {
+      return response.data;
+    }
+    return [];
+  }
+
+  private resolveTotalElementsValue(rawTotal: any, fallback: number): number {
+    if (typeof rawTotal === 'number' && rawTotal > 0) {
+      return rawTotal;
+    }
+    if (typeof rawTotal === 'number' && rawTotal === 0 && fallback === 0) {
+      return 0;
+    }
+    return fallback;
+  }
+
+  private resolvePageSize(rawSize: any, fallback: number): number {
+    if (typeof rawSize === 'number' && rawSize > 0) {
+      return rawSize;
+    }
+    return fallback > 0 ? fallback : 10;
+  }
+
+  private resolveTotalPages(rawTotalPages: any, totalElements: number, size: number): number {
+    if (typeof rawTotalPages === 'number' && rawTotalPages > 0) {
+      return rawTotalPages;
+    }
+    const effectiveSize = size > 0 ? size : 1;
+    return Math.max(1, Math.ceil(totalElements / effectiveSize));
+  }
+
+  private resolveUsername(username: string | undefined | null, email: string | undefined | null): string {
+    if (username && username.trim().length > 0) {
+      return username.trim();
+    }
+    if (email && email.trim().length > 0) {
+      const localPart = email.split('@')[0];
+      return localPart ? localPart.trim() : 'Utilisateur';
+    }
+    return 'Utilisateur';
+  }
+
+  /**
    * Transforme un utilisateur backend en format frontend
    */
   transformUser(backendUser: any): AdminUser {
+    const rawUsername = backendUser?.username ?? backendUser?.userName ?? backendUser?.login;
+    const rawEmail = backendUser?.email ?? backendUser?.mail;
+    const resolvedUsername = this.resolveUsername(rawUsername, rawEmail);
+
+    const firstName = backendUser?.firstName ?? backendUser?.firstname ?? backendUser?.first_name;
+    const lastName = backendUser?.lastName ?? backendUser?.lastname ?? backendUser?.last_name;
+    const status = backendUser?.status ?? backendUser?.userStatus ?? 'active';
+
     return {
       id: backendUser.id,
-      username: backendUser.username ?? backendUser.email?.split('@')[0] ?? 'Utilisateur',
-      email: backendUser.email,
+      username: resolvedUsername,
+      email: rawEmail,
       role: backendUser.role?.name || backendUser.role || 'ROLE_USER',
       createdAt: backendUser.createdAt || backendUser.registrationDate || new Date().toISOString(),
-      firstName: backendUser.firstName,
-      lastName: backendUser.lastName,
-      lastLogin: backendUser.lastLogin,
-      status: backendUser.status || 'active',
+      firstName,
+      lastName,
+      lastLogin: backendUser.lastLogin ?? backendUser.lastLoginAt,
+      status,
       bookingCount: backendUser.bookingCount ?? backendUser.totalBookings ?? backendUser.reservationCount ?? 0
     };
   }
@@ -160,6 +238,10 @@ export class AdminService {
   }
 
   private transformOffer(rawOffer: any): Offer {
+    const pickupLocationName = rawOffer.pickupLocation?.name ?? rawOffer.pickupLocationName ?? rawOffer.pickupLocation ?? '';
+    const returnLocationName = rawOffer.returnLocation?.name ?? rawOffer.returnLocationName ?? rawOffer.returnLocation ?? '';
+    const mobilityServiceName = rawOffer.mobilityService?.name ?? rawOffer.mobilityServiceName ?? rawOffer.mobilityService ?? '';
+
     return {
       offerId: rawOffer.offerId ?? rawOffer.id,
       description: rawOffer.description ?? '',
@@ -168,25 +250,44 @@ export class AdminService {
       createdAt: rawOffer.createdAt ?? new Date().toISOString(),
       updatedAt: rawOffer.updatedAt ?? rawOffer.createdAt ?? new Date().toISOString(),
       version: rawOffer.version ?? 0,
-      adminId: rawOffer.adminId ?? rawOffer.admin?.id ?? 0,
-      mobilityServiceId: rawOffer.mobilityServiceId ?? rawOffer.mobilityService?.id ?? 0,
-      pickupLocationId: rawOffer.pickupLocationId ?? rawOffer.pickupLocation?.id ?? 0,
-      returnLocationId: rawOffer.returnLocationId ?? rawOffer.returnLocation?.id ?? 0,
+      adminId: rawOffer.adminId ?? rawOffer.admin?.id ?? undefined,
+      mobilityServiceId: rawOffer.mobilityServiceId ?? rawOffer.mobilityService?.id ?? undefined,
+      pickupLocationId: rawOffer.pickupLocationId ?? rawOffer.pickupLocation?.id ?? undefined,
+      returnLocationId: rawOffer.returnLocationId ?? rawOffer.returnLocation?.id ?? undefined,
+      pickupLocationName,
+      returnLocationName,
+      pickupLocationCity: rawOffer.pickupLocationCity ?? pickupLocationName,
+      returnLocationCity: rawOffer.returnLocationCity ?? returnLocationName,
       status: this.normalizeOfferStatus(rawOffer.status),
-      mobilityService: rawOffer.mobilityService?.name ?? rawOffer.mobilityServiceName,
-      pickupLocation: rawOffer.pickupLocation?.name ?? rawOffer.pickupLocationName,
-      returnLocation: rawOffer.returnLocation?.name ?? rawOffer.returnLocationName,
+      mobilityService: mobilityServiceName,
+      pickupLocation: pickupLocationName,
+      returnLocation: returnLocationName,
       adminName: rawOffer.admin?.username ?? rawOffer.adminName
     };
   }
 
+  private buildOfferUpdatePayload(offerData: Partial<Offer> | undefined): Partial<Offer> {
+    if (!offerData) {
+      return {};
+    }
+    const {
+      offerId,
+      mobilityService,
+      pickupLocation,
+      returnLocation,
+      adminName,
+      ...rest
+    } = offerData;
+    return rest;
+  }
+
   private normalizeOfferStatus(status?: string | null): OfferStatus {
     if (!status) {
-      return 'ACTIVE';
+      return 'PENDING';
     }
     const upper = status.toUpperCase();
-    const allowed: OfferStatus[] = ['ACTIVE', 'INACTIVE', 'EXPIRED'];
-    return allowed.includes(upper as OfferStatus) ? (upper as OfferStatus) : 'ACTIVE';
+    const allowed: OfferStatus[] = ['PENDING', 'CONFIRMED', 'CANCELLED', 'COMPLETED'];
+    return allowed.includes(upper as OfferStatus) ? (upper as OfferStatus) : 'PENDING';
   }
 
   /**
@@ -240,38 +341,29 @@ export class AdminService {
   getBookingById(bookingId: number): Observable<AdminBooking> {
     return this.http.get<any>(`${this.apiUrl}/bookings/${bookingId}`).pipe(
       map(booking => this.transformBooking(booking)),
-      catchError(error => {
-        console.error('Erreur récupération réservation:', error);
-        throw error;
-      })
+     catchError(error => this.handleApiError('récupération de la réservation', error))
     );
   }
 
   /**
    * Met à jour le statut d'une réservation
-   * PATCH /api/admin/bookings/{id}/status
+   * POST /api/admin/bookings/{id}/status
    */
   updateBookingStatus(bookingId: number, newStatus: string): Observable<AdminBooking> {
-    return this.http.patch<any>(`${this.apiUrl}/bookings/${bookingId}/status`, { status: newStatus }).pipe(
+    return this.http.post<any>(`${this.apiUrl}/bookings/${bookingId}/status`, { status: newStatus }).pipe(
       map(booking => this.transformBooking(booking)),
-      catchError(error => {
-        console.error('Erreur mise à jour statut:', error);
-        throw error;
-      })
+      catchError(error => this.handleApiError('mise à jour du statut de réservation', error))
     );
   }
 
   /**
    * Annule une réservation
-   * PATCH /api/admin/bookings/{id}/cancel
+   * POST /api/admin/bookings/{id}/cancel
    */
   cancelBooking(bookingId: number): Observable<AdminBooking> {
-    return this.http.patch<any>(`${this.apiUrl}/bookings/${bookingId}/cancel`, {}).pipe(
+    return this.http.post<any>(`${this.apiUrl}/bookings/${bookingId}/cancel`, {}).pipe(
       map(booking => this.transformBooking(booking)),
-      catchError(error => {
-        console.error('Erreur annulation:', error);
-        throw error;
-      })
+       catchError(error => this.handleApiError('annulation de la réservation', error))
     );
   }
 
@@ -281,10 +373,7 @@ export class AdminService {
    */
   deleteBooking(bookingId: number): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/bookings/${bookingId}`).pipe(
-      catchError(error => {
-        console.error('Erreur suppression:', error);
-        throw error;
-      })
+       catchError(error => this.handleApiError('suppression de la réservation', error))
     );
   }
 
@@ -528,7 +617,7 @@ export class AdminService {
    * GET /api/admin/users/{id}
    */
   getUserById(userId: number): Observable<AdminUser> {
-    return this.http.get<AdminUser>(`${this.apiUrl}/users/${userId}`).pipe(
+    return this.http.get<AdminUser>(`${this.apiUrl}/users-management/${userId}`).pipe(
       catchError(error => {
         console.error('Erreur récupération user:', error);
         throw error;
@@ -541,7 +630,8 @@ export class AdminService {
    * PUT /api/admin/users/{id}
    */
   updateUser(userId: number, userData: any): Observable<AdminUser> {
-    return this.http.put<AdminUser>(`${this.apiUrl}/users/${userId}`, userData).pipe(
+    return this.http.put<any>(`${this.apiUrl}/users-management/${userId}`, userData).pipe(
+      map(response => this.transformUser(response)),
       catchError(error => {
         console.error('Erreur mise à jour user:', error);
         throw error;
@@ -551,10 +641,10 @@ export class AdminService {
 
   /**
    * Désactive un utilisateur
-   * PATCH /api/admin/users/{id}/deactivate
+   * POST /api/admin/users/{id}/deactivate
    */
   deactivateUser(userId: number): Observable<void> {
-    return this.http.patch<void>(`${this.apiUrl}/users/${userId}/deactivate`, {}).pipe(
+    return this.http.post<void>(`${this.apiUrl}/users-management/${userId}/deactivate`, {}).pipe(
       catchError(error => {
         console.error('Erreur désactivation user:', error);
         throw error;
@@ -564,10 +654,10 @@ export class AdminService {
 
   /**
    * Réactive un utilisateur
-   * PATCH /api/admin/users/{id}/activate
+   * POST /api/admin/users/{id}/activate
    */
   activateUser(userId: number): Observable<void> {
-    return this.http.patch<void>(`${this.apiUrl}/users/${userId}/activate`, {}).pipe(
+    return this.http.post<void>(`${this.apiUrl}/users-management/${userId}/activate`, {}).pipe(
       catchError(error => {
         console.error('Erreur activation user:', error);
         throw error;
@@ -580,7 +670,7 @@ export class AdminService {
    * DELETE /api/admin/users/{id}
    */
   deleteUser(userId: number): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}/users/${userId}`).pipe(
+    return this.http.delete<void>(`${this.apiUrl}/users-management/${userId}`).pipe(
       catchError(error => {
         console.error('Erreur suppression user:', error);
         throw error;
@@ -589,17 +679,19 @@ export class AdminService {
   }
 
   /**
-   * Change le rôle d'un utilisateur
-   * PATCH /api/admin/users/{id}/role
-   */
-  changeUserRole(userId: number, newRole: string): Observable<AdminUser> {
-    return this.http.patch<AdminUser>(`${this.apiUrl}/users/${userId}/role`, { role: newRole }).pipe(
-      catchError(error => {
-        console.error('Erreur changement rôle:', error);
-        throw error;
-      })
-    );
-  }
+ * Change le rôle d'un utilisateur
+ * POST /api/admin/users-management/{id}/role
+ */
+changeUserRole(userId: number, newRole: string): Observable<AdminUser> {
+  // Correction : utiliser "users-management" et le bon payload
+  return this.http.post<any>(`${this.apiUrl}/users-management/${userId}/role`, { newRole: newRole }).pipe(
+    map(response => this.transformUser(response)),
+    catchError(error => {
+      console.error('Erreur changement rôle:', error);
+      throw error;
+    })
+  );
+}
 
   /**
    * Recherche des utilisateurs
@@ -611,7 +703,8 @@ export class AdminService {
       .set('page', page.toString())
       .set('size', size.toString());
 
-    return this.http.get<UserResponse>(`${this.apiUrl}/users/search`, { params }).pipe(
+    return this.http.get<any>(`${this.apiUrl}/users-management/search`, { params }).pipe(
+      map(response => this.normalizeUserResponse(response)),
       catchError(error => {
         console.error('Erreur recherche users:', error);
         return of(this.getMockUserResponse());
@@ -648,10 +741,8 @@ export class AdminService {
    */
   getOfferById(offerId: number): Observable<Offer> {
     return this.http.get<Offer>(`${this.apiUrl}/offers/${offerId}`).pipe(
-      catchError(error => {
-        console.error('Erreur récupération offre:', error);
-        throw error;
-      })
+   catchError(error => this.handleApiError('récupération de l\'offre', error))
+      
     );
   }
 
@@ -659,12 +750,9 @@ export class AdminService {
    * Crée une nouvelle offre
    * POST /api/admin/offers
    */
-  createOffer(offerData: any): Observable<Offer> {
+  createOffer(offerData: CreateOfferRequest): Observable<Offer> {
     return this.http.post<Offer>(`${this.apiUrl}/offers`, offerData).pipe(
-      catchError(error => {
-        console.error('Erreur création offre:', error);
-        throw error;
-      })
+      catchError(error => this.handleApiError('récupération de l\'offre', error))
     );
   }
 
@@ -674,11 +762,10 @@ export class AdminService {
    * PUT /api/admin/offers/{id}
    */
   updateOffer(offerId: number, offerData: any): Observable<Offer> {
-    return this.http.put<Offer>(`${this.apiUrl}/offers/${offerId}`, offerData).pipe(
-      catchError(error => {
-        console.error('Erreur mise à jour offre:', error);
-        throw error;
-      })
+    const payload = this.buildOfferUpdatePayload(offerData);
+    return this.http.put<Offer>(`${this.apiUrl}/offers/${offerId}`, payload).pipe(
+      map(response => this.transformOffer(response)),
+      catchError(error => this.handleApiError('mise à jour de l\'offre', error))
     );
   }
 
@@ -689,23 +776,17 @@ export class AdminService {
    */
   deleteOffer(offerId: number): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/offers/${offerId}`).pipe(
-      catchError(error => {
-        console.error('Erreur suppression offre:', error);
-        throw error;
-      })
+      catchError(error => this.handleApiError('récupération de l\'offre', error))
     );
   }
 
    /**
    * Change le statut d'une offre
-   * PATCH /api/admin/offers/{id}/status
+   * POST /api/admin/offers/{id}/status
    */
   changeOfferStatus(offerId: number, newStatus: string): Observable<Offer> {
-    return this.http.patch<Offer>(`${this.apiUrl}/offers/${offerId}/status`, { status: newStatus }).pipe(
-      catchError(error => {
-        console.error('Erreur changement statut:', error);
-        throw error;
-      })
+    return this.http.post<Offer>(`${this.apiUrl}/offers/${offerId}/status`, { status: newStatus }).pipe(
+     catchError(error => this.handleApiError('récupération de l\'offre', error))
     );
   }
 
@@ -738,14 +819,14 @@ export class AdminService {
         createdAt: '2024-01-15T00:00:00',
         updatedAt: '2024-02-01T00:00:00',
         version: 1,
-        adminId: 1,
-        mobilityServiceId: 1,
-        pickupLocationId: 1,
-        returnLocationId: 1,
-        status: 'ACTIVE',
+        status: 'PENDING',
         mobilityService: 'Voiture électrique',
         pickupLocation: 'Paris Centre',
+        pickupLocationName: 'Paris Centre',
+        pickupLocationCity: 'Paris',
         returnLocation: 'Paris Centre',
+        returnLocationName: 'Paris Centre',
+        returnLocationCity: 'Paris',
         adminName: 'Admin System'
       },
       {
@@ -756,14 +837,14 @@ export class AdminService {
         createdAt: '2024-02-10T00:00:00',
         updatedAt: '2024-02-15T00:00:00',
         version: 2,
-        adminId: 1,
-        mobilityServiceId: 2,
-        pickupLocationId: 2,
-        returnLocationId: 3,
-        status: 'ACTIVE',
+        status: 'CONFIRMED',
         mobilityService: 'Scooter électrique',
         pickupLocation: 'Lyon Part-Dieu',
+        pickupLocationName: 'Lyon Part-Dieu',
+        pickupLocationCity: 'Lyon',
         returnLocation: 'Lyon Perrache',
+        returnLocationName: 'Lyon Perrache',
+        returnLocationCity: 'Lyon',
         adminName: 'Admin System'
       },
       {
@@ -774,15 +855,33 @@ export class AdminService {
         createdAt: '2024-03-05T00:00:00',
         updatedAt: '2024-03-10T00:00:00',
         version: 1,
-        adminId: 2,
-        mobilityServiceId: 3,
-        pickupLocationId: 3,
-        returnLocationId: 3,
-        status: 'INACTIVE',
+        status: 'CANCELLED',
         mobilityService: 'Vélo électrique',
         pickupLocation: 'Marseille Vieux-Port',
+        pickupLocationName: 'Marseille Vieux-Port',
+        pickupLocationCity: 'Marseille',
         returnLocation: 'Marseille Vieux-Port',
-        adminName: 'Admin System'
+        returnLocationName: 'Marseille Vieux-Port',
+        returnLocationCity: 'Marseille',
+        adminName: 'Admin Sud'
+      },
+      {
+        offerId: 4,
+        pickupDatetime: '2025-01-05T08:30:00',
+        description: 'Berline thermique confortable pour longs trajets',
+        price: 59.5,
+        createdAt: '2024-04-01T00:00:00',
+        updatedAt: '2024-04-05T00:00:00',
+        version: 1,
+        status: 'COMPLETED',
+        mobilityService: 'Voiture thermique',
+        pickupLocation: 'Bordeaux Gare',
+        pickupLocationName: 'Bordeaux Gare',
+        pickupLocationCity: 'Bordeaux',
+        returnLocation: 'Bordeaux Mérignac',
+        returnLocationName: 'Bordeaux Mérignac',
+        returnLocationCity: 'Bordeaux',
+        adminName: 'Admin Ouest'
       }
     ];
 
@@ -796,6 +895,71 @@ export class AdminService {
   }
 
 
+  private handleApiError(operation: string, error: any): Observable<never> {
+  console.error(`❌ Erreur ${operation}:`, error);
+  
+  let errorMessage = 'Erreur de connexion au serveur';
+  
+  if (error.status === 0) {
+    errorMessage = 'Serveur inaccessible - vérifiez que le backend est démarré';
+  } else if (error.status === 401) {
+    errorMessage = 'Non authentifié - veuillez vous reconnecter';
+  } else if (error.status === 403) {
+    errorMessage = 'Accès non autorisé - droits administrateur requis';
+  } else if (error.status === 404) {
+    errorMessage = 'Endpoint non trouvé - vérifiez l\'URL';
+  } else if (error.error?.message) {
+    errorMessage = error.error.message;
+  }
+  
+  throw new Error(`${operation} - ${errorMessage}`);
+}
+
+
+
+
+ //============================ADMIN GERE LES OFFRES============================
+
+ // Gestion des offres - méthodes manquantes
+getOfferStats(): Observable<any> {
+  return this.http.get<any>(`${this.apiUrl}/offers/stats`).pipe(
+    catchError(error => {
+      console.error('Erreur stats offres:', error);
+      return of(this.getMockOfferStats());
+    })
+  );
+}
+
+activateOffer(offerId: number): Observable<void> {
+  return this.http.post<void>(`${this.apiUrl}/offers/${offerId}/activate`, {}).pipe(
+    catchError(error => this.handleApiError('activation d\'offre', error))
+  );
+}
+
+deactivateOffer(offerId: number): Observable<void> {
+  return this.http.post<void>(`${this.apiUrl}/offers/${offerId}/deactivate`, {}).pipe(
+    catchError(error => this.handleApiError('désactivation d\'offre', error))
+  );
+}
+
+completeBooking(bookingId: number): Observable<AdminBooking> {
+  return this.http.post<any>(`${this.apiUrl}/bookings/${bookingId}/complete`, {}).pipe(
+    map(booking => this.transformBooking(booking)),
+    catchError(error => this.handleApiError('finalisation de la réservation', error))
+  );
+}
+
+// Données mockées pour les statistiques offres
+private getMockOfferStats(): any {
+  return {
+    total: 28,
+    pending: 12,
+    confirmed: 10,
+    cancelled: 6,
+    confirmationRate: 62.5
+  };
+
 }
 
   
+}

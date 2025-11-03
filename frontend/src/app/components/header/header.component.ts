@@ -45,4 +45,12 @@ export class HeaderComponent {
   get dashboardRoute(): string {
     return this.isAdmin ? '/admin' : '/dashboard';
   }
+
+  get offersRoute(): string {
+    return this.isAdmin ? '/admin/offers' : '/offers';
+  }
+
+  get bookingsRoute(): string {
+    return this.isAdmin ? '/admin/bookings' : '/bookings';
+  }
 }

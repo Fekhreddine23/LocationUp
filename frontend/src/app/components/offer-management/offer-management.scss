@@ -242,6 +242,9 @@
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
   border: 1px solid #e1e5e9;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
   
   &:hover {
     transform: translateY(-2px);
@@ -267,6 +270,9 @@
 
 .offer-content {
   padding: 1rem 1.5rem;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
 }
 
 .offer-info {
@@ -305,6 +311,8 @@
   font-size: 0.9rem;
   line-height: 1.4;
   border-left: 3px solid #3b82f6;
+  max-height: 160px;
+  overflow-y: auto;
 }
 
 .offer-actions {
@@ -312,6 +320,8 @@
   gap: 0.5rem;
   padding: 1rem 1.5rem;
   border-top: 1px solid #f1f3f4;
+  margin-top: auto;
+  min-height: 66px;
   
   button {
     flex: 1;
@@ -354,6 +364,12 @@
       }
     }
     
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+    
     &.btn-delete {
       background: #fee2e2;
       color: #dc2626;
@@ -375,14 +391,24 @@
   letter-spacing: 0.5px;
   white-space: nowrap;
   
-  &.status-active {
-    background: #d1fae5;
-    color: #065f46;
+  &.status-pending {
+    background: #fef3c7;
+    color: #b45309;
   }
   
-  &.status-inactive {
+  &.status-confirmed {
+    background: #d1fae5;
+    color: #047857;
+  }
+  
+  &.status-cancelled {
     background: #fee2e2;
-    color: #991b1b;
+    color: #b91c1c;
+  }
+  
+  &.status-completed {
+    background: #e0f2fe;
+    color: #1d4ed8;
   }
 }
 
@@ -577,6 +603,16 @@
       resize: vertical;
       min-height: 80px;
     }
+  }
+}
+
+.form-row {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+
+  .form-group.half {
+    flex: 1 1 220px;
   }
 }
 
