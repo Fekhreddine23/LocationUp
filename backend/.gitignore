@@ -29,5 +29,173 @@ build/
 !**/src/main/**/build/
 !**/src/test/**/build/
 
+# ===================================
+# JAVA & COMPILATION
+# ===================================
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+*.zip
+*.tar.gz
+*.rar
+
+# Maven
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+pom.xml.versionsBackup
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+
+# Gradle (au cas où)
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+.gradle
+
+# ===================================
+# IDE
+# ===================================
+# IntelliJ IDEA
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+
+# Eclipse
+.classpath
+.project
+.settings/
+bin/
+
+# NetBeans
+.nb-gradle/
+nbbuild/
+dist/
+nbdist/
+.nb-gradle-properties
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# ===================================
+# OS & TEMP
+# ===================================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+
+# Temp folders
+tmp/
+temp/
+.cache/
+*.tmp
+*.bak
+*.swp
+*~.nib
+
+# ===================================
+# LOGS
+# ===================================
+*.log
+*.log.*
+logs/
+log/
+log.txt
+
+# ===================================
+# APPLICATION CONFIG & SECRETS
+# ===================================
+application-dev.properties
+application-prod.properties
+application-local.properties
+application-test.properties
+
+# Secrets
+*.p12
+*.jks
+*.keystore
+*.pem
+.env
+.env.local
+.secrets/
+
+# ===================================
+# DATABASE
+# ===================================
+*.db
+*.h2.db
+*.mv.db
+*.sqlite
+*.sqlite3
+data/
+database/
+
+# ===================================
+# DOCKER
+# ===================================
+Dockerfile.local
+.dockerignore.local
+docker-compose.override.yml
+.docker/
+
+# ===================================
+# AUTRES
+# ===================================
+# Hotspot crash logs
+hs_err_pid*
+
+# Node (si frontend dans le même repo)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+venv/
+.venv/
+env/
+ENV/
+
+# Coverage
+.coverage
+htmlcov/
+*.cover
+
+# Misc
+.DS_Store
+*.DS_Store
+
+
+
+
+
 ### VS Code ###
 .vscode/

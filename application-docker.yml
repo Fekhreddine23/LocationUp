@@ -1,0 +1,31 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://database:5432/mobilitydb
+    username: admin
+    password: password
+    driver-class-name: org.postgresql.Driver
+    
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  management:
+    endpoints:
+      web:
+        exposure:
+          include: health,info,metrics
+    endpoint:
+      health:
+        show-details: always
+
+server:
+  port: 8088  # Garde ton port 8088
+  address: 0.0.0.0
+
+logging:
+  level:
+    com.mobility: DEBUG

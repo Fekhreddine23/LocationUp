@@ -37,6 +37,13 @@ yarn-error.log
 testem.log
 /typings
 __screenshots__/
+/cypress/screenshots/
+/cypress/videos/
+/cypress/downloads/
+
+# Environment files
+.env
+.env.*
 
 # System files
 .DS_Store

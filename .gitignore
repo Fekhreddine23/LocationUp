@@ -19,20 +19,100 @@ frontend/.env.local
 
 # =====================
 # Database
-# =====================
-*.db
-*.sqlite
+# ===================================
+# DOCKER
+# ===================================
+docker-compose.override.yml
+.env
+.env.local
+.env.*.local
 
-# =====================
-# IDE
-# =====================
-.vscode/
-.idea/
-*.iml
-*.iws
+# ===================================
+# LOGS
+# ===================================
+*.log
+*.log.*
+logs/
+log/
 
-# =====================
-# Système
-# =====================
+# ===================================
+# SYSTÈME D'EXPLOITATION
+# ===================================
+# macOS
 .DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
 Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+.directory
+
+# ===================================
+# ÉDITEURS & IDE
+# ===================================
+# VS Code
+.vscode/
+*.code-workspace
+
+# IntelliJ / Android Studio
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+
+# Vim
+*.swp
+*.swo
+*.swn
+
+# Emacs
+*~
+.#*
+\#*#
+
+# ===================================
+# FICHIERS TEMPORAIRES
+# ===================================
+tmp/
+temp/
+.cache/
+*.tmp
+*.bak
+
+# ===================================
+# BASES DE DONNÉES & DONNÉES LOCALES
+# ===================================
+data/
+*.db
+*.h2.db
+*.mv.db
+*.sqlite
+*.sqlite3
+
+# ===================================
+# NODE / FRONTEND (si tu as du JS/TS)
+# ===================================
+node_modules/
+dist/
+build/
+.npm/
+.yarn/
+.pnpm-store/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# ===================================
+# PYTHON (si scripts locaux)
+# ===================================
+__pycache__/
+*.pyc
+venv/
+.env

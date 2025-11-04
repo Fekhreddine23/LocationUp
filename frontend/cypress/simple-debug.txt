@@ -1,0 +1,1 @@
+=== SIMPLE DEBUG ===\n\nElement 0: {"tag":"BUTTON","text":"📊 Tester Stats"}\nElement 1: {"tag":"BUTTON","text":"👥 Tester Utilisateurs"}\nElement 2: {"tag":"BUTTON","text":"🚗 Tester Offres"}\nElement 3: {"tag":"BUTTON","text":"📅 Tester Réservations"}\n
