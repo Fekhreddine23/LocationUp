@@ -1,0 +1,42 @@
+<div class="notification-container">
+  <h3>🔔 Notifications Temps Réel</h3>
+  
+  <!-- Boutons de test -->
+  <div class="test-buttons">
+    <button (click)="sendTest()" class="btn-test">Test Simple</button>
+    <button (click)="sendCustomTest('success')" class="btn-success">Test Succès</button>
+    <button (click)="sendCustomTest('error')" class="btn-error">Test Erreur</button>
+    <button (click)="sendCustomTest('warning')" class="btn-warning">Test Avertissement</button>
+    <button (click)="sendCustomTest('info')" class="btn-info">Test Info</button>
+    <button (click)="clearNotifications()" class="btn-clear">Effacer Tout</button>
+  </div>
+
+  <!-- Liste des notifications -->
+  <div class="notifications-list">
+    <div *ngFor="let notification of notifications" 
+         [class]="'notification-item ' + notification.type.toLowerCase()">
+      
+      <div class="notification-header">
+        <strong class="notification-type">{{ notification.type }}</strong>
+        <span class="notification-time">
+          {{ notification.timestamp | date:'medium' }}
+        </span>
+      </div>
+      
+      <p class="notification-content">{{ notification.content }}</p>
+      
+      <div class="notification-meta">
+        <small>Pour: {{ notification.recipient }}</small>
+      </div>
+    </div>
+
+    <div *ngIf="notifications.length === 0" class="empty-state">
+      <p>📭 Aucune notification pour le moment</p>
+      <p class="hint">Utilisez les boutons ci-dessus pour tester</p>
+    </div>
+  </div>
+
+  <div class="stats">
+    <small>Total: {{ notifications.length }} notification(s)</small>
+  </div>
+</div>

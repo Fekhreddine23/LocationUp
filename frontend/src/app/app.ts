@@ -7,6 +7,7 @@ import { HeaderComponent } from '../../src/app/components/header/header.componen
 import { OffersService } from '../../src/app/core/services/offers.service'; // ← SERVICE CORRIGÉ
 import { Offer } from './core/models/offer.model';
 import { ToastContainer } from './components/toast-container/toast-container';
+import { NotificationComponent } from './components/notification/notification';
 import { BreadcrumbService } from './core/services/breadcrumb';
 import { BreadcrumbItem } from './core/models/BreadcrumbItem.model';
 import { IntegrationTest } from "./components/integration-test/integration-test";
@@ -14,7 +15,7 @@ import { IntegrationTest } from "./components/integration-test/integration-test"
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, CommonModule, HeaderComponent, ToastContainer, IntegrationTest],
+  imports: [RouterOutlet, CommonModule, HeaderComponent, ToastContainer, NotificationComponent, IntegrationTest],
   templateUrl: './app.html',
   styleUrl: './app.scss'
 })
