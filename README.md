@@ -1,185 +1,261 @@
-# 🧩 Évaluation de candidats  
-## 🚀 Projet Full Stack
+# Application Fullstack de Gestion de Services de Mobilité  
+## Avec Interface d'Administration Complète
 
 ---
 
-## 🎯 Objectif
+## 🛠️ Stack Technique
 
-Évaluer la capacité du candidat à **concevoir, développer, tester et livrer** une application complète intégrant un **Frontend**, un **Backend**, et un **pipeline DevOps**, tout en respectant les bonnes pratiques de qualité, de sécurité et de documentation.
+### Backend
+- **Spring Boot 3** – Framework Java
+- **Spring Security** – Authentification JWT
+- **Spring Data JPA** – Persistance des données
+- **H2 Database** – Base de données en mémoire (dev)
+- **Maven** – Gestion des dépendances
 
----
+### Frontend
+- **Angular 16** – Framework frontend
+- **TypeScript** – Langage de développement
+- **RxJS** – Programmation réactive
+- **Cypress** – Tests E2E
 
-## 🧠 Contexte du projet
-
-Tu participes à la conception d’une application **de gestion d’offres de location** (par exemple : voitures, vélos, équipements, etc.).  
-L’application doit permettre aux utilisateurs de consulter et filtrer des offres, et aux administrateurs de les gérer.
-
----
-
-## 📜 User Stories
-
-### 👤 Utilisateur :
-- Consulter la liste des offres disponibles  
-- Filtrer les offres par :
-  - Ville de départ (`pickupLocation`)
-  - Date de départ (`pickupDatetime`)
-  - Ville de retour (`returnLocation`)
-  - Type de service (`mobilityService`)
-
-### 👨‍💼 Administrateur :
-- Créer une nouvelle offre  
-- Modifier une offre existante  
-- Supprimer une offre  
+### DevOps
+- **Docker** – Containerisation
+- **Docker Compose** – Orchestration
+- **Git** – Versioning
 
 ---
 
-## ⚙️ Exigences techniques
+## 🚀 Démarrage Rapide
 
-### ✅ Obligatoires
+### Avec Docker (Recommandé)
+```bash
+# Cloner le projet
+git clone <url-du-repo>
 
-| Domaine | Exigence | Détails |
-|----------|-----------|---------|
-| **Backend** | Spring Boot (ou équivalent Java) | API REST complète |
-| **Frontend** | Angular / React / Vue.js | Interface web responsive et fonctionnelle |
-| **Base de données** | PostgreSQL / MongoDB / H2 | Persistance des offres |
-| **Sécurité** | JWT ou OAuth2 | Authentification & rôles (user/admin) |
-| **Tests** | Unitaires & intégration | ≥ 60% de couverture |
-| **CI/CD** | GitHub Actions ou GitLab CI | Build + Tests automatisés |
-| **Containerisation** | Dockerfile + docker-compose | Exécution locale |
-| **Documentation** | Swagger + README | Instructions claires |
-
-### 🧪 Optionnels (bonus)
-- Déploiement cloud (AWS, Azure, Render, EKS, etc.)  
-- Monitoring (Spring Actuator, Prometheus, Grafana)  
-- Appel d’une API externe (Feign client ou HttpClient)  
-- Gestion d’état frontend (Redux, NgRx, Pinia)  
-- Responsive design (Tailwind, Material UI, Bootstrap)
-
----
-
-## 🕓 Durée
-⏱️ **3 à 5 jours maximum**
-
-Le candidat choisit ses priorités et justifie ses choix techniques dans la documentation.
-
----
-
-## 📦 Livrables attendus
-
-1. Lien du dépôt **GitHub** ou **GitLab**  
-2. **README clair** contenant :
-   - Instructions d’installation et d’exécution  
-   - Description des endpoints (Swagger ou Postman)  
-   - Explication du pipeline CI/CD  
-   - (Optionnel) Lien de démo du déploiement  
-3. Code source propre et organisé  
-4. Tests unitaires et d’intégration  
-5. Captures d’écran ou lien vers l’interface frontend  
-
----
-
-## 🧩 Structure suggérée du projet
-
+# Lancer l'application
+docker-compose up --build
 ```
-fullstack-evaluation/
-│
-├── backend/
-│   ├── src/main/java/... 
-│   ├── Dockerfile
-│   └── README.md
-│
-├── frontend/
-│   ├── src/
-│   ├── Dockerfile
-│   └── README.md
-│
+
+#### Accès
+
+Frontend : http://localhost
+Backend : http://localhost:8088
+Console H2 : http://localhost:8088/h2-console
+
+#### Développement Local
+##### Backend  
+
+
+```bash
+cd backend
+./mvnw spring-boot:run
+```
+##### Frontend
+```bash 
+cd frontend
+npm install
+npm start
+```
+
+## Fonctionnalités
+
+- Fonctionnalité,Statut
+- Gestion des utilisateurs (CRUD complet),✅
+- Gestion des offres (services de mobilité),✅
+- Gestion des réservations,✅
+- Tableau de bord (statistiques & métriques),✅
+- Authentification JWT sécurisée,✅
+- Interface d’administration complète,✅
+
+
+## 🧪 Tests
+### Tests E2E avec Cypress
+
+```bash 
+cd frontend
+npx cypress open   # Interface graphique
+npx cypress run    # Mode headless (CI)
+```
+
+## Couverture des tests
+
+- Navigation principale
+- Gestion des utilisateurs
+- Gestion des offres
+- Gestion des réservations
+- Tableau de bord & statistiques
+
+
+## 📁 Structure du Projet
+
+```bash
+LocationUp/
+├── backend/              # API Spring Boot
+├── frontend/             # Application Angular
 ├── docker-compose.yml
-└── .gitlab-ci.yml / .github/workflows/
+└── README.md
 ```
 
+## 👤 Accès Démo
+
+L’application utilise un système d’auto-authentification avec des boutons de test pré-configurés pour faciliter la démonstration.
+
+## 🛠️ Développement
+
+Consulte les README.md individuels dans chaque dossier pour les instructions détaillées.
+
+## 📖 Documentation Interne
+
+###  README Backend
+
+```bash 
+
+# 🚀 Backend Spring Boot
+
+API REST pour l'application **LocationUp** avec Spring Boot et sécurité JWT.
+
+## 🏗️ Architecture
+- **Spring Boot 3.5.6** – Framework principal
+- **Spring Security** – Authentification JWT
+- **Spring Data JPA** – Accès aux données
+- **H2 Database** – Base en mémoire (développement)
+- **Maven** – Gestion des dépendances
+
+## 🔧 Configuration
+
+### Variables d’environnement
+```properties
+SERVER_PORT=8088
+SPRING_PROFILES_ACTIVE=dev
+SPRING_DATASOURCE_URL=jdbc:h2:mem:testdb
+```
+### Profils disponibles
+
+- dev → Développement avec H2
+- docker → Déploiement Docker 
+
+
+## 🚀 Démarrage
+
+### Avec Maven
+
+```bash   
+./mvnw spring-boot:run
+```
+
+
+### Avec Docker
+
+```bash 
+docker-compose up backend
+```
+
+## 📚 API Endpoints
+### Authentification
+
+```bash 
+POST   /api/auth/login          → Connexion utilisateur
+```
+### Administration
+```bash
+GET    /api/admin/users-management            → Liste des utilisateurs
+PUT    /api/admin/users-management/{id}       → Modifier un utilisateur
+POST   /api/admin/users-management/{id}/role  → Changer le rôle
+```
+
+### Santé & Monitoring
+```bash
+GET    /actuator/health       → État de l'application
+GET    /h2-console            → Console H2 (mode dev uniquement)
+```
+
+
+## 🧪 Données de Test
+
+L’application crée automatiquement à l’initialisation :
+
+- Utilisateur de test : testuser / password123
+- Données de démonstration pour toutes les entités (utilisateurs, offres, réservations)
+
+
+
 ---
 
-## 📊 Matrice de compétences
+## 8. README Frontend
 
-### 🧱 Backend
+ 
+# 🎨 Frontend Angular
 
-| Compétence | Description | Pondération |
-|-------------|--------------|--------------|
-| Architecture & Design | Structure claire, modularité, séparation des couches | 10% |
-| API REST | Respect des conventions REST, DTO, statuts HTTP | 10% |
-| Sécurité | JWT, rôles, validation des entrées | 10% |
-| Tests | Unitaires & intégration (MockMvc, JUnit, Testcontainers) | 10% |
-| Documentation | Swagger, README backend complet | 5% |
+Interface utilisateur moderne pour **LocationUp**, développée avec Angular 16.
 
----
+## 🛠️ Stack Technique
+- **Angular 16** – Framework principal
+- **TypeScript** – Typage statique
+- **RxJS** – Gestion du state réactif
+- **Cypress** – Tests end-to-end
+- **Docker** – Containerisation
+ 
+## 🚀 Démarrage
 
-### 🎨 Frontend
+### Développement
+ 
+npm install
+npm start
+# → http://localhost:4200 
 
-| Compétence | Description | Pondération |
-|-------------|--------------|--------------|
-| Architecture du projet | Organisation modulaire (components, services, routing) | 10% |
-| UI/UX | Interface claire, responsive et intuitive | 10% |
-| Communication API | Appels HTTP vers le backend (Axios, HttpClient, etc.) | 10% |
-| Gestion d’état | Utilisation de store global (Redux, NgRx, Pinia) | 5% |
-| Tests | Tests unitaires (Jest, Jasmine, Vitest) | 5% |
-| Documentation | README frontend clair | 5% |
 
----
+### Production
 
-### ⚙️ DevOps
+```bash
 
-| Compétence | Description | Pondération |
-|-------------|--------------|--------------|
-| CI/CD | Pipeline automatisé : build, test, analyse | 10% |
-| Dockerisation | Dockerfile & docker-compose fonctionnels | 10% |
-| Déploiement (optionnel) | Cloud, container registry, scripts IaC | 5% |
-| Monitoring (optionnel) | Actuator, Prometheus, Grafana | 5% |
+npm run build
+```
 
----
+## 🧪 Tests E2E (Cypress)
 
-### 🧾 Qualité globale
+```bash 
+npx cypress open   # Interface graphique
+npx cypress run    # Exécution en mode CI
+```
 
-| Compétence | Description | Pondération |
-|-------------|--------------|--------------|
-| Clean Code | Nommage clair, lisibilité, principes SOLID | 5% |
-| Git Workflow | Commits clairs, branches, messages pertinents | 5% |
-| Documentation globale | Complète, structurée et pédagogique | 5% |
+### Structure des tests
+```
+cypress/
+├── e2e/
+│   ├── auth/             # Tests d'authentification
+│   ├── admin/            # Tests d'administration
+│   └── navigation/       # Tests de navigation
+├── support/              # Commandes personnalisées
+└── fixtures/             # Données de test
+```
 
----
+#### Exécuter un test spécifique
+```
+npx cypress run --spec "cypress/e2e/admin/user-management.cy.ts"
+```
 
-## 🔢 Total : 100 points
+### 📁 Structure du Frontend
 
-✅ **Seuil de réussite : 75 points**
+```
+src/
+├── app/
+│   ├── components/       # Composants réutilisables
+│   ├── pages/            # Pages principales
+│   ├── services/         # Services API (HttpClient)
+│   └── models/           # Interfaces TypeScript
+├── assets/               # Images, icônes, polices
+└── environments/         # Configurations par environnement
+```
 
----
+## 🐳 Docker
+### Build de l’image
 
-## 🗣️ Entretien de soutenance (45 à 60 min)
+```
+docker build -t locationup-frontend 
+```
 
-### Objectifs :
-- Démonstration du projet (frontend + backend)
-- Explication des choix techniques
-- Discussion sur la sécurité, les tests et la pipeline CI/CD
-- Évaluation de la vision architecturelle et DevOps
+### Lancer le conteneur
+```
+docker run -p 80:80 locationup-frontend
+```
 
-### Exemples de questions :
-- Comment ton application gère-t-elle les erreurs globalement ?  
-- Pourquoi avoir choisi ce framework frontend ?  
-- Comment assurer la scalabilité du backend ?  
-- Quelle est la structure de ton pipeline CI/CD ?  
-- Quelles améliorations proposerais-tu pour la production ?
-
----
-
-## 💡 Conseils au candidat
-> Concentre-toi sur la **qualité**, la **clarté du code** et la **documentation**.  
-Les fonctionnalités optionnelles ne sont pas obligatoires, mais peuvent **valoriser ton profil**.  
-Priorise un code **maintenable, testé et bien structuré**.
-
----
-
-## 🏁 Bon courage et bonne réussite !
-> “Un bon projet ne se juge pas par sa complexité, mais par sa clarté et sa maîtrise technique.”
-
----
-
-**© 2025 — Évaluation technique Full Stack — Interne RH / Tech Recruiting**
