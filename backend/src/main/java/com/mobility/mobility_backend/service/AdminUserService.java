@@ -1,9 +1,9 @@
 package com.mobility.mobility_backend.service;
 
-import com.mobility.mobility_backend.dto.UserDTO;
-import com.mobility.mobility_backend.entity.User;
-import com.mobility.mobility_backend.entity.Role;
-import com.mobility.mobility_backend.repository.UserRepository;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -11,9 +11,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
+import com.mobility.mobility_backend.dto.UserDTO;
+import com.mobility.mobility_backend.entity.Role;
+import com.mobility.mobility_backend.entity.User;
+import com.mobility.mobility_backend.repository.UserRepository;
 
 @Service
 @Transactional
@@ -42,7 +43,7 @@ public class AdminUserService {
     public UserDTO changeUserRole(Integer userId, String newRole) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé avec l'ID: " + userId));
-        
+
         try {
             // Convertir le String en Enum Role
             Role role = Role.valueOf(newRole.toUpperCase());
@@ -122,7 +123,7 @@ public class AdminUserService {
         dto.setUsername(user.getUsername());
         dto.setEmail(user.getEmail());
         dto.setRole(user.getRole().name()); // Convertir Enum en String
-        dto.setFirstname(user.getFirstName());   
+        dto.setFirstname(user.getFirstName());
         dto.setLastname(user.getLastName());
         dto.setEmail(user.getEmail());
         dto.setRole(user.getRole().name());       // Convertir Enum en String si nécessaire

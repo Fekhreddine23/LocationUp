@@ -24,7 +24,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import com.mobility.mobility_backend.authentication.JwtAuthenticationFilter;
 
-@Profile("!test")
+@Profile({"default", "dev", "!test"})
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
@@ -40,12 +40,19 @@ public class SecurityConfig {
 
 	@Bean
 	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+
+		 System.out.println("🔒 [DEBUG] SecurityConfig is being loaded!");
+
+
 		http.csrf(csrf -> csrf.disable()).cors(cors -> cors.configurationSource(corsConfigurationSource()))
 				.headers(headers -> headers.frameOptions(frame -> frame.disable())
 						.contentSecurityPolicy(
 								csp -> csp.policyDirectives("frame-ancestors 'self' http://localhost:8088")))
 				.authorizeHttpRequests(auth -> auth
 						// Routes publiques - DOIVENT ÊTRE EN PREMIER
+						.requestMatchers("/api/notifications/**").permitAll()
+						.requestMatchers("/api/debug/**").permitAll()
+		                .requestMatchers("/ws/**").permitAll() // Pour WebSocket si utilisé plus tard
 						.requestMatchers("/api/auth/**").permitAll()
 						.requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
 						.requestMatchers("/h2-console/**").permitAll()
@@ -76,6 +83,8 @@ public class SecurityConfig {
 				).sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				.authenticationProvider(authenticationProvider())
 				.addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+
+		 System.out.println("✅ [DEBUG] SecurityConfig loaded successfully!");
 
 		return http.build();
 	}

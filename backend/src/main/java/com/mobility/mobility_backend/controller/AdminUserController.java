@@ -22,9 +22,9 @@ import com.mobility.mobility_backend.service.AdminUserService;
 @RequestMapping("/api/admin/users-management")
 @PreAuthorize("hasRole('ADMIN')")
 public class AdminUserController {
-	
+
     private final AdminUserService adminUserService;
-    
+
     @Autowired
     public AdminUserController(AdminUserService adminUserService) {
         this.adminUserService = adminUserService;
@@ -49,7 +49,7 @@ public class AdminUserController {
     // POST /api/admin/users/{id}/role - Change le rôle d'un utilisateur
     @PostMapping("/{id}/role")
     public ResponseEntity<UserDTO> changeUserRole(
-            @PathVariable Integer id, 
+            @PathVariable Integer id,
             @RequestBody ChangeRoleRequest request) {
         try {
             UserDTO updatedUser = adminUserService.changeUserRole(id, request.getNewRole());
@@ -62,7 +62,7 @@ public class AdminUserController {
  // PUT /api/admin/users/{id} - Met à jour un utilisateur
     @PutMapping("/{id}")
     public ResponseEntity<UserDTO> updateUser(
-            @PathVariable Integer id, 
+            @PathVariable Integer id,
             @RequestBody UserDTO userDTO) {
         try {
             UserDTO updatedUser = adminUserService.updateUser(id, userDTO);

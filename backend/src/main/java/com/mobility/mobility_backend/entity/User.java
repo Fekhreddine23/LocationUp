@@ -30,12 +30,12 @@ public class User implements UserDetails {
 
 	@Column(nullable = false, unique = true)
 	private String email;
-	
+
 	@Column(name = "first_name")
     private String firstName;
 
-    
-	@Column(name = "last_name") 
+
+	@Column(name = "last_name")
     private String lastName;
 
 	@Column(nullable = false)
@@ -167,8 +167,8 @@ public class User implements UserDetails {
 		// Retourne la liste des autorités/rôles de l'utilisateur
 		return List.of(new SimpleGrantedAuthority(role.name()));
 	}
-	
-	
+
+
 	public String getFirstName() {
 		return firstName;
 	}

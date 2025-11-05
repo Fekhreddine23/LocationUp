@@ -208,9 +208,9 @@ public class OfferService {
         validateOffer(offerDTO);
 
         // 🎯 MISE À JOUR DES VILLES (CORRECTION CRITIQUE)
-        if (offerDTO.getPickupLocationName() != null && 
+        if (offerDTO.getPickupLocationName() != null &&
             !offerDTO.getPickupLocationName().equals(existingOffer.getPickupLocation().getName())) {
-            
+
             System.out.println("📍 Mise à jour ville départ: " + offerDTO.getPickupLocationName());
             City pickupCity = cityRepository.findByName(offerDTO.getPickupLocationName())
                 .orElseGet(() -> {
@@ -223,9 +223,9 @@ public class OfferService {
             existingOffer.setPickupLocation(pickupCity);
         }
 
-        if (offerDTO.getReturnLocationName() != null && 
+        if (offerDTO.getReturnLocationName() != null &&
             !offerDTO.getReturnLocationName().equals(existingOffer.getReturnLocation().getName())) {
-            
+
             System.out.println("📍 Mise à jour ville retour: " + offerDTO.getReturnLocationName());
             City returnCity = cityRepository.findByName(offerDTO.getReturnLocationName())
                 .orElseGet(() -> {
@@ -327,5 +327,5 @@ public class OfferService {
             throw new RuntimeException("Offre non trouvée avec l'ID: " + offerId);
         }
     }
-    
+
 }

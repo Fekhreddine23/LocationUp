@@ -19,7 +19,7 @@ public interface UserRepository extends JpaRepository<User, Integer> {
 	boolean existsByUsername(String username);
 
 	boolean existsByEmail(String email);
-	
+
 	 // Méthode de recherche
     Page<User> findByEmailContainingOrFirstNameContainingOrLastNameContaining(
         String email, String firstName, String lastName, Pageable pageable);
