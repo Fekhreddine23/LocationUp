@@ -13,8 +13,11 @@ import { AuthService } from '../../core/services/auth.service';
   styleUrl: './notification.scss'
 })
 export class NotificationComponent implements OnInit, OnDestroy {
-
   notifications: NotificationPayload[] = [];
+  unreadCount: number = 0;
+  isPanelOpen: boolean = false;
+  isLoading: boolean = false;
+  
   private subscription?: Subscription;
 
   constructor(
@@ -23,6 +26,42 @@ export class NotificationComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    this.loadExistingNotifications();
+    this.connectToRealtimeNotifications();
+  }
+
+  private async loadExistingNotifications(): Promise<void> {
+  this.isLoading = true;
+  
+  try {
+    const userId = this.getCurrentUserId();
+    if (userId) {
+      const notifications = await this.notificationService.getUserNotifications(userId);
+      this.notifications = notifications;
+      this.updateUnreadCount();
+      console.log('📥 Notifications existantes chargées:', notifications.length);
+    }
+  } catch (error) {
+    console.error('❌ Erreur chargement notifications existantes:', error);
+  } finally {
+    this.isLoading = false;
+  }
+}
+
+
+
+async markAsRead(notification: NotificationPayload): Promise<void> {
+  if (notification.read) return;
+  
+  notification.read = true;
+  this.updateUnreadCount();
+  
+  if (notification.id) {
+    await this.notificationService.markAsRead(notification.id);
+  }
+}
+
+  private connectToRealtimeNotifications(): void {
     const userId = this.getCurrentUserId();
 
     if (!userId) {
@@ -32,13 +71,27 @@ export class NotificationComponent implements OnInit, OnDestroy {
 
     this.subscription = this.notificationService.connect(userId).subscribe(
       (notification: NotificationPayload) => {
-        this.notifications.unshift(notification);
-        // Garder seulement les 10 dernières notifications
-        if (this.notifications.length > 10) {
-          this.notifications.pop();
-        }
+        console.log('📩 Nouvelle notification reçue:', notification);
+        this.addNotification(notification);
+        this.updateUnreadCount();
+      },
+      (error) => {
+        console.error('💥 Erreur dans le flux de notifications:', error);
       }
     );
+  }
+
+  private addNotification(notification: NotificationPayload): void {
+    this.notifications.unshift(notification);
+    
+    // Garder seulement les 50 dernières notifications
+    if (this.notifications.length > 50) {
+      this.notifications = this.notifications.slice(0, 50);
+    }
+  }
+
+  private updateUnreadCount(): void {
+    this.unreadCount = this.notifications.filter(notification => !notification.read).length;
   }
 
   private getCurrentUserId(): string {
@@ -63,11 +116,53 @@ export class NotificationComponent implements OnInit, OnDestroy {
     return '';
   }
 
+  // ✅ Méthodes pour l'interface utilisateur
+  toggleNotificationPanel(): void {
+    this.isPanelOpen = !this.isPanelOpen;
+    if (this.isPanelOpen) {
+      this.markAllAsRead();
+    }
+  }
+
+ async markAllAsRead(): Promise<void> {
+  const userId = this.getCurrentUserId();
+  if (!userId) return;
+  
+  this.notifications.forEach(notification => {
+    notification.read = true;
+  });
+  this.unreadCount = 0;
+  
+  await this.notificationService.markAllAsRead(userId);
+}
+
+ async removeNotification(notification: NotificationPayload): Promise<void> {
+  if (notification.id) {
+    await this.notificationService.deleteNotification(notification.id);
+  }
+  
+  this.notifications = this.notifications.filter(n => n.id !== notification.id);
+  this.updateUnreadCount();
+}
+  getNotificationIcon(notification: NotificationPayload): string {
+    switch (notification.type) {
+      case 'SUCCESS': return '✅';
+      case 'ERROR': return '❌';
+      case 'WARNING': return '⚠️';
+      case 'URGENT': return '🚨';
+      default: return 'ℹ️';
+    }
+  }
+
+  getNotificationClass(notification: NotificationPayload): string {
+    return `notification-item notification-${notification.type.toLowerCase()}`;
+  }
+
+  // ✅ Méthodes de test existantes
   sendTest(): void {
     this.notificationService.sendTestNotification();
   }
 
-  // ✅ Nouvelle méthode pour envoyer différents types de tests
   sendCustomTest(type: string): void {
     const messages = {
       'success': 'Opération réussie ! ✅',
@@ -82,9 +177,9 @@ export class NotificationComponent implements OnInit, OnDestroy {
     this.notificationService.sendCustomTest(message);
   }
 
-  // ✅ Nettoyer les notifications
   clearNotifications(): void {
     this.notifications = [];
+    this.unreadCount = 0;
   }
 
   ngOnDestroy(): void {

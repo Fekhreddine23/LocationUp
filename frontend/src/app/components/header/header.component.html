@@ -18,6 +18,9 @@
             </a>
             <a [routerLink]="offersRoute" class="nav-link">Offres</a>
             <a [routerLink]="bookingsRoute" class="nav-link">Réservations</a>
+
+            <!-- ✅ INTÉGRATION DE LA NOTIFICATION -->
+        <app-notification></app-notification>
             
             <div class="user-menu">
               <button class="user-btn" (click)="toggleMenu()">

@@ -4,6 +4,7 @@ import { Observable, of, throwError } from 'rxjs';
 import { delay, tap, catchError } from 'rxjs/operators';
 import { AuthService } from './auth.service';
 import { LoadingService } from './loading.service';
+import { BusinessEventsService } from './business-events/business-events';
 
 export interface Booking {
   reservationId?: number;
@@ -52,7 +53,8 @@ export class BookingsService {
   constructor(
     private http: HttpClient,
     private authService: AuthService,
-    private loadingService: LoadingService 
+    private loadingService: LoadingService,
+    private businessEvents: BusinessEventsService 
   ) {}
 
   private getHeaders(): HttpHeaders {
@@ -140,10 +142,30 @@ export class BookingsService {
       };
       
       this.mockBookings.push(newBooking);
+      // ✅ NOTIFICATION pour création
+      this.businessEvents.notifyBookingCreated(
+        newBooking.reservationId!,
+        newBooking.userId,
+        { message: 'Réservation créée avec succès' }
+      ).subscribe();
+      
       return of(newBooking).pipe(this.simulateDelay());
     }
     return this.withLoading('create-booking',
-      this.http.post<Booking>(this.apiUrl, bookingData, { headers: this.getHeaders() })
+      this.http.post<Booking>(this.apiUrl, bookingData, { headers: this.getHeaders() }).pipe(
+        tap((newBooking: Booking) => {
+          // ✅ NOTIFICATION pour création réelle
+          console.log('🎉 Réservation créée, envoi notification...');
+          this.businessEvents.notifyBookingCreated(
+            newBooking.reservationId!,
+            newBooking.userId,
+            { message: 'Votre réservation a été créée' }
+          ).subscribe({
+            next: () => console.log('✅ Notification réservation envoyée'),
+            error: (err) => console.error('❌ Erreur notification:', err)
+          });
+        })
+      )
     );
   }
 
@@ -163,35 +185,69 @@ export class BookingsService {
     );
   }
 
-  // Confirmer une réservation
+   // ✅ MODIFIÉ : Confirmer une réservation avec notification
   confirmBooking(bookingId: number): Observable<Booking> {
     if (this.useMockData) {
       const booking = this.mockBookings.find(b => b.reservationId === bookingId);
       if (booking) {
         booking.status = 'CONFIRMED';
         booking.updatedAt = new Date().toISOString();
+        
+        // ✅ NOTIFICATION pour confirmation
+        this.businessEvents.notifyBookingConfirmed(
+          bookingId,
+          booking.userId
+        ).subscribe();
+        
         return of(booking).pipe(this.simulateDelay());
       }
       throw new Error('Booking not found');
     }
+
     return this.withLoading(`confirm-${bookingId}`,
-      this.http.patch<Booking>(`${this.apiUrl}/${bookingId}/confirm`, {}, { headers: this.getHeaders() })
+      this.http.patch<Booking>(`${this.apiUrl}/${bookingId}/confirm`, {}, { headers: this.getHeaders() }).pipe(
+        tap((booking: Booking) => {
+          // ✅ NOTIFICATION pour confirmation réelle
+          this.businessEvents.notifyBookingConfirmed(
+            bookingId,
+            booking.userId
+          ).subscribe();
+        })
+      )
     );
   }
 
-  // Annuler une réservation
+  // ✅ MODIFIÉ : Annuler une réservation avec notification
   cancelBooking(bookingId: number): Observable<Booking> {
     if (this.useMockData) {
       const booking = this.mockBookings.find(b => b.reservationId === bookingId);
       if (booking) {
         booking.status = 'CANCELLED';
         booking.updatedAt = new Date().toISOString();
+        
+        // ✅ NOTIFICATION pour annulation
+        this.businessEvents.notifyBookingCancelled(
+          bookingId,
+          booking.userId,
+          'Annulé par l\'utilisateur'
+        ).subscribe();
+        
         return of(booking).pipe(this.simulateDelay());
       }
       throw new Error('Booking not found');
     }
+
     return this.withLoading(`cancel-${bookingId}`,
-      this.http.patch<Booking>(`${this.apiUrl}/${bookingId}/cancel`, {}, { headers: this.getHeaders() })
+      this.http.patch<Booking>(`${this.apiUrl}/${bookingId}/cancel`, {}, { headers: this.getHeaders() }).pipe(
+        tap((booking: Booking) => {
+          // ✅ NOTIFICATION pour annulation réelle
+          this.businessEvents.notifyBookingCancelled(
+            bookingId,
+            booking.userId,
+            'Réservation annulée'
+          ).subscribe();
+        })
+      )
     );
   }
 

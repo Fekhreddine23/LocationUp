@@ -1,8 +1,10 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, of } from 'rxjs';
+import { Observable, of, tap } from 'rxjs';
 import { environment } from '../../../environments/environment'; 
 import { Offer, CreateOfferRequest } from '../../core/models/offer.model'; // ← Import séparé depuis le modèle
+import { BusinessEventsService } from './business-events/business-events';
+import { AuthService } from './auth.service';
 @Injectable({
   providedIn: 'root'
 })
@@ -10,7 +12,10 @@ export class OffersService {
   private apiUrl = '/api/offers';
   private useMocks = true; // ⚠️ Passez à false quand l'API backend sera prête
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient, 
+    private businessEvents: BusinessEventsService,
+    private authService: AuthService // ✅ AJOUT 
+  ) {}
 
   // GET /api/offers - Récupérer toutes les offres
   getAllOffers(): Observable<Offer[]> {
@@ -33,6 +38,7 @@ export class OffersService {
   }
 
   // POST /api/offers - Créer une nouvelle offre
+  // ✅ MODIFIÉ : Créer une offre avec notification
   createOffer(offerData: CreateOfferRequest): Observable<Offer> {
     if (this.useMocks) {
       const newOffer: Offer = {
@@ -40,11 +46,35 @@ export class OffersService {
         offerId: Date.now(),
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-        version: 0 // ← AJOUTÉ pour correspondre à l'interface
+        version: 0
       };
+
+      // ✅ NOTIFICATION pour création d'offre
+      const currentUser = this.authService.currentUserValue;
+      if (currentUser) {
+        this.businessEvents.notifyOfferCreated(
+          newOffer.offerId,
+          newOffer.description,
+          currentUser.id
+        ).subscribe();
+      }
+      
       return of(newOffer);
     }
-    return this.http.post<Offer>(this.apiUrl, offerData);
+
+    return this.http.post<Offer>(this.apiUrl, offerData).pipe(
+      tap((newOffer: Offer) => {
+        // ✅ NOTIFICATION pour création réelle
+        const currentUser = this.authService.currentUserValue;
+        if (currentUser) {
+          this.businessEvents.notifyOfferCreated(
+            newOffer.offerId,
+            newOffer.description,
+            currentUser.id
+          ).subscribe();
+        }
+      })
+    );
   }
 
   // PUT /api/offers/{id} - Mettre à jour une offre
@@ -184,6 +214,18 @@ export class OffersService {
         observer.complete();
       });
     });
+  }
+
+
+   // ✅ NOUVELLE MÉTHODE : Notifier nouvelle offre disponible
+  notifyNewOfferAvailable(offer: Offer, targetUserId?: number) {
+    if (targetUserId) {
+      this.businessEvents.notifyOfferAvailable(
+        offer.offerId,
+        offer.description,
+        targetUserId
+      ).subscribe();
+    }
   }
 }
 

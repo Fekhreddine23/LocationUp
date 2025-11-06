@@ -62,16 +62,16 @@ export class NotificationService {
 
         this.eventSource.onerror = error => {
           console.error('❌ Erreur flux SSE notifications', error);
-          
+
           this.reconnectionAttempts++;
-          const shouldAttemptReconnect = 
-            this.currentUserId === userId && 
+          const shouldAttemptReconnect =
+            this.currentUserId === userId &&
             this.reconnectionAttempts <= this.maxReconnectionAttempts;
 
           if (shouldAttemptReconnect) {
             const delay = Math.min(3000 * this.reconnectionAttempts, 30000);
             console.warn(`♻️ Tentative de reconnexion SSE ${this.reconnectionAttempts}/${this.maxReconnectionAttempts} dans ${delay}ms...`);
-            
+
             this.disconnect(false);
             setTimeout(() => {
               if (this.currentUserId === userId && !this.eventSource) {
@@ -101,10 +101,10 @@ export class NotificationService {
     }
 
     const requestUrl = `${this.baseUrl}/api/notifications/test?userId=${encodeURIComponent(this.currentUserId)}&message=${encodeURIComponent(message)}&severity=${severity.toUpperCase()}`;
-    
+
     console.log('📤 Envoi test vers:', requestUrl);
 
-    fetch(requestUrl, { 
+    fetch(requestUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
@@ -128,12 +128,12 @@ export class NotificationService {
       });
   }
 
-  sendCustomNotification(payload: { 
-    message: string; 
-    severity?: NotificationPayload['type']; 
-    title?: string; 
-    category?: string; 
-    metadata?: Record<string, unknown> 
+  sendCustomNotification(payload: {
+    message: string;
+    severity?: NotificationPayload['type'];
+    title?: string;
+    category?: string;
+    metadata?: Record<string, unknown>
   }): void {
     if (!this.currentUserId) {
       console.error('❌ UserId non défini. Appelez connect() au préalable.');
@@ -153,7 +153,7 @@ export class NotificationService {
 
     fetch(`${this.baseUrl}/api/notifications/send`, {
       method: 'POST',
-      headers: { 
+      headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json'
       },
@@ -226,7 +226,7 @@ export class NotificationService {
       content,
       timestamp,
       recipient,
-      id: typeof raw.id === 'number' ? raw.id : undefined,
+      id: raw.id ? String(raw.id) : undefined, // Convertir en string si numérique
       category: this.getNotificationCategory(raw),
       severity: this.getNotificationSeverity(raw),
       title: typeof raw.title === 'string' ? raw.title : undefined,
@@ -313,7 +313,7 @@ export class NotificationService {
   // ✅ NOUVEAU : Méthode pour tester la connexion rapidement
   quickTest(userId: string = '13'): void {
     console.log('🚀 Démarrage test rapide...');
-    
+
     this.connect(userId).subscribe({
       next: (notification) => {
         console.log('🎉 NOTIFICATION REÇUE DANS TEST:', notification);
@@ -344,7 +344,7 @@ export class NotificationService {
     if (!this.eventSource) {
       return 'DISCONNECTED';
     }
-    
+
     switch (this.eventSource.readyState) {
       case EventSource.CONNECTING:
         return 'CONNECTING';
@@ -365,4 +365,81 @@ export class NotificationService {
       this.connect(this.currentUserId);
     }
   }
+
+
+
+  /**
+ * Charge les notifications existantes pour un utilisateur
+ */
+  getUserNotifications(userId: string): Promise<NotificationPayload[]> {
+    return fetch(`${this.baseUrl}/api/notifications/user/${userId}`)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        return response.json();
+      })
+      .then((notifications: any[]) => {
+        return notifications.map(notification => this.mapToNotificationModel(notification));
+      })
+      .catch(error => {
+        console.error('❌ Erreur chargement notifications:', error);
+        return [];
+      });
+  }
+
+  /**
+   * Marque une notification comme lue
+   */
+  markAsRead(notificationId: string): Promise<void> {
+    return fetch(`${this.baseUrl}/api/notifications/${notificationId}/read`, {
+      method: 'POST'
+    })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        console.log('✅ Notification marquée comme lue:', notificationId);
+      })
+      .catch(error => {
+        console.error('❌ Erreur marquer comme lu:', error);
+      });
+  }
+
+  /**
+   * Marque toutes les notifications comme lues
+   */
+  markAllAsRead(userId: string): Promise<void> {
+    return fetch(`${this.baseUrl}/api/notifications/user/${userId}/mark-all-read`, {
+      method: 'POST'
+    })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        console.log('✅ Toutes les notifications marquées comme lues');
+      })
+      .catch(error => {
+        console.error('❌ Erreur marquer tout comme lu:', error);
+      });
+  }
+
+  /**
+   * Supprime une notification
+   */
+  deleteNotification(notificationId: String): Promise<void> {
+    return fetch(`${this.baseUrl}/api/notifications/${notificationId}`, {
+      method: 'DELETE'
+    })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        console.log('✅ Notification supprimée:', notificationId);
+      })
+      .catch(error => {
+        console.error('❌ Erreur suppression notification:', error);
+      });
+  }
+
 }

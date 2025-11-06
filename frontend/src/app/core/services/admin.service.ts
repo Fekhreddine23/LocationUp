@@ -1,7 +1,7 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable, of } from 'rxjs';
-import { catchError, map } from 'rxjs/operators';
+import { catchError, map, tap } from 'rxjs/operators';
 import { AdminStats } from '../models/AdminStats.model';
 import { AdminUser } from '../models/AdminUser.model';
 import { RecentActivity } from '../models/RecentActivity.model';
@@ -9,6 +9,8 @@ import { UserResponse } from '../models/UserResponse.model';
 import { OfferResponse } from '../models/OfferReponse.model';
 import { CreateOfferRequest, Offer, OfferStatus } from '../models/offer.model';
 import { AdminBooking, BookingResponse } from '../models/AdminBooking.model';
+import { BusinessEventsService } from './business-events/business-events';
+import { AuthService } from './auth.service';
 
 
 
@@ -18,7 +20,7 @@ import { AdminBooking, BookingResponse } from '../models/AdminBooking.model';
 })
 export class AdminService {
 
-    constructor(private http: HttpClient) {}
+    constructor(private http: HttpClient, private businessEvents: BusinessEventsService, private authService: AuthService) {}
 
 
      private apiUrl = 'http://localhost:8088/api/admin';
@@ -750,9 +752,26 @@ changeUserRole(userId: number, newRole: string): Observable<AdminUser> {
    * Crée une nouvelle offre
    * POST /api/admin/offers
    */
+  // ✅ MODIFIÉ : Créer une offre avec notification
   createOffer(offerData: CreateOfferRequest): Observable<Offer> {
     return this.http.post<Offer>(`${this.apiUrl}/offers`, offerData).pipe(
-      catchError(error => this.handleApiError('récupération de l\'offre', error))
+      tap((newOffer: Offer) => {
+        // ✅ NOTIFICATION pour création d'offre par admin
+        console.log('🎉 Offre créée par admin, envoi notification...');
+        
+        const currentUser = this.authService.currentUserValue;
+        if (currentUser) {
+          this.businessEvents.notifyOfferCreated(
+            newOffer.offerId,
+            newOffer.description,
+            currentUser.id
+          ).subscribe({
+            next: () => console.log('✅ Notification offre créée envoyée'),
+            error: (err) => console.error('❌ Erreur notification offre:', err)
+          });
+        }
+      }),
+      catchError(error => this.handleApiError('création de l\'offre', error))
     );
   }
 
@@ -761,10 +780,25 @@ changeUserRole(userId: number, newRole: string): Observable<AdminUser> {
    * Met à jour une offre
    * PUT /api/admin/offers/{id}
    */
+  // ✅ MODIFIÉ : Mettre à jour une offre avec notification
   updateOffer(offerId: number, offerData: any): Observable<Offer> {
     const payload = this.buildOfferUpdatePayload(offerData);
     return this.http.put<Offer>(`${this.apiUrl}/offers/${offerId}`, payload).pipe(
       map(response => this.transformOffer(response)),
+      tap((updatedOffer: Offer) => {
+        // ✅ NOTIFICATION pour modification d'offre
+        console.log('✏️ Offre modifiée par admin, envoi notification...');
+        
+        const currentUser = this.authService.currentUserValue;
+        if (currentUser) {
+          this.businessEvents.notifySystemEvent(
+            'OFFER_UPDATED',
+            `Offre "${updatedOffer.description.substring(0, 30)}..." modifiée`,
+            'INFO',
+            currentUser.id
+          ).subscribe();
+        }
+      }),
       catchError(error => this.handleApiError('mise à jour de l\'offre', error))
     );
   }
@@ -774,9 +808,24 @@ changeUserRole(userId: number, newRole: string): Observable<AdminUser> {
    * Supprime une offre
    * DELETE /api/admin/offers/{id}
    */
+  // ✅ MODIFIÉ : Supprimer une offre avec notification
   deleteOffer(offerId: number): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/offers/${offerId}`).pipe(
-      catchError(error => this.handleApiError('récupération de l\'offre', error))
+      tap(() => {
+        // ✅ NOTIFICATION pour suppression d'offre
+        console.log('🗑️ Offre supprimée par admin, envoi notification...');
+        
+        const currentUser = this.authService.currentUserValue;
+        if (currentUser) {
+          this.businessEvents.notifySystemEvent(
+            'OFFER_DELETED',
+            `Offre #${offerId} supprimée`,
+            'WARNING',
+            currentUser.id
+          ).subscribe();
+        }
+      }),
+      catchError(error => this.handleApiError('suppression de l\'offre', error))
     );
   }
 
@@ -784,9 +833,33 @@ changeUserRole(userId: number, newRole: string): Observable<AdminUser> {
    * Change le statut d'une offre
    * POST /api/admin/offers/{id}/status
    */
+   // ✅ MODIFIÉ : Changer statut offre avec notification
   changeOfferStatus(offerId: number, newStatus: string): Observable<Offer> {
     return this.http.post<Offer>(`${this.apiUrl}/offers/${offerId}/status`, { status: newStatus }).pipe(
-     catchError(error => this.handleApiError('récupération de l\'offre', error))
+      tap((updatedOffer: Offer) => {
+        // ✅ NOTIFICATION pour changement de statut
+        console.log('🔄 Statut offre changé, envoi notification...');
+        
+        const currentUser = this.authService.currentUserValue;
+        if (currentUser) {
+          const statusMessages = {
+            'PENDING': 'en attente',
+            'CONFIRMED': 'confirmée', 
+            'CANCELLED': 'annulée',
+            'COMPLETED': 'terminée'
+          };
+          
+          const statusText = statusMessages[newStatus as keyof typeof statusMessages] || newStatus.toLowerCase();
+          
+          this.businessEvents.notifySystemEvent(
+            'OFFER_STATUS_CHANGED',
+            `Offre "${updatedOffer.description.substring(0, 30)}..." ${statusText}`,
+            this.getSeverityForStatus(newStatus),
+            currentUser.id
+          ).subscribe();
+        }
+      }),
+      catchError(error => this.handleApiError('changement de statut de l\'offre', error))
     );
   }
 
@@ -930,17 +1003,47 @@ getOfferStats(): Observable<any> {
   );
 }
 
-activateOffer(offerId: number): Observable<void> {
-  return this.http.post<void>(`${this.apiUrl}/offers/${offerId}/activate`, {}).pipe(
-    catchError(error => this.handleApiError('activation d\'offre', error))
-  );
-}
+// ✅ MODIFIÉ : Activer une offre avec notification
+  activateOffer(offerId: number): Observable<void> {
+    return this.http.post<void>(`${this.apiUrl}/offers/${offerId}/activate`, {}).pipe(
+      tap(() => {
+        // ✅ NOTIFICATION pour activation d'offre
+        console.log('🟢 Offre activée, envoi notification...');
+        
+        const currentUser = this.authService.currentUserValue;
+        if (currentUser) {
+          this.businessEvents.notifySystemEvent(
+            'OFFER_ACTIVATED',
+            `Offre #${offerId} activée`,
+            'SUCCESS',
+            currentUser.id
+          ).subscribe();
+        }
+      }),
+      catchError(error => this.handleApiError('activation d\'offre', error))
+    );
+  }
 
 deactivateOffer(offerId: number): Observable<void> {
-  return this.http.post<void>(`${this.apiUrl}/offers/${offerId}/deactivate`, {}).pipe(
-    catchError(error => this.handleApiError('désactivation d\'offre', error))
-  );
-}
+    return this.http.post<void>(`${this.apiUrl}/offers/${offerId}/deactivate`, {}).pipe(
+      tap(() => {
+        // ✅ NOTIFICATION pour désactivation d'offre
+        console.log('🔴 Offre désactivée, envoi notification...');
+        
+        const currentUser = this.authService.currentUserValue;
+        if (currentUser) {
+          this.businessEvents.notifySystemEvent(
+            'OFFER_DEACTIVATED',
+            `Offre #${offerId} désactivée`,
+            'WARNING',
+            currentUser.id
+          ).subscribe();
+        }
+      }),
+      catchError(error => this.handleApiError('désactivation d\'offre', error))
+    );
+  }
+
 
 completeBooking(bookingId: number): Observable<AdminBooking> {
   return this.http.post<any>(`${this.apiUrl}/bookings/${bookingId}/complete`, {}).pipe(
@@ -948,6 +1051,25 @@ completeBooking(bookingId: number): Observable<AdminBooking> {
     catchError(error => this.handleApiError('finalisation de la réservation', error))
   );
 }
+
+
+// ✅ NOUVELLE MÉTHODE : Helper pour déterminer la sévérité selon le statut
+  private getSeverityForStatus(status: string): 'SUCCESS' | 'ERROR' | 'WARNING' | 'INFO' {
+    switch (status.toUpperCase()) {
+      case 'CONFIRMED':
+      case 'COMPLETED':
+      case 'ACTIVATED':
+        return 'SUCCESS';
+      case 'CANCELLED':
+      case 'DELETED':
+        return 'ERROR';
+      case 'PENDING':
+      case 'DEACTIVATED':
+        return 'WARNING';
+      default:
+        return 'INFO';
+    }
+  }
 
 // Données mockées pour les statistiques offres
 private getMockOfferStats(): any {

@@ -1,42 +1,96 @@
 <div class="notification-container">
-  <h3>🔔 Notifications Temps Réel</h3>
-  
-  <!-- Boutons de test -->
-  <div class="test-buttons">
-    <button (click)="sendTest()" class="btn-test">Test Simple</button>
-    <button (click)="sendCustomTest('success')" class="btn-success">Test Succès</button>
-    <button (click)="sendCustomTest('error')" class="btn-error">Test Erreur</button>
-    <button (click)="sendCustomTest('warning')" class="btn-warning">Test Avertissement</button>
-    <button (click)="sendCustomTest('info')" class="btn-info">Test Info</button>
-    <button (click)="clearNotifications()" class="btn-clear">Effacer Tout</button>
+  <!-- Badge/Bouton de déclenchement -->
+  <div class="notification-trigger" (click)="toggleNotificationPanel()">
+    <span class="notification-icon">🔔</span>
+    <span *ngIf="unreadCount > 0" class="notification-badge">
+      {{ unreadCount > 99 ? '99+' : unreadCount }}
+    </span>
   </div>
 
-  <!-- Liste des notifications -->
-  <div class="notifications-list">
-    <div *ngFor="let notification of notifications" 
-         [class]="'notification-item ' + notification.type.toLowerCase()">
-      
-      <div class="notification-header">
-        <strong class="notification-type">{{ notification.type }}</strong>
-        <span class="notification-time">
-          {{ notification.timestamp | date:'medium' }}
-        </span>
-      </div>
-      
-      <p class="notification-content">{{ notification.content }}</p>
-      
-      <div class="notification-meta">
-        <small>Pour: {{ notification.recipient }}</small>
+  <!-- Panneau des notifications -->
+  <div *ngIf="isPanelOpen" class="notification-panel">
+    <div class="panel-header">
+      <h3>Notifications</h3>
+      <div class="panel-actions">
+        <button *ngIf="unreadCount > 0" 
+                class="btn-mark-all-read" 
+                (click)="markAllAsRead()"
+                title="Tout marquer comme lu">
+          ✓ Tout lire
+        </button>
+        <button class="btn-clear" 
+                (click)="clearNotifications()"
+                title="Effacer toutes les notifications">
+          🗑️
+        </button>
+        <button class="btn-close" (click)="toggleNotificationPanel()">×</button>
       </div>
     </div>
 
-    <div *ngIf="notifications.length === 0" class="empty-state">
-      <p>📭 Aucune notification pour le moment</p>
-      <p class="hint">Utilisez les boutons ci-dessus pour tester</p>
-    </div>
-  </div>
+    <div class="notification-list">
+      <!-- État de chargement -->
+      <div *ngIf="isLoading" class="loading-state">
+        <div class="loading-spinner"></div>
+        <p>Chargement des notifications...</p>
+      </div>
 
-  <div class="stats">
-    <small>Total: {{ notifications.length }} notification(s)</small>
+      <!-- Liste vide -->
+      <div *ngIf="!isLoading && notifications.length === 0" class="empty-state">
+        <div class="empty-icon">📭</div>
+        <p>Aucune notification</p>
+        <small>Toutes vos notifications apparaîtront ici</small>
+      </div>
+
+      <!-- Liste des notifications -->
+      <div *ngFor="let notification of notifications" 
+           [class]="getNotificationClass(notification)"
+           [class.unread]="!notification.read">
+        
+        <div class="notification-content">
+          <div class="notification-header">
+            <span class="notification-type-icon">
+              {{ getNotificationIcon(notification) }}
+            </span>
+            <span class="notification-title" [title]="notification.title">
+              {{ notification.title || 'Notification' }}
+            </span>
+            <span class="notification-time">
+              {{ notification.timestamp | date:'HH:mm' }}
+            </span>
+          </div>
+          
+          <div class="notification-message">
+            {{ notification.content }}
+          </div>
+
+          <div *ngIf="notification.metadata" class="notification-metadata">
+            <!-- Affichage des métadonnées si présentes -->
+          </div>
+        </div>
+
+        <div class="notification-actions">
+          <button *ngIf="!notification.read" 
+                  class="btn-mark-read"
+                  (click)="markAsRead(notification)"
+                  title="Marquer comme lu">
+            ✓
+          </button>
+          <button class="btn-dismiss"
+                  (click)="removeNotification(notification)"
+                  title="Supprimer">
+            ×
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Boutons de test (à retirer en production) -->
+    <div class="test-buttons">
+      <small>Tests :</small>
+      <button (click)="sendCustomTest('success')" class="test-btn success">✅</button>
+      <button (click)="sendCustomTest('error')" class="test-btn error">❌</button>
+      <button (click)="sendCustomTest('warning')" class="test-btn warning">⚠️</button>
+      <button (click)="sendCustomTest('info')" class="test-btn info">ℹ️</button>
+    </div>
   </div>
 </div>

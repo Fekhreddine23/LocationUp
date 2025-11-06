@@ -1,7 +1,7 @@
 export type NotificationSeverity = 'SUCCESS' | 'ERROR' | 'WARNING' | 'INFO' | 'URGENT';
 
 export interface Notification {
-  id?: number;
+  id?: string;
   type: NotificationSeverity;
   category: string;
   severity?: NotificationSeverity;
