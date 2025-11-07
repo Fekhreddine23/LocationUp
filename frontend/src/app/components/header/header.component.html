@@ -1,38 +1,46 @@
- <header class="header">
-      <nav class="nav">
-        <div class="logo">
-          <a routerLink="/">MonApp</a>
-        </div>
-        
-        <div class="nav-links">
-          <a routerLink="/" class="nav-link">Accueil</a>
-          
-          <ng-container *ngIf="!isLoggedIn; else userMenu">
-            <a routerLink="/login" class="nav-link">Connexion</a>
-            <a routerLink="/register" class="nav-link button">Inscription</a>
-          </ng-container>
-          
-          <ng-template #userMenu>
-            <a [routerLink]="dashboardRoute" class="nav-link">
-              {{ isAdmin ? 'Admin' : 'Dashboard' }}
-            </a>
-            <a [routerLink]="offersRoute" class="nav-link">Offres</a>
-            <a [routerLink]="bookingsRoute" class="nav-link">Réservations</a>
+<header class="header">
+  <nav class="nav">
+    <div class="logo">
+      <a routerLink="/">MonApp</a>
+    </div>
 
-            <!-- ✅ INTÉGRATION DE LA NOTIFICATION -->
+    <div class="nav-links">
+      <a routerLink="/" class="nav-link">Accueil</a>
+
+      <ng-container *ngIf="!isLoggedIn; else userMenu">
+        <a routerLink="/login" class="nav-link">Connexion</a>
+        <a routerLink="/register" class="nav-link button">Inscription</a>
+      </ng-container>
+
+      <ng-template #userMenu>
+        <a [routerLink]="dashboardRoute" class="nav-link">
+          {{ isAdmin ? 'Admin' : 'Dashboard' }}
+        </a>
+        <a [routerLink]="offersRoute" class="nav-link">Offres</a>
+        <a [routerLink]="bookingsRoute" class="nav-link">Réservations</a>
+
+        <!-- ✅ INTÉGRATION DE LA NOTIFICATION -->
         <app-notification></app-notification>
-            
-            <div class="user-menu">
-              <button class="user-btn" (click)="toggleMenu()">
-                👤 {{ currentUser?.username }}
-              </button>
-              
-              <div class="dropdown-menu" *ngIf="isMenuOpen">
-                <a routerLink="/profile" class="dropdown-item">Mon Profil</a>
-                <button (click)="logout()" class="dropdown-item logout">Déconnexion</button>
-              </div>
-            </div>
-          </ng-template>
+
+        <div class="user-menu">
+          <button class="user-btn" (click)="toggleMenu()">
+            👤 {{ currentUser?.username }}
+          </button>
+
+          <div class="dropdown-menu" *ngIf="isMenuOpen">
+            <a routerLink="/profile" class="dropdown-item">Mon Profil</a>
+            <button (click)="logout()" class="dropdown-item logout">Déconnexion</button>
+          </div>
         </div>
-      </nav>
-    </header>
+
+         <!-- AJOUT DU BOUTON DE BASCULEMENT DU THÈME -->
+        <button class="theme-toggle" (click)="toggleTheme()"
+          [title]="isDarkMode ? 'Passer en mode clair' : 'Passer en mode sombre'">
+          <span class="theme-icon" [class.dark]="isDarkMode">
+            {{ isDarkMode ? '🌙' : '☀️' }}
+          </span>
+        </button>
+      </ng-template>
+    </div>
+  </nav>
+</header>

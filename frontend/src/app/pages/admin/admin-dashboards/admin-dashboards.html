@@ -136,6 +136,50 @@
         </div>
       </div>
 
+      <div class="dashboard-card health-card">
+        <div class="card-header">
+          <h3>🩺 Santé du Système</h3>
+          <button type="button" class="see-all-btn" (click)="loadSystemHealth()">
+            Rafraîchir
+          </button>
+        </div>
+        <div class="card-content">
+          <app-heath-status></app-heath-status>
+
+          <ng-container *ngIf="systemHealth; else healthFallback">
+            <div class="health-grid">
+              <div class="health-row">
+                <span class="label">Backend</span>
+                <span class="value" [class.is-up]="systemHealth.status === 'UP'">
+                  {{ systemHealth.status }}
+                </span>
+              </div>
+              <div class="health-row">
+                <span class="label">Database</span>
+                <span class="value" [class.is-up]="systemHealth.database === 'UP'">
+                  {{ systemHealth.database }}
+                </span>
+              </div>
+              <div class="health-row">
+                <span class="label">Mémoire</span>
+                <span class="value">
+                  {{ systemHealth.memory?.used || 'N/A' }}
+                </span>
+              </div>
+            </div>
+            <small class="health-timestamp">
+              Dernière vérification : {{ systemHealth.timestamp | date:'short' }}
+            </small>
+          </ng-container>
+
+          <ng-template #healthFallback>
+            <p class="health-placeholder">
+              Vérification en cours…
+            </p>
+          </ng-template>
+        </div>
+      </div>
+
       <!-- Activité Récente -->
       <div class="dashboard-card">
         <div class="card-header">

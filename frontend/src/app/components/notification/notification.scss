@@ -8,12 +8,13 @@
   cursor: pointer;
   padding: 8px 12px;
   border: none;
-  background: #f8f9fa;
+  background: var(--card-bg);
   border-radius: 8px;
   transition: background-color 0.2s;
+  color: var(--text-color);
 
   &:hover {
-    background: #e9ecef;
+    background: var(--hover-color);
   }
 }
 
@@ -33,6 +34,7 @@
   font-weight: bold;
   min-width: 18px;
   text-align: center;
+  border: 2px solid var(--card-bg);
 }
 
 .notification-panel {
@@ -41,13 +43,14 @@
   right: 0;
   width: 400px;
   max-height: 500px;
-  background: white;
-  border: 1px solid #ddd;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  box-shadow: var(--shadow);
   z-index: 1000;
   display: flex;
   flex-direction: column;
+  color: var(--text-color);
 }
 
 .panel-header {
@@ -55,12 +58,13 @@
   justify-content: space-between;
   align-items: center;
   padding: 12px 16px;
-  border-bottom: 1px solid #eee;
-  background: #f8f9fa;
+  background: var(--surface-color);
+  border-bottom: 1px solid var(--border-color);
 
   h3 {
     margin: 0;
     font-size: 1.1em;
+    color: var(--text-color);
   }
 }
 
@@ -75,9 +79,10 @@
     padding: 4px 8px;
     border-radius: 4px;
     font-size: 0.9em;
+    color: var(--text-secondary);
 
     &:hover {
-      background: #e9ecef;
+      background: var(--hover-color);
     }
   }
 
@@ -86,11 +91,11 @@
   }
 
   .btn-clear {
-    color: #6c757d;
+    color: var(--text-secondary);
   }
 
   .btn-close {
-    color: #6c757d;
+    color: var(--text-secondary);
     font-size: 1.2em;
   }
 }
@@ -101,15 +106,16 @@
   max-height: 400px;
 }
 
-.loading-state, .empty-state {
+.loading-state,
+.empty-state {
   padding: 40px 20px;
   text-align: center;
-  color: #6c757d;
+  color: var(--text-secondary);
 }
 
 .loading-spinner {
-  border: 2px solid #f3f3f3;
-  border-top: 2px solid #007bff;
+  border: 2px solid var(--border-color);
+  border-top: 2px solid var(--primary-color);
   border-radius: 50%;
   width: 30px;
   height: 30px;
@@ -118,8 +124,13 @@
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .empty-icon {
@@ -132,16 +143,16 @@
   justify-content: space-between;
   align-items: flex-start;
   padding: 12px 16px;
-  border-bottom: 1px solid #f8f9fa;
+  border-bottom: 1px solid var(--border-color);
   transition: background-color 0.2s;
 
   &:hover {
-    background: #f8f9fa;
+    background: var(--hover-color);
   }
 
   &.unread {
-    background: #f0f7ff;
-    border-left: 3px solid #007bff;
+    background: var(--surface-color);
+    border-left: 3px solid var(--primary-color);
   }
 }
 
@@ -169,12 +180,12 @@
 
 .notification-time {
   font-size: 0.8em;
-  color: #6c757d;
+  color: var(--text-secondary);
 }
 
 .notification-message {
   font-size: 0.9em;
-  color: #495057;
+  color: var(--text-color);
   line-height: 1.4;
 }
 
@@ -196,9 +207,10 @@
   padding: 4px;
   border-radius: 3px;
   font-size: 0.8em;
+  color: var(--text-secondary);
 
   &:hover {
-    background: #e9ecef;
+    background: var(--hover-color);
   }
 }
 
@@ -229,38 +241,50 @@
 
 .notification-urgent {
   border-left-color: #dc3545;
-  background: #fff5f5;
+  background: rgba(220, 53, 69, 0.08);
 }
 
 .test-buttons {
   padding: 8px 16px;
-  border-top: 1px solid #eee;
-  background: #f8f9fa;
+  border-top: 1px solid var(--border-color);
+  background: var(--surface-color);
   display: flex;
   align-items: center;
   gap: 8px;
 
   small {
-    color: #6c757d;
+    color: var(--text-secondary);
   }
 }
 
 .test-btn {
-  background: none;
-  border: 1px solid #ddd;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
   border-radius: 4px;
   padding: 4px 8px;
   cursor: pointer;
   font-size: 0.9em;
+  color: var(--text-color);
 
   &:hover {
-    background: #e9ecef;
+    background: var(--hover-color);
   }
 
-  &.success { border-color: #28a745; }
-  &.error { border-color: #dc3545; }
-  &.warning { border-color: #ffc107; }
-  &.info { border-color: #17a2b8; }
+  &.success {
+    border-color: #28a745;
+  }
+
+  &.error {
+    border-color: #dc3545;
+  }
+
+  &.warning {
+    border-color: #ffc107;
+  }
+
+  &.info {
+    border-color: #17a2b8;
+  }
 }
 
 // Responsive

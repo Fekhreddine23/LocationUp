@@ -10,11 +10,13 @@ import { AdminService } from '../../../core/services/admin.service';
 import { UserResponse } from '../../../core/models/UserResponse.model';
 import { Breadcrumbs } from '../../../components/breadcrumbs/breadcrumbs';
 import { Spinner } from '../../../components/spinner/spinner';
+import { HealthStatusService } from '../../../core/services/health/healthStatusService';
+import { HeathStatus } from '../../../components/heath-status/heath-status';
 
 @Component({
   selector: 'app-admin-dashboards',
   standalone: true,
-  imports: [CommonModule, RouterModule, Breadcrumbs, Spinner],
+  imports: [CommonModule, RouterModule, Breadcrumbs, Spinner, HeathStatus],
   templateUrl: './admin-dashboards.html',
   styleUrls: ['./admin-dashboards.scss']
 })
@@ -22,6 +24,9 @@ export class AdminDashboards implements OnInit, OnDestroy {
   
   isLoading = false;
   errorMessage = '';
+
+    systemHealth: any; //variable pour stocker le statut de santé du système
+
   
   adminStats: AdminStats = {
     totalUsers: 0,
@@ -43,12 +48,14 @@ export class AdminDashboards implements OnInit, OnDestroy {
 
   constructor(
     private adminService: AdminService,
-    private router: Router
+    private router: Router,
+    private healthService: HealthStatusService 
   ) {}
 
   ngOnInit(): void {
     this.loadAdminData();
     this.setupAutoRefresh();
+    this.loadSystemHealth();
   }
 
   ngOnDestroy(): void {
@@ -202,5 +209,19 @@ export class AdminDashboards implements OnInit, OnDestroy {
 
   refreshData(): void {
     this.loadAdminData();
+  }
+
+
+
+  //===================== SANTÉ DU SYSTÈME ====================
+  loadSystemHealth() {
+    this.healthService.checkBackendHealth().subscribe({
+      next: (health) => {
+        this.systemHealth = health;
+      },
+      error: (error) => {
+        console.error('❌ Erreur health check:', error);
+      }
+    });
   }
 }

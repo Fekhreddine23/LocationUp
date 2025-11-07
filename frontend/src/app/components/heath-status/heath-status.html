@@ -1,0 +1,7 @@
+ <div *ngIf="isAdmin" class="health-status" [class.healthy]="isHealthy" [class.unhealthy]="!isHealthy">
+      <span class="status-indicator"></span>
+      <span class="status-text">
+        {{ isHealthy ? 'Système opérationnel' : 'Problème détecté' }}
+      </span>
+      <small class="last-check">{{ lastCheck }}</small>
+    </div>

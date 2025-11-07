@@ -291,6 +291,61 @@
   }
 }
 
+.health-card {
+  .card-content {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  app-heath-status {
+    width: 100%;
+  }
+
+  .health-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 1rem;
+  }
+
+  .health-row {
+    background: #f8fafc;
+    border-radius: 10px;
+    padding: 0.9rem 1.1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+
+    .label {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #6b7280;
+    }
+
+    .value {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #111827;
+
+      &.is-up {
+        color: #22c55e;
+      }
+    }
+  }
+
+  .health-timestamp {
+    color: #94a3b8;
+    font-size: 0.8rem;
+  }
+
+  .health-placeholder {
+    margin: 0;
+    color: #94a3b8;
+    font-style: italic;
+  }
+}
+
 /* Utilisateurs Récents */
 .user-item {
   display: flex;

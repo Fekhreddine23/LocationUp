@@ -4,6 +4,8 @@ import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { User } from '../../core/models/auth.models';
 import { NotificationComponent } from '../notification/notification';
+import { Theme, ThemeService } from '../../core/services/theme/theme-service';
+import { Observable } from 'rxjs';
 
 
 @Component({
@@ -19,15 +21,27 @@ export class HeaderComponent {
   currentUser: User | null = null;
   isMenuOpen = false;
 
+  // gestion du theme 
+  currentTheme$: Observable<Theme>; 
+  isDarkMode = false; 
+
   constructor(
     private authService: AuthService,
-    private router: Router
-  ) {}
+    private router: Router, 
+    private themeService: ThemeService 
+  ) {
+    this.currentTheme$ = this.themeService.currentTheme$;
+
+  }
 
   ngOnInit() {
     this.authService.currentUser.subscribe(user => {
       this.isLoggedIn = !!user;
       this.currentUser = user;
+    });
+     //souscrire aux changements de thème
+     this.currentTheme$.subscribe(theme => {
+      this.isDarkMode = theme === 'dark';
     });
   }
 
@@ -39,6 +53,11 @@ export class HeaderComponent {
     this.authService.logout();
     this.isMenuOpen = false;
     this.router.navigate(['/']);
+  }
+
+   //AJOUT: Méthode pour basculer le thème
+  toggleTheme(): void {
+    this.themeService.toggleTheme();
   }
 
   get isAdmin(): boolean {
