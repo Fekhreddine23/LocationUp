@@ -2,10 +2,17 @@ package com.mobility.mobility_backend.controller.notification;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
-import com.mobility.mobility_backend.dto.socket.NotificationCategory;
 import com.mobility.mobility_backend.dto.socket.NotificationMessage;
 import com.mobility.mobility_backend.dto.socket.NotificationSeverity;
 import com.mobility.mobility_backend.service.notification.NotificationService;
@@ -209,11 +216,11 @@ public class NotificationController {
 
         try {
             System.out.println("🧪 [CONTROLLER] Test notification - userId: " + userId + ", severity: " + severity + ", message: " + message);
-            
+
             // ✅ CORRECTION : Utiliser la méthode dédiée du service au lieu de créer manuellement
             notificationService.sendTestNotification(userId, message, severity);
             return ResponseEntity.ok("Notification de test envoyée à " + userId);
-            
+
         } catch (Exception e) {
             System.err.println("❌ [CONTROLLER] Erreur test notification: " + e.getMessage());
             return ResponseEntity.badRequest().body("Erreur: " + e.getMessage());

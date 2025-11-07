@@ -1,15 +1,5 @@
 package com.mobility.mobility_backend.service.notification;
 
-import com.mobility.mobility_backend.dto.socket.NotificationCategory;
-import com.mobility.mobility_backend.dto.socket.NotificationMessage;
-import com.mobility.mobility_backend.dto.socket.NotificationSeverity;
-import com.mobility.mobility_backend.repository.notification.NotificationRepository;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Service;
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -17,11 +7,21 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
+import com.mobility.mobility_backend.dto.socket.NotificationCategory;
+import com.mobility.mobility_backend.dto.socket.NotificationMessage;
+import com.mobility.mobility_backend.dto.socket.NotificationSeverity;
+import com.mobility.mobility_backend.repository.notification.NotificationRepository;
+
 @Service
 public class NotificationService {
-    
+
     private final Map<String, SseEmitter> userEmitters = new ConcurrentHashMap<>();
-    
+
     @Autowired
     private NotificationRepository notificationRepository;
 
@@ -29,24 +29,24 @@ public class NotificationService {
 
     public SseEmitter connect(String userId, String userRole) {
         System.out.println("🔔 [SERVICE] Nouvelle connexion SSE pour userId: " + userId);
-        
+
         SseEmitter emitter = new SseEmitter(120_000L); // 2 minutes timeout
         String connectionId = userId + "_" + System.currentTimeMillis();
-        
+
         userEmitters.put(connectionId, emitter);
         System.out.println("📊 [SERVICE] Connexions actives: " + userEmitters.size());
-        
+
         // Configuration des callbacks
         emitter.onCompletion(() -> {
             System.out.println("🔌 [SERVICE] Connexion SSE terminée: " + connectionId);
             userEmitters.remove(connectionId);
         });
-        
+
         emitter.onTimeout(() -> {
             System.out.println("⏰ [SERVICE] Timeout SSE: " + connectionId);
             userEmitters.remove(connectionId);
         });
-        
+
         // Envoyer un message de bienvenue
         try {
             NotificationMessage welcomeMsg = new NotificationMessage();
@@ -55,30 +55,30 @@ public class NotificationService {
             welcomeMsg.setTitle("Connexion établie");
             welcomeMsg.setMessage("Vous êtes connecté aux notifications temps réel");
             welcomeMsg.setRecipient(userId);
-            
+
             emitter.send(SseEmitter.event()
                 .name("notification")
                 .data(welcomeMsg));
-                
+
             System.out.println("✅ [SERVICE] Message de bienvenue envoyé à: " + userId);
         } catch (IOException e) {
             System.err.println("❌ [SERVICE] Erreur envoi message bienvenue: " + e.getMessage());
         }
-        
+
         return emitter;
     }
-    
+
     public void sendNotification(NotificationMessage notification) {
         System.out.println("📤 [SERVICE] Envoi notification: " + notification.getTitle() + " à: " + notification.getRecipient());
-        
+
         // Sauvegarder en base
         notificationRepository.save(notification);
         System.out.println("💾 [SERVICE] Notification sauvegardée en base: " + notification.getId());
-        
+
         // Déterminer les destinataires
         List<String> recipients = resolveRecipients(notification.getRecipient());
         System.out.println("🎯 [SERVICE] Destinataires trouvés: " + recipients);
-        
+
         // Envoyer en temps réel via SSE
         int sentCount = 0;
         for (String recipient : recipients) {
@@ -98,16 +98,16 @@ public class NotificationService {
                 }
             }
         }
-        
+
         System.out.println("📊 [SERVICE] Total notifications envoyées via SSE: " + sentCount);
         if (sentCount == 0) {
             System.out.println("⚠️ [SERVICE] Aucun client connecté pour recevoir la notification");
         }
     }
-    
+
     private List<String> resolveRecipients(String recipientPattern) {
         List<String> recipients = new ArrayList<>();
-        
+
         if ("all".equals(recipientPattern)) {
             // Tous les utilisateurs connectés
             recipients.addAll(userEmitters.keySet().stream()
@@ -118,36 +118,36 @@ public class NotificationService {
             // UserId spécifique
             recipients.add(recipientPattern);
         }
-        
+
         return recipients;
     }
-    
+
     // ✅ MÉTHODE SPÉCIALE POUR LES TESTS
     public void sendTestNotification(String userId, String message, String severity) {
         System.out.println("🧪 [SERVICE] Envoi notification de test à: " + userId);
-        
+
         NotificationMessage testNotification = new NotificationMessage();
         testNotification.setCategory(NotificationCategory.SYSTEM_ALERT);
         testNotification.setSeverity(NotificationSeverity.valueOf(severity));
         testNotification.setTitle("Notification de Test");
         testNotification.setMessage(message);
         testNotification.setRecipient(userId);
-        
+
         sendNotification(testNotification);
     }
 
     // === MÉTHODES UTILITAIRES POUR ÉVÉNEMENTS ===
-    
+
     public void notifyReservationEvent(String reservationId, String userId, String eventType, Map<String, Object> data) {
         NotificationMessage notification = createNotificationFromEvent("reservation", eventType, userId, data);
         sendNotification(notification);
     }
-    
+
     public void notifyPaymentEvent(String paymentId, String userId, String eventType, Map<String, Object> data) {
         NotificationMessage notification = createNotificationFromEvent("payment", eventType, userId, data);
         sendNotification(notification);
     }
-    
+
     public void notifySystemEvent(String eventType, String message, NotificationSeverity severity) {
         NotificationMessage notification = new NotificationMessage();
         notification.setCategory(NotificationCategory.SYSTEM_ALERT);
@@ -156,13 +156,13 @@ public class NotificationService {
         notification.setMessage(message);
         notification.setRecipient("all");
         notification.getMetadata().put("systemEvent", eventType);
-        
+
         sendNotification(notification);
     }
-    
+
     private NotificationMessage createNotificationFromEvent(String entityType, String eventType, String userId, Map<String, Object> data) {
         NotificationMessage notification = new NotificationMessage();
-        
+
         switch(entityType + "_" + eventType) {
             case "reservation_created":
                 notification.setCategory(NotificationCategory.USER_ACTION);
@@ -182,18 +182,18 @@ public class NotificationService {
                 notification.setTitle("Événement " + entityType);
                 notification.setMessage("Événement " + eventType + " pour " + entityType);
         }
-        
+
         notification.setRecipient(userId);
         if (data != null) {
         	// Convertir chaque valeur en String
             for (Map.Entry<String, Object> entry : data.entrySet()) {
-                notification.getMetadata().put(entry.getKey(), 
+                notification.getMetadata().put(entry.getKey(),
                     entry.getValue() != null ? entry.getValue().toString() : null);
             }
         }
         notification.getMetadata().put("entityType", entityType);
         notification.getMetadata().put("eventType", eventType);
-        
+
         return notification;
     }
 
@@ -203,9 +203,9 @@ public class NotificationService {
      * Récupérer les notifications d'un utilisateur avec filtres
      */
     public List<NotificationMessage> getUserNotifications(String userId, String category, String severity) {
-        System.out.println("📋 [SERVICE] Récupération notifications pour userId: " + userId + 
+        System.out.println("📋 [SERVICE] Récupération notifications pour userId: " + userId +
                          ", category: " + category + ", severity: " + severity);
-        
+
         if (category != null && severity != null) {
             try {
                 NotificationCategory catEnum = NotificationCategory.valueOf(category.toUpperCase());
@@ -288,11 +288,11 @@ public class NotificationService {
             // Vérifier que l'utilisateur est propriétaire de la notification
             NotificationMessage notification = notificationRepository.findById(notificationId)
                 .orElseThrow(() -> new RuntimeException("Notification non trouvée"));
-            
+
             if (!notification.getRecipient().equals(userId)) {
                 throw new RuntimeException("Non autorisé à supprimer cette notification");
             }
-            
+
             notificationRepository.deleteById(notificationId);
             System.out.println("✅ [SERVICE] Notification supprimée");
         } catch (Exception e) {

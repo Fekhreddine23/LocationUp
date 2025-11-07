@@ -1,8 +1,7 @@
 package com.mobility.mobility_backend.repository.notification;
 
-import com.mobility.mobility_backend.dto.socket.NotificationCategory;
-import com.mobility.mobility_backend.dto.socket.NotificationMessage;
-import com.mobility.mobility_backend.dto.socket.NotificationSeverity;
+import java.util.List;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -10,7 +9,9 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
+import com.mobility.mobility_backend.dto.socket.NotificationCategory;
+import com.mobility.mobility_backend.dto.socket.NotificationMessage;
+import com.mobility.mobility_backend.dto.socket.NotificationSeverity;
 
 @Repository
 public interface NotificationRepository extends JpaRepository<NotificationMessage, String> {
