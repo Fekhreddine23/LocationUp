@@ -20,8 +20,12 @@ public interface ReservationRepository extends JpaRepository<Reservation, Intege
 	List<Reservation> findByOfferId(@Param("offerId") Integer offerId);
 
 	long countByStatus(Reservation.ReservationStatus status);
-    List<Reservation> findTop10ByOrderByReservationDateDesc();
 
+	List<Reservation> findTop10ByOrderByReservationDateDesc();
+	
+	
+    
+    // Méthode 4: Récupérer les réservations récentes
+   // List<Reservation> findTop10ByOrderByCreatedAtDesc();
 
 }
-

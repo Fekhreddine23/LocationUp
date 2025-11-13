@@ -88,5 +88,4 @@ public class Reservation {
 		PENDING, CONFIRMED, CANCELLED, COMPLETED
 	}
 
-
 }

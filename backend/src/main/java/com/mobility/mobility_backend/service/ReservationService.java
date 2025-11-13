@@ -181,56 +181,51 @@ public class ReservationService {
 	}
 
 	public Object getReservationStats() {
-	    System.out.println("📊 Calculating reservation stats...");
+		System.out.println("📊 Calculating reservation stats...");
 
-	    long totalReservations = reservationRepository.count();
-	    System.out.println("📈 Total reservations: " + totalReservations);
+		long totalReservations = reservationRepository.count();
+		System.out.println("📈 Total reservations: " + totalReservations);
 
-	    long pendingReservations = reservationRepository.countByStatus(Reservation.ReservationStatus.PENDING);
-	    long confirmedReservations = reservationRepository.countByStatus(Reservation.ReservationStatus.CONFIRMED);
-	    long cancelledReservations = reservationRepository.countByStatus(Reservation.ReservationStatus.CANCELLED);
+		long pendingReservations = reservationRepository.countByStatus(Reservation.ReservationStatus.PENDING);
+		long confirmedReservations = reservationRepository.countByStatus(Reservation.ReservationStatus.CONFIRMED);
+		long cancelledReservations = reservationRepository.countByStatus(Reservation.ReservationStatus.CANCELLED);
 
-	    System.out.println("📈 Pending: " + pendingReservations);
-	    System.out.println("📈 Confirmed: " + confirmedReservations);
-	    System.out.println("📈 Cancelled: " + cancelledReservations);
+		System.out.println("📈 Pending: " + pendingReservations);
+		System.out.println("📈 Confirmed: " + confirmedReservations);
+		System.out.println("📈 Cancelled: " + cancelledReservations);
 
-	    Map<String, Object> stats = new HashMap<>();
-	    stats.put("total", totalReservations);
-	    stats.put("pending", pendingReservations);
-	    stats.put("confirmed", confirmedReservations);
-	    stats.put("cancelled", cancelledReservations);
+		Map<String, Object> stats = new HashMap<>();
+		stats.put("total", totalReservations);
+		stats.put("pending", pendingReservations);
+		stats.put("confirmed", confirmedReservations);
+		stats.put("cancelled", cancelledReservations);
 
-	    double confirmationRate = totalReservations > 0 ?
-	        (confirmedReservations * 100.0 / totalReservations) : 0;
-	    stats.put("confirmationRate", Math.round(confirmationRate * 100.0) / 100.0);
+		double confirmationRate = totalReservations > 0 ? (confirmedReservations * 100.0 / totalReservations) : 0;
+		stats.put("confirmationRate", Math.round(confirmationRate * 100.0) / 100.0);
 
-	    System.out.println("📊 Final stats: " + stats);
-	    return stats;
+		System.out.println("📊 Final stats: " + stats);
+		return stats;
 	}
 
-	 public List<ReservationDTO> getRecentReservations() {
-	        List<Reservation> reservations = reservationRepository.findTop10ByOrderByReservationDateDesc();
-	        return reservations.stream()
-	                .map(reservationMapper::toDTO)
-	                .collect(Collectors.toList());
-	    }
+	public List<ReservationDTO> getRecentReservations() {
+		List<Reservation> reservations = reservationRepository.findTop10ByOrderByReservationDateDesc();
+		return reservations.stream().map(reservationMapper::toDTO).collect(Collectors.toList());
+	}
 
+	// update le statut d'une reservation
+	// update reservation statue
+	public ReservationDTO updateReservationStatus(Integer reservationId, Reservation.ReservationStatus newStatus) {
+		Optional<Reservation> reservationOpt = reservationRepository.findById(reservationId);
 
+		if (reservationOpt.isPresent()) {
+			Reservation reservation = reservationOpt.get();
+			reservation.setStatus(newStatus);
 
-	 //update le statut d'une reservation
-	//update reservation statue
-		public ReservationDTO updateReservationStatus(Integer reservationId, Reservation.ReservationStatus newStatus) {
-		    Optional<Reservation> reservationOpt = reservationRepository.findById(reservationId);
-
-		    if (reservationOpt.isPresent()) {
-		        Reservation reservation = reservationOpt.get();
-		        reservation.setStatus(newStatus);
-
-		        Reservation savedReservation = reservationRepository.save(reservation);
-		        return reservationMapper.toDTO(savedReservation);
-		    } else {
-		        throw new RuntimeException("Réservation non trouvée avec l'ID: " + reservationId);
-		    }
+			Reservation savedReservation = reservationRepository.save(reservation);
+			return reservationMapper.toDTO(savedReservation);
+		} else {
+			throw new RuntimeException("Réservation non trouvée avec l'ID: " + reservationId);
 		}
+	}
 
 }

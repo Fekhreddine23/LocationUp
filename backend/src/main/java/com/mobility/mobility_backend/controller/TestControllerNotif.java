@@ -9,13 +9,13 @@ import org.springframework.web.bind.annotation.RestController;
 public class TestControllerNotif {
 
 	@GetMapping("/security")
-    public String testSecurity() {
-        return "✅ Security config is working!";
-    }
+	public String testSecurity() {
+		return "✅ Security config is working!";
+	}
 
-    @GetMapping("/public")
-    public String testPublic() {
-        return "✅ Public endpoint accessible!";
-    }
+	@GetMapping("/public")
+	public String testPublic() {
+		return "✅ Public endpoint accessible!";
+	}
 
 }

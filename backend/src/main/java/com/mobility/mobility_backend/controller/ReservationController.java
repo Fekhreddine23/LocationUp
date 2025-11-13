@@ -38,52 +38,38 @@ public class ReservationController {
 		this.reservationService = reservationService;
 	}
 
-	//tests
-		// ⚠️ ASSURE-TOI QUE CETTE MÉTHODE EXISTE BIEN
-	    @PostMapping("/test-public")
-	    public ResponseEntity<Map<String, Object>> testPublic() {
-	        System.out.println("✅ [ReservationController] PUBLIC POST endpoint called!");
-	        return ResponseEntity.ok(Map.of(
-	            "message", "ReservationController public POST endpoint works!",
-	            "timestamp", LocalDateTime.now().toString(),
-	            "controller", "ReservationController"
-	        ));
-	    }
+	// tests
+	// ⚠️ ASSURE-TOI QUE CETTE MÉTHODE EXISTE BIEN
+	@PostMapping("/test-public")
+	public ResponseEntity<Map<String, Object>> testPublic() {
+		System.out.println("✅ [ReservationController] PUBLIC POST endpoint called!");
+		return ResponseEntity.ok(Map.of("message", "ReservationController public POST endpoint works!", "timestamp",
+				LocalDateTime.now().toString(), "controller", "ReservationController"));
+	}
 
-	 // Et aussi la méthode GET
-	    @GetMapping("/test-simple")
-	    public ResponseEntity<String> testSimple() {
-	        System.out.println("✅ [ReservationController] GET endpoint called!");
-	        return ResponseEntity.ok("GET endpoint works!");
-	    }
+	// Et aussi la méthode GET
+	@GetMapping("/test-simple")
+	public ResponseEntity<String> testSimple() {
+		System.out.println("✅ [ReservationController] GET endpoint called!");
+		return ResponseEntity.ok("GET endpoint works!");
+	}
 
+	@PostMapping("/test-auth")
+	public ResponseEntity<?> testAuthEndpoint() {
+		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+		System.out.println("✅ [ReservationController] AUTHENTICATED test endpoint called");
+		System.out.println("🔐 Authenticated user: " + (auth != null ? auth.getName() : "null"));
+		System.out.println("🔐 User authorities: " + (auth != null ? auth.getAuthorities() : "null"));
 
-
-
-		@PostMapping("/test-auth")
-		public ResponseEntity<?> testAuthEndpoint() {
-		    Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-		    System.out.println("✅ [ReservationController] AUTHENTICATED test endpoint called");
-		    System.out.println("🔐 Authenticated user: " + (auth != null ? auth.getName() : "null"));
-		    System.out.println("🔐 User authorities: " + (auth != null ? auth.getAuthorities() : "null"));
-
-		    if (auth == null || !auth.isAuthenticated()) {
-		        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Not authenticated"));
-		    }
-
-		    return ResponseEntity.ok(Map.of(
-		        "message", "Authenticated endpoint works!",
-		        "user", auth.getName(),
-		        "authorities", auth.getAuthorities().stream()
-		                          .map(GrantedAuthority::getAuthority)
-		                          .collect(Collectors.toList()),
-		        "timestamp", LocalDateTime.now().toString()
-		    ));
+		if (auth == null || !auth.isAuthenticated()) {
+			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Not authenticated"));
 		}
 
-
-
-
+		return ResponseEntity
+				.ok(Map.of("message", "Authenticated endpoint works!", "user", auth.getName(), "authorities",
+						auth.getAuthorities().stream().map(GrantedAuthority::getAuthority).collect(Collectors.toList()),
+						"timestamp", LocalDateTime.now().toString()));
+	}
 
 	// Récupérer toutes les réservations
 	@GetMapping
@@ -157,6 +143,5 @@ public class ReservationController {
 		return cancelledReservation.map(value -> new ResponseEntity<>(value, HttpStatus.OK))
 				.orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
 	}
-
 
 }

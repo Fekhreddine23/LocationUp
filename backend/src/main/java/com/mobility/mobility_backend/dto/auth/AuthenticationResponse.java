@@ -4,7 +4,7 @@ public class AuthenticationResponse {
 	private String token;
 	private String username;
 	private String role;
-	 private Integer userId;
+	private Integer userId;
 
 	// Constructeurs
 	public AuthenticationResponse() {
@@ -17,14 +17,12 @@ public class AuthenticationResponse {
 	}
 
 	// NOUVEAU Constructeur avec userId
-    public AuthenticationResponse(String token, String username, String role, Integer userId) {
-        this.token = token;
-        this.username = username;
-        this.role = role;
-        this.setUserId(userId); // ← MÊME TYPE QUE User.id
-    }
-
-
+	public AuthenticationResponse(String token, String username, String role, Integer userId) {
+		this.token = token;
+		this.username = username;
+		this.role = role;
+		this.setUserId(userId); // ← MÊME TYPE QUE User.id
+	}
 
 	// Getters et Setters
 	public String getToken() {
@@ -58,6 +56,5 @@ public class AuthenticationResponse {
 	public void setUserId(Integer userId) {
 		this.userId = userId;
 	}
-
 
 }

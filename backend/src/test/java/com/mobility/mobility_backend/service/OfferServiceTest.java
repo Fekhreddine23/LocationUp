@@ -124,7 +124,8 @@ public class OfferServiceTest {
 	}
 
 	/*
-	 * CORRECTION : Ce test simule la création d'une offre valide avec CreateOfferDTO
+	 * CORRECTION : Ce test simule la création d'une offre valide avec
+	 * CreateOfferDTO
 	 */
 	@Test
 	void whenCreateValidOffer_thenOfferIsSaved() {

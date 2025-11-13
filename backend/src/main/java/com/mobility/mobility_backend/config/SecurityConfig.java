@@ -24,7 +24,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import com.mobility.mobility_backend.authentication.JwtAuthenticationFilter;
 
-@Profile({"default", "dev", "!test"})
+@Profile({ "default", "dev", "!test" })
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
@@ -41,50 +41,45 @@ public class SecurityConfig {
 	@Bean
 	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
-		 System.out.println("🔒 [DEBUG] SecurityConfig is being loaded!");
-
+		System.out.println("🔒 [DEBUG] SecurityConfig is being loaded!");
 
 		http.csrf(csrf -> csrf.disable()).cors(cors -> cors.configurationSource(corsConfigurationSource()))
-				.headers(headers -> headers.frameOptions(frame -> frame.disable())
-						.contentSecurityPolicy(
-								csp -> csp.policyDirectives("frame-ancestors 'self' http://localhost:8088")))
+				.headers(headers -> headers.frameOptions(frame -> frame.disable()).contentSecurityPolicy(
+						csp -> csp.policyDirectives("frame-ancestors 'self' http://localhost:8088")))
 				.authorizeHttpRequests(auth -> auth
 						// Routes publiques - DOIVENT ÊTRE EN PREMIER
-						.requestMatchers("/api/notifications/**").permitAll()
-						.requestMatchers("/api/debug/**").permitAll()
-		                .requestMatchers("/ws/**").permitAll() // Pour WebSocket si utilisé plus tard
+						.requestMatchers("/api/notifications/**").permitAll().requestMatchers("/api/debug/**")
+						.permitAll().requestMatchers("/ws/**").permitAll() // Pour WebSocket si utilisé plus tard
 						.requestMatchers("/api/auth/**").permitAll()
 						.requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
-						.requestMatchers("/h2-console/**").permitAll()
-						.requestMatchers("/actuator/**").permitAll()
+						.requestMatchers("/h2-console/**").permitAll().requestMatchers("/actuator/**").permitAll()
 
- 						.requestMatchers("/api/reservations/test-public").permitAll()
-						.requestMatchers("/api/reservations/test-simple").permitAll()
-						.requestMatchers("/api/test/**").permitAll()
-						.requestMatchers("/api/debug/**").permitAll()
+						.requestMatchers("/api/reservations/test-public").permitAll()
+						.requestMatchers("/api/reservations/test-simple").permitAll().requestMatchers("/api/test/**")
+						.permitAll().requestMatchers("/api/debug/**").permitAll()
 
 						// ✅ AJOUTEZ CETTE LIGNE - OFFRES ACCESSIBLES SANS AUTH
 						.requestMatchers("/api/offers/**").permitAll()
 
-						 .requestMatchers(HttpMethod.POST, "/api/reservations").authenticated()
+						.requestMatchers(HttpMethod.POST, "/api/reservations").authenticated()
 
 						// Routes protégées par rôle
 						.requestMatchers("/api/admin/**").hasRole("ADMIN")
 
 						// Routes nécessitant une authentification
-						.requestMatchers("/api/reservations/**").authenticated()
-						.requestMatchers("/api/users/**").authenticated()
+						.requestMatchers("/api/reservations/**").authenticated().requestMatchers("/api/users/**")
+						.authenticated()
 
 						// Toutes les autres routes API
 						.requestMatchers("/api/**").authenticated()
 
 						// Toutes les autres routes
-						.anyRequest().permitAll()
-				).sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+						.anyRequest().permitAll())
+				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				.authenticationProvider(authenticationProvider())
 				.addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
-		 System.out.println("✅ [DEBUG] SecurityConfig loaded successfully!");
+		System.out.println("✅ [DEBUG] SecurityConfig loaded successfully!");
 
 		return http.build();
 	}
@@ -92,29 +87,14 @@ public class SecurityConfig {
 	@Bean
 	public CorsConfigurationSource corsConfigurationSource() {
 		CorsConfiguration configuration = new CorsConfiguration();
-		configuration.setAllowedOrigins(Arrays.asList(
-			"http://localhost:4200",
-			"http://127.0.0.1:4200",
-			"http://localhost:3000"
-		));
-		configuration.setAllowedMethods(Arrays.asList(
-			"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"
-		));
-		configuration.setAllowedHeaders(Arrays.asList(
-			"Authorization",
-			"Content-Type",
-			"Accept",
-			"Origin",
-			"X-Requested-With",
-			"Access-Control-Request-Method",
-			"Access-Control-Request-Headers",
-			"Cache-Control"
-		));
-		configuration.setExposedHeaders(Arrays.asList(
-			"Access-Control-Allow-Origin",
-			"Access-Control-Allow-Credentials",
-			"Authorization"
-		));
+		configuration.setAllowedOrigins(
+				Arrays.asList("http://localhost:4200", "http://127.0.0.1:4200", "http://localhost:3000"));
+		configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"));
+		configuration.setAllowedHeaders(
+				Arrays.asList("Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With",
+						"Access-Control-Request-Method", "Access-Control-Request-Headers", "Cache-Control"));
+		configuration.setExposedHeaders(
+				Arrays.asList("Access-Control-Allow-Origin", "Access-Control-Allow-Credentials", "Authorization"));
 		configuration.setAllowCredentials(true);
 		configuration.setMaxAge(3600L);
 
@@ -138,24 +118,24 @@ public class SecurityConfig {
 
 	@Bean
 	public PasswordEncoder passwordEncoder() {
-	    // ⚠️ TEMPORAIRE - PasswordEncoder simple pour debugger
-	    return new PasswordEncoder() {
-	        @Override
-	        public String encode(CharSequence rawPassword) {
-	            System.out.println("🔑 [TEMP] Encoding password: " + rawPassword);
-	            return rawPassword.toString(); // Retourne le mot de passe en clair
-	        }
+		// ⚠️ TEMPORAIRE - PasswordEncoder simple pour debugger
+		return new PasswordEncoder() {
+			@Override
+			public String encode(CharSequence rawPassword) {
+				System.out.println("🔑 [TEMP] Encoding password: " + rawPassword);
+				return rawPassword.toString(); // Retourne le mot de passe en clair
+			}
 
-	        @Override
-	        public boolean matches(CharSequence rawPassword, String encodedPassword) {
-	            System.out.println("🔍 [TEMP] Comparing: '" + rawPassword + "' with stored: '" + encodedPassword + "'");
-	            boolean result = rawPassword.toString().equals(encodedPassword);
-	            System.out.println("✅ [TEMP] Match result: " + result);
-	            return result;
-	        }
-	    };
+			@Override
+			public boolean matches(CharSequence rawPassword, String encodedPassword) {
+				System.out.println("🔍 [TEMP] Comparing: '" + rawPassword + "' with stored: '" + encodedPassword + "'");
+				boolean result = rawPassword.toString().equals(encodedPassword);
+				System.out.println("✅ [TEMP] Match result: " + result);
+				return result;
+			}
+		};
 
-	    // Pour revenir à BCrypt plus tard :
-	    // return new BCryptPasswordEncoder();
+		// Pour revenir à BCrypt plus tard :
+		// return new BCryptPasswordEncoder();
 	}
 }

@@ -20,12 +20,11 @@ public interface UserRepository extends JpaRepository<User, Integer> {
 
 	boolean existsByEmail(String email);
 
-	 // Méthode de recherche
-    Page<User> findByEmailContainingOrFirstNameContainingOrLastNameContaining(
-        String email, String firstName, String lastName, Pageable pageable);
+	// Méthode de recherche
+	Page<User> findByEmailContainingOrFirstNameContainingOrLastNameContaining(String email, String firstName,
+			String lastName, Pageable pageable);
 
 	@Override
 	long count();
-
 
 }

@@ -25,8 +25,6 @@ public class MobilityService {
 	@Column(name = "categorie", length = 500)
 	private String categorie;
 
-
-
 	// Constructeurs
 	public MobilityService() {
 	}
@@ -60,7 +58,6 @@ public class MobilityService {
 	public void setDescription(String description) {
 		this.description = description;
 	}
-
 
 	public String getCategorie() {
 		return categorie;

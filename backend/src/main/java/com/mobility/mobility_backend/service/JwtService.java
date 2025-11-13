@@ -27,13 +27,11 @@ public class JwtService {
 		Map<String, Object> claims = new HashMap<>();
 
 		// Ajouter le rôle dans les claims
-	    String role = userDetails.getAuthorities().stream()
-	            .findFirst()
-	            .map(GrantedAuthority::getAuthority)
-	            .orElse("ROLE_USER");
+		String role = userDetails.getAuthorities().stream().findFirst().map(GrantedAuthority::getAuthority)
+				.orElse("ROLE_USER");
 
-	    claims.put("role", role);
-	    System.out.println("🔐 Adding role to JWT: " + role);
+		claims.put("role", role);
+		System.out.println("🔐 Adding role to JWT: " + role);
 		return generateToken(claims, userDetails);
 	}
 

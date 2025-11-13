@@ -19,7 +19,6 @@ public class City {
 	@Column(nullable = false, unique = false)
 	private String name;
 
-
 	@Column(nullable = true, unique = false)
 	private String postalCode;
 

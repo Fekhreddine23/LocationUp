@@ -80,7 +80,6 @@ public class Offer {
 	@Column(name = "updated_at")
 	private LocalDateTime updatedAt;
 
-
 	@Column(name = "status", nullable = false)
 	@Enumerated(EnumType.STRING)
 	private OfferStatus status = OfferStatus.PENDING; // Valeur par défaut
@@ -88,9 +87,8 @@ public class Offer {
 	@Version
 	private Long version;
 
-
-    @Column(name = "active", nullable = false)
-    private boolean active = true; // Valeur par défaut
+	@Column(name = "active", nullable = false)
+	private boolean active = true; // Valeur par défaut
 
 	// Constructeurs
 	public Offer() {
@@ -282,8 +280,7 @@ public class Offer {
 				+ '\'' + '}';
 	}
 
-
-	//gestion administrateur
+	// gestion administrateur
 	public OfferStatus getStatus() {
 		return status;
 	}
@@ -297,13 +294,12 @@ public class Offer {
 	}
 
 	public void setActive(boolean active) {
-		 this.active = active;
+		this.active = active;
 
 	}
 
 	public boolean getActive(boolean active) {
 		return active;
 	}
-
 
 }

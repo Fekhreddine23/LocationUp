@@ -77,16 +77,17 @@ public interface OfferRepository extends JpaRepository<Offer, Integer> {
 
 	List<Offer> findByOrderByCreatedAtDesc();
 
-	  // ✅ Méthodes pour les statistiques d'activation
-    long countByActiveTrue();
-    long countByActiveFalse();
+	// ✅ Méthodes pour les statistiques d'activation
+	long countByActiveTrue();
 
-    // ✅ Méthodes pour les statistiques de statut (si votre entité Offer a un champ "status")
-    long countByStatus(Offer.OfferStatus status);
+	long countByActiveFalse();
 
-    // ✅ Méthode pour pagination
-    @Override
+	// ✅ Méthodes pour les statistiques de statut (si votre entité Offer a un champ
+	// "status")
+	long countByStatus(Offer.OfferStatus status);
+
+	// ✅ Méthode pour pagination
+	@Override
 	Page<Offer> findAll(Pageable pageable);
-
 
 }

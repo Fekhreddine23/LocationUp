@@ -13,6 +13,6 @@ public interface CityRepository extends JpaRepository<City, Integer> {
 
 	boolean existsByName(String name);
 
-	 // Ajoutez cette méthode
-    Optional<City> findByNameAndPostalCode(String name, String postalCode);
+	// Ajoutez cette méthode
+	Optional<City> findByNameAndPostalCode(String name, String postalCode);
 }

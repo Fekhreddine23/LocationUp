@@ -28,97 +28,93 @@ import com.mobility.mobility_backend.service.OfferService;
 @PreAuthorize("hasRole('ADMIN')")
 public class AdminOfferController {
 
-    private final OfferService offerService;
+	private final OfferService offerService;
 
-    @Autowired
-    public AdminOfferController(OfferService offerService) {
-        this.offerService = offerService;
-    }
+	@Autowired
+	public AdminOfferController(OfferService offerService) {
+		this.offerService = offerService;
+	}
 
-    // 📋 Récupérer toutes les offres (paginated)
-    @GetMapping("/offers")
-    public ResponseEntity<Page<OfferDTO>> getAllOffers(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        Pageable pageable = PageRequest.of(page, size);
-        Page<OfferDTO> offers = offerService.getAllOffers(pageable);
-        return ResponseEntity.ok(offers);
-    }
+	// 📋 Récupérer toutes les offres (paginated)
+	@GetMapping("/offers")
+	public ResponseEntity<Page<OfferDTO>> getAllOffers(@RequestParam(defaultValue = "0") int page,
+			@RequestParam(defaultValue = "10") int size) {
+		Pageable pageable = PageRequest.of(page, size);
+		Page<OfferDTO> offers = offerService.getAllOffers(pageable);
+		return ResponseEntity.ok(offers);
+	}
 
-    // 📊 Statistiques des offres
-    @GetMapping("/offers/stats")
-    public ResponseEntity<?> getOfferStats() {
-        Object stats = offerService.getOffersStats();
-        return ResponseEntity.ok(stats);
-    }
+	// 📊 Statistiques des offres
+	@GetMapping("/offers/stats")
+	public ResponseEntity<?> getOfferStats() {
+		Object stats = offerService.getOffersStats();
+		return ResponseEntity.ok(stats);
+	}
 
-    // 🟢 Activer une offre
-    @PostMapping("/offers/{id}/activate")
-    public ResponseEntity<?> activateOffer(@PathVariable Integer id) {
-        System.out.println("🟢 Activation offre " + id);
-        try {
-            OfferDTO updatedOffer = offerService.updateOfferStatus(id, true);
-            return ResponseEntity.ok(updatedOffer);
-        } catch (Exception e) {
-            return ResponseEntity.notFound().build();
-        }
-    }
+	// 🟢 Activer une offre
+	@PostMapping("/offers/{id}/activate")
+	public ResponseEntity<?> activateOffer(@PathVariable Integer id) {
+		System.out.println("🟢 Activation offre " + id);
+		try {
+			OfferDTO updatedOffer = offerService.updateOfferStatus(id, true);
+			return ResponseEntity.ok(updatedOffer);
+		} catch (Exception e) {
+			return ResponseEntity.notFound().build();
+		}
+	}
 
-    // 🔴 Désactiver une offre
-    @PostMapping("/offers/{id}/deactivate")
-    public ResponseEntity<?> deactivateOffer(@PathVariable Integer id) {
-        System.out.println("🔴 Désactivation offre " + id);
-        try {
-            OfferDTO updatedOffer = offerService.updateOfferStatus(id, false);
-            return ResponseEntity.ok(updatedOffer);
-        } catch (Exception e) {
-            return ResponseEntity.notFound().build();
-        }
-    }
+	// 🔴 Désactiver une offre
+	@PostMapping("/offers/{id}/deactivate")
+	public ResponseEntity<?> deactivateOffer(@PathVariable Integer id) {
+		System.out.println("🔴 Désactivation offre " + id);
+		try {
+			OfferDTO updatedOffer = offerService.updateOfferStatus(id, false);
+			return ResponseEntity.ok(updatedOffer);
+		} catch (Exception e) {
+			return ResponseEntity.notFound().build();
+		}
+	}
 
-    // 🗑️ Supprimer une offre (désactivation)
-    @DeleteMapping("/offers/{id}")
-    public ResponseEntity<?> deleteOffer(@PathVariable Integer id) {
-        System.out.println("🗑️ Suppression (désactivation) offre " + id);
-        try {
-            // Désactive l'offre au lieu de la supprimer
-            OfferDTO updatedOffer = offerService.updateOfferStatus(id, false);
-            return ResponseEntity.ok().body(Map.of(
-                "message", "Offre désactivée avec succès",
-                "offer", updatedOffer
-            ));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body("Erreur lors de la désactivation: " + e.getMessage());
-        }
-    }
+	// 🗑️ Supprimer une offre (désactivation)
+	@DeleteMapping("/offers/{id}")
+	public ResponseEntity<?> deleteOffer(@PathVariable Integer id) {
+		System.out.println("🗑️ Suppression (désactivation) offre " + id);
+		try {
+			// Désactive l'offre au lieu de la supprimer
+			OfferDTO updatedOffer = offerService.updateOfferStatus(id, false);
+			return ResponseEntity.ok().body(Map.of("message", "Offre désactivée avec succès", "offer", updatedOffer));
+		} catch (Exception e) {
+			return ResponseEntity.badRequest().body("Erreur lors de la désactivation: " + e.getMessage());
+		}
+	}
 
-    // ✏️ Modifier une offre
-    @PutMapping("/offers/{id}")
-    public ResponseEntity<?> updateOffer(@PathVariable Integer id, @RequestBody OfferDTO offerDTO) {
-        System.out.println("✏️ Modification offre " + id);
-        try {
-            Optional<OfferDTO> updatedOffer = offerService.updateOffer(id, offerDTO);
-            if (updatedOffer.isPresent()) {
-                return ResponseEntity.ok(updatedOffer.get());
-            } else {
-                return ResponseEntity.notFound().build();
-            }
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body("Erreur lors de la modification: " + e.getMessage());
-        }
-    }
+	// ✏️ Modifier une offre
+	@PutMapping("/offers/{id}")
+	public ResponseEntity<?> updateOffer(@PathVariable Integer id, @RequestBody OfferDTO offerDTO) {
+		System.out.println("✏️ Modification offre " + id);
+		try {
+			Optional<OfferDTO> updatedOffer = offerService.updateOffer(id, offerDTO);
+			if (updatedOffer.isPresent()) {
+				return ResponseEntity.ok(updatedOffer.get());
+			} else {
+				return ResponseEntity.notFound().build();
+			}
+		} catch (Exception e) {
+			return ResponseEntity.badRequest().body("Erreur lors de la modification: " + e.getMessage());
+		}
+	}
 
-    @PostMapping("/offers")
-    public ResponseEntity<?> createOffer(@RequestBody CreateOfferDTO createOfferDTO) {
-        System.out.println("➕ Création nouvelle offre");
-        System.out.println("📦 Données reçues: " + createOfferDTO);
+	@PostMapping("/offers")
+	public ResponseEntity<?> createOffer(@RequestBody CreateOfferDTO createOfferDTO) {
+		System.out.println("➕ Création nouvelle offre");
+		System.out.println("📦 Données reçues: " + createOfferDTO);
 
-        try {
-            OfferDTO createdOffer = offerService.createOffer(createOfferDTO);
-            return ResponseEntity.ok(createdOffer);
-        } catch (Exception e) {
-            System.out.println("❌ Erreur création: " + e.getMessage());
-            return ResponseEntity.badRequest().body("Erreur lors de la création: " + e.getMessage());
-        }
-    }
+		try {
+			OfferDTO createdOffer = offerService.createOffer(createOfferDTO);
+			return ResponseEntity.ok(createdOffer);
+		} catch (Exception e) {
+			System.out.println("❌ Erreur création: " + e.getMessage());
+			return ResponseEntity.badRequest().body("Erreur lors de la création: " + e.getMessage());
+		}
+	}
 }
