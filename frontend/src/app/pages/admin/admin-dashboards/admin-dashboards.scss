@@ -488,3 +488,52 @@
     }
   }
 }
+
+
+
+// Styles pour la nouvelle section Analytics
+.analytics-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-top: 20px;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.analytics-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  border: 1px solid #e9ecef;
+  overflow: hidden;
+
+  .card-header {
+    padding: 20px 20px 0;
+    
+    h3 {
+      margin: 0;
+      font-size: 1.1rem;
+      color: #333;
+    }
+  }
+}
+
+.chart-container {
+  height: 300px;
+  padding: 20px;
+  position: relative;
+}
+
+// Adaptation responsive
+@media (max-width: 1024px) {
+  .analytics-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .chart-container {
+    height: 250px;
+  }
+}

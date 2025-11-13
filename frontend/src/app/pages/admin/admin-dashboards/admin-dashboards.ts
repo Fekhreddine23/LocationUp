@@ -12,22 +12,25 @@ import { Breadcrumbs } from '../../../components/breadcrumbs/breadcrumbs';
 import { Spinner } from '../../../components/spinner/spinner';
 import { HealthStatusService } from '../../../core/services/health/healthStatusService';
 import { HeathStatus } from '../../../components/heath-status/heath-status';
+import { BaseChartDirective, provideCharts, withDefaultRegisterables } from 'ng2-charts';
+import { ChartConfiguration, ChartData, ChartType } from 'chart.js';
 
 @Component({
   selector: 'app-admin-dashboards',
   standalone: true,
-  imports: [CommonModule, RouterModule, Breadcrumbs, Spinner, HeathStatus],
+  imports: [CommonModule, RouterModule, Breadcrumbs, Spinner, HeathStatus, BaseChartDirective],
+  providers: [provideCharts(withDefaultRegisterables())],
   templateUrl: './admin-dashboards.html',
   styleUrls: ['./admin-dashboards.scss']
 })
 export class AdminDashboards implements OnInit, OnDestroy {
-  
+
   isLoading = false;
   errorMessage = '';
 
-    systemHealth: any; //variable pour stocker le statut de santé du système
+  systemHealth: any; //variable pour stocker le statut de santé du système
 
-  
+
   adminStats: AdminStats = {
     totalUsers: 0,
     activeUsers: 0,
@@ -36,10 +39,10 @@ export class AdminDashboards implements OnInit, OnDestroy {
     totalOffers: 0,
     totalRevenue: 0
   };
-  
+
   recentUsers: AdminUser[] = [];
   recentActivity: RecentActivity[] = [];
-  
+
   breadcrumbItems = [
     { label: 'Administration', url: '/admin', active: true }
   ];
@@ -49,8 +52,8 @@ export class AdminDashboards implements OnInit, OnDestroy {
   constructor(
     private adminService: AdminService,
     private router: Router,
-    private healthService: HealthStatusService 
-  ) {}
+    private healthService: HealthStatusService
+  ) { }
 
   ngOnInit(): void {
     this.loadAdminData();
@@ -82,6 +85,8 @@ export class AdminDashboards implements OnInit, OnDestroy {
     this.adminService.getAdminStats().subscribe({
       next: (stats) => {
         this.adminStats = stats;
+        this.adminStats = stats;
+        this.updateCharts(); // ← AJOUT CHARTS.JS
         this.loadRecentUsers();
       },
       error: (error) => {
@@ -185,11 +190,11 @@ export class AdminDashboards implements OnInit, OnDestroy {
     const diffMs = now.getTime() - date.getTime();
     const diffMins = Math.floor(diffMs / 60000);
     const diffHours = Math.floor(diffMs / 3600000);
-    
+
     if (diffMins < 1) return 'À l\'instant';
     if (diffMins < 60) return `Il y a ${diffMins} min`;
     if (diffHours < 24) return `Il y a ${diffHours} h`;
-    
+
     return this.formatDate(timestamp);
   }
 
@@ -223,5 +228,68 @@ export class AdminDashboards implements OnInit, OnDestroy {
         console.error('❌ Erreur health check:', error);
       }
     });
+  }
+
+
+
+  //============== CHART.JS ==============
+
+  // Charts Configuration
+  public barChartOptions: ChartConfiguration['options'] = {
+    responsive: true,
+    plugins: {
+      legend: { display: true },
+      title: { display: true, text: 'Statistiques des Réservations' }
+    }
+  };
+
+  public barChartLabels: string[] = ['Confirmées', 'En attente', 'Annulées', 'Terminées'];
+  public barChartType: ChartType = 'bar';
+  public barChartData: ChartData<'bar'> = {
+    labels: this.barChartLabels,
+    datasets: [
+      {
+        data: [0, 0, 0, 0],
+        label: 'Réservations',
+        backgroundColor: ['#28a745', '#ffc107', '#dc3545', '#17a2b8']
+      }
+    ]
+  };
+
+  public pieChartOptions: ChartConfiguration['options'] = {
+    responsive: true,
+    plugins: {
+      legend: { display: true, position: 'top' },
+      title: { display: true, text: 'Répartition des Utilisateurs' }
+    }
+  };
+
+  public pieChartData: ChartData<'pie', number[]> = {
+    labels: ['Actifs', 'Inactifs'],
+    datasets: [{
+      data: [0, 0],
+      backgroundColor: ['#28a745', '#6c757d']
+    }]
+  };
+
+
+  public pieChartType: ChartType = 'pie';
+
+
+  // Mettre à jour les charts avec les données
+  private updateCharts(): void {
+    // Graphique réservations
+    this.barChartData.datasets[0].data = [
+      this.adminStats.totalReservations - this.adminStats.pendingReservations, // Confirmées
+      this.adminStats.pendingReservations, // En attente
+      0, // Annulées (à récupérer si disponible)
+      0  // Terminées (à récupérer si disponible)
+    ];
+
+    // Graphique utilisateurs
+    this.pieChartData.datasets[0].data = [
+      this.adminStats.activeUsers,
+      this.adminStats.totalUsers - this.adminStats.activeUsers
+    ];
   }
 }

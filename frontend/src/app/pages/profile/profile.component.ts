@@ -6,10 +6,11 @@ import { CommonModule } from '@angular/common';
 import { AuthService } from '../../core/services/auth.service';
 import { User } from '../../core/models/auth.models';
 import { UserStatsService } from '../../core/services/user-stats.service';
+import { TwoFactorSetup } from '../../components/twoFactor/two-factor-setup';
 
 @Component({
   selector: 'app-profile',
-    imports: [CommonModule, RouterModule, FormsModule, Breadcrumbs],
+    imports: [CommonModule, RouterModule, FormsModule, Breadcrumbs, TwoFactorSetup],
   templateUrl: './profile.component.html',
   styleUrl: './profile.component.scss'
 })

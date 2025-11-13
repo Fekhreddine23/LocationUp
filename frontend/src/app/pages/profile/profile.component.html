@@ -139,6 +139,18 @@
       </div>
     </div>
 
+    <!-- Section Sécurité / 2FA -->
+    <div class="profile-section" *ngIf="user">
+      <h2>Sécurité</h2>
+      <p class="section-subtitle">
+        Activez l'authentification à deux facteurs pour sécuriser davantage votre compte.
+      </p>
+      <app-two-factor-setup
+        [username]="user.username"
+        (onComplete)="loadUserProfile()">
+      </app-two-factor-setup>
+    </div>
+
     <!-- Actions -->
     <div class="profile-actions">
       <!-- Mode Lecture -->

@@ -1,13 +1,14 @@
 import { TestBed } from '@angular/core/testing';
-import { HealthStatusService } from './healthStatusService';
+import { TwoFactorAuthService } from './two-factor-auth-service';
 
 
-describe('HealthsStatus', () => {
-  let service: HealthStatusService;
+
+describe('TwoFactorAuthService', () => {
+  let service: TwoFactorAuthService;
 
   beforeEach(() => {
     TestBed.configureTestingModule({});
-    service = TestBed.inject(HealthStatusService);
+    service = TestBed.inject(TwoFactorAuthService);
   });
 
   it('should be created', () => {

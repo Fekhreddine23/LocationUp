@@ -1,0 +1,64 @@
+<div class="two-factor-setup">
+      <h3>🔐 Authentification à Deux Facteurs</h3>
+      
+      <div *ngIf="!isSetupCompleted" class="setup-container">
+        <!-- Étape 1 : Génération QR Code -->
+        <div *ngIf="!qrCodeData" class="step step-1">
+          <p>Activez l'authentification à deux facteurs pour renforcer la sécurité de votre compte.</p>
+          <button class="btn btn-primary" (click)="startSetup()" [disabled]="isLoading">
+            {{ isLoading ? 'Génération...' : 'Commencer la configuration' }}
+          </button>
+        </div>
+
+        <!-- Étape 2 : Scan QR Code -->
+        <div *ngIf="qrCodeData && !isVerified" class="step step-2">
+          <h4>Étape 1 : Scannez le QR Code</h4>
+          <div class="qr-container">
+            <img [src]="qrCodeData.qrCodeUrl" alt="QR Code 2FA" class="qr-code">
+          </div>
+          <p class="instruction">
+            Scannez ce QR Code avec Google Authenticator ou une application similaire.
+          </p>
+
+          <h4>Étape 2 : Entrez le code de vérification</h4>
+          <div class="verification-form">
+            <input 
+              type="text" 
+              [(ngModel)]="verificationCode" 
+              placeholder="Entrez le code à 6 chiffres"
+              maxlength="6"
+              class="code-input"
+              [class.error]="verificationError"
+            >
+            <button 
+              class="btn btn-success" 
+              (click)="verifyCode()"
+              [disabled]="!verificationCode || verificationCode.length !== 6 || isLoading"
+            >
+              {{ isLoading ? 'Vérification...' : 'Vérifier' }}
+            </button>
+          </div>
+
+          <div *ngIf="verificationError" class="error-message">
+            ❌ Code invalide. Veuillez réessayer.
+          </div>
+        </div>
+      </div>
+
+      <!-- Étape 3 : Configuration réussie -->
+      <div *ngIf="isSetupCompleted" class="step step-3 success">
+        <div class="success-icon">✅</div>
+        <h4>2FA Activé avec Succès !</h4>
+        <p>L'authentification à deux facteurs est maintenant activée pour votre compte.</p>
+        
+        <div *ngIf="backupCode" class="backup-code">
+          <strong>Code de secours :</strong>
+          <code class="backup-code-display">{{ backupCode }}</code>
+          <small>Conservez ce code en lieu sûr. Il vous permettra d'accéder à votre compte si vous perdez votre téléphone.</small>
+        </div>
+
+        <button class="btn btn-secondary" (click)="onComplete.emit()">
+          Terminer
+        </button>
+      </div>
+    </div>
