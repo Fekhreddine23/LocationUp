@@ -51,7 +51,11 @@ public class DataInitializer implements CommandLineRunner {
 
 	@Override
 	public void run(String... args) throws Exception {
+		
+		 System.out.println("Data initialization disabled - using data.sql instead");
 		// Nettoyer d'abord
+		 
+		/*
 		userRepository.deleteAll();
 
 		// Créer l'utilisateur avec mot de passe HACHÉ
@@ -96,6 +100,8 @@ public class DataInitializer implements CommandLineRunner {
 		createSampleOffers(); // ⚠️ Puis offres
 		createSampleReservations(); // ⚠️ Enfin réservations
 		createSampleReservations();
+		*/
+		
 	}
 
 	private void createSampleOffers() {

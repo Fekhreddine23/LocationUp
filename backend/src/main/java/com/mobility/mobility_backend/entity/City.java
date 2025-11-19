@@ -22,6 +22,12 @@ public class City {
 	@Column(nullable = true, unique = false)
 	private String postalCode;
 
+	@Column(name = "latitude", nullable = true)
+	private Double latitude;
+
+	@Column(name = "longitude", nullable = true)
+	private Double longitude;
+
 	public String getPostalCode() {
 		return postalCode;
 	}
@@ -36,6 +42,13 @@ public class City {
 
 	public City(String name) {
 		this.name = name;
+	}
+
+	public City(String name, String postalCode, Double latitude, Double longitude) {
+		this.name = name;
+		this.postalCode = postalCode;
+		this.latitude = latitude;
+		this.longitude = longitude;
 	}
 
 	// Getters et Setters
@@ -53,6 +66,22 @@ public class City {
 
 	public void setName(String name) {
 		this.name = name;
+	}
+
+	public Double getLatitude() {
+		return latitude;
+	}
+
+	public void setLatitude(Double latitude) {
+		this.latitude = latitude;
+	}
+
+	public Double getLongitude() {
+		return longitude;
+	}
+
+	public void setLongitude(Double longitude) {
+		this.longitude = longitude;
 	}
 
 	@Override
@@ -74,6 +103,7 @@ public class City {
 
 	@Override
 	public String toString() {
-		return "City [cityId=" + cityId + ", name=" + name + ", postalCode=" + postalCode + "]";
+		return "City [cityId=" + cityId + ", name=" + name + ", postalCode=" + postalCode + ", latitude=" + latitude
+				+ ", longitude=" + longitude + "]";
 	}
 }

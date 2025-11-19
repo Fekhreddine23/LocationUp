@@ -28,10 +28,14 @@ public class OfferMapper {
 		if (offer.getPickupLocation() != null) {
 			offerDTO.setPickupLocationId(offer.getPickupLocation().getCityId());
 			offerDTO.setPickupLocationName(offer.getPickupLocation().getName()); // Ajoutez le nom
+			offerDTO.setPickupLatitude(offer.getPickupLocation().getLatitude());
+			offerDTO.setPickupLongitude(offer.getPickupLocation().getLongitude());
 		}
 		if (offer.getReturnLocation() != null) {
 			offerDTO.setReturnLocationId(offer.getReturnLocation().getCityId());
 			offerDTO.setReturnLocationName(offer.getReturnLocation().getName());
+			offerDTO.setReturnLatitude(offer.getReturnLocation().getLatitude());
+			offerDTO.setReturnLongitude(offer.getReturnLocation().getLongitude());
 		}
 		if (offer.getMobilityService() != null) {
 			offerDTO.setMobilityServiceId(offer.getMobilityService().getServiceId());

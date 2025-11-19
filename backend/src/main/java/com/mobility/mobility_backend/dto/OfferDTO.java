@@ -15,6 +15,7 @@ public class OfferDTO {
 	private LocalDateTime pickupDatetime;
 	private String description;
 	private BigDecimal price;
+	private String imageUrl;
 	private LocalDateTime createdAt;
 	private LocalDateTime updatedAt;
 	private boolean active;
@@ -25,6 +26,10 @@ public class OfferDTO {
 	private String returnLocationName;
 	private String mobilityServiceName;
 	private String adminName;
+	private Double pickupLatitude;
+	private Double pickupLongitude;
+	private Double returnLatitude;
+	private Double returnLongitude;
 
 	// Constructeurs (tu peux en ajouter selon besoin)
 	public OfferDTO() {
@@ -94,6 +99,16 @@ public class OfferDTO {
 	public void setPrice(BigDecimal price) {
 		this.price = price;
 	}
+	
+	
+	public String getImageUrl() {
+		return imageUrl;
+	}
+
+	public void setImageUrl(String imageUrl) {
+		this.imageUrl = imageUrl;
+	}
+
 
 	public LocalDateTime getCreatedAt() {
 		return createdAt;
@@ -160,4 +175,37 @@ public class OfferDTO {
 	public void setAdminName(String adminName) {
 		this.adminName = adminName;
 	}
+
+	public Double getPickupLatitude() {
+		return pickupLatitude;
+	}
+
+	public void setPickupLatitude(Double pickupLatitude) {
+		this.pickupLatitude = pickupLatitude;
+	}
+
+	public Double getPickupLongitude() {
+		return pickupLongitude;
+	}
+
+	public void setPickupLongitude(Double pickupLongitude) {
+		this.pickupLongitude = pickupLongitude;
+	}
+
+	public Double getReturnLatitude() {
+		return returnLatitude;
+	}
+
+	public void setReturnLatitude(Double returnLatitude) {
+		this.returnLatitude = returnLatitude;
+	}
+
+	public Double getReturnLongitude() {
+		return returnLongitude;
+	}
+
+	public void setReturnLongitude(Double returnLongitude) {
+		this.returnLongitude = returnLongitude;
+	}
+
 }

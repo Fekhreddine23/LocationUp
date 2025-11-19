@@ -43,8 +43,8 @@ public class CityControllerTest {
 	@Test
 	public void testCreateCity() throws Exception {
 		// Given
-		CityDTO requestDTO = new CityDTO(null, "Paris");
-		CityDTO responseDTO = new CityDTO(1, "Paris");
+		CityDTO requestDTO = new CityDTO(null, "Paris", null, null, null);
+		CityDTO responseDTO = new CityDTO(1, "Paris", null, null, null);
 
 		when(cityService.createCity(any(String.class))).thenReturn(responseDTO);
 
@@ -57,8 +57,8 @@ public class CityControllerTest {
 	@Test
 	public void testGetAllCities() throws Exception {
 		// Given
-		CityDTO city1 = new CityDTO(1, "Paris");
-		CityDTO city2 = new CityDTO(2, "Lyon");
+		CityDTO city1 = new CityDTO(1, "Paris", null, null, null);
+		CityDTO city2 = new CityDTO(2, "Lyon", null, null, null);
 		List<CityDTO> cities = Arrays.asList(city1, city2);
 
 		when(cityService.getAllCities()).thenReturn(cities);
@@ -71,7 +71,7 @@ public class CityControllerTest {
 	@Test
 	public void testGetCityById() throws Exception {
 		// Given
-		CityDTO city = new CityDTO(1, "Paris");
+		CityDTO city = new CityDTO(1, "Paris", null, null, null);
 
 		when(cityService.getCityById(1)).thenReturn(Optional.of(city));
 
@@ -92,7 +92,7 @@ public class CityControllerTest {
 	@Test
 	public void testGetCityByName() throws Exception {
 		// Given
-		CityDTO city = new CityDTO(1, "Paris");
+		CityDTO city = new CityDTO(1, "Paris", null, null, null);
 
 		when(cityService.getCityByName("Paris")).thenReturn(Optional.of(city));
 

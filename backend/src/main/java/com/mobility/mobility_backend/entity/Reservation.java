@@ -33,7 +33,7 @@ public class Reservation {
 	private Offer offer;
 
 	@NotNull(message = "La date de reservation ne peut pas être nulle")
-	@Future(message = "La date de reservation doit être dans le futur")
+	//@Future(message = "La date de reservation doit être dans le futur")
 	@Column(name = "reservation_date", nullable = false)
 	private LocalDateTime reservationDate;
 

@@ -15,6 +15,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
@@ -116,26 +117,13 @@ public class SecurityConfig {
 		return config.getAuthenticationManager();
 	}
 
+ 
 	@Bean
 	public PasswordEncoder passwordEncoder() {
-		// ⚠️ TEMPORAIRE - PasswordEncoder simple pour debugger
-		return new PasswordEncoder() {
-			@Override
-			public String encode(CharSequence rawPassword) {
-				System.out.println("🔑 [TEMP] Encoding password: " + rawPassword);
-				return rawPassword.toString(); // Retourne le mot de passe en clair
-			}
-
-			@Override
-			public boolean matches(CharSequence rawPassword, String encodedPassword) {
-				System.out.println("🔍 [TEMP] Comparing: '" + rawPassword + "' with stored: '" + encodedPassword + "'");
-				boolean result = rawPassword.toString().equals(encodedPassword);
-				System.out.println("✅ [TEMP] Match result: " + result);
-				return result;
-			}
-		};
+	    System.out.println("🔐 [SecurityConfig] Creating BCryptPasswordEncoder");
+	    return new BCryptPasswordEncoder();
+	}
 
 		// Pour revenir à BCrypt plus tard :
 		// return new BCryptPasswordEncoder();
 	}
-}

@@ -31,6 +31,7 @@ public class Offer {
 	// Constantes
 	public static final int DESCRIPTION_MAX_LENGTH = 1000;
 	public static final String PRICE_PRECISION = "10,2";
+	public static final int IMAGE_URL_MAX_LENGTH = 500;
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -71,6 +72,16 @@ public class Offer {
 	@DecimalMin(value = "0.0", inclusive = false, message = "Le prix doit être supérieur à 0")
 	@Column(nullable = false, precision = 10, scale = 2)
 	private BigDecimal price;
+	
+	
+	@Size(max = IMAGE_URL_MAX_LENGTH, message = "L'URL de l'image ne peut pas dépasser " + IMAGE_URL_MAX_LENGTH + " caractères")
+	@Column(name = "image_url", length = IMAGE_URL_MAX_LENGTH)
+	private String imageUrl;
+	
+	
+	
+
+	
 
 	@CreationTimestamp
 	@Column(name = "created_at", updatable = false)
@@ -96,7 +107,7 @@ public class Offer {
 
 	// Constructeur avec paramètres
 	public Offer(City pickupLocation, City returnLocation, MobilityService mobilityService, Admin admin,
-			LocalDateTime pickupDatetime, String description, BigDecimal price) {
+			LocalDateTime pickupDatetime, String description, BigDecimal price, String imageUrl) {
 		this.pickupLocation = pickupLocation;
 		this.returnLocation = returnLocation;
 		this.mobilityService = mobilityService;
@@ -104,6 +115,7 @@ public class Offer {
 		this.pickupDatetime = pickupDatetime;
 		this.description = description;
 		this.price = price;
+		this.imageUrl = imageUrl;
 	}
 
 	// Builder Pattern
@@ -119,6 +131,7 @@ public class Offer {
 		private LocalDateTime pickupDatetime;
 		private String description;
 		private BigDecimal price;
+		private String imageUrl;
 
 		public Builder pickupLocation(City pickupLocation) {
 			this.pickupLocation = pickupLocation;
@@ -157,7 +170,7 @@ public class Offer {
 
 		public Offer build() {
 			return new Offer(pickupLocation, returnLocation, mobilityService, admin, pickupDatetime, description,
-					price);
+					price, imageUrl);
 		}
 	}
 
@@ -233,6 +246,16 @@ public class Offer {
 	public void setCreatedAt(LocalDateTime createdAt) {
 		this.createdAt = createdAt;
 	}
+	
+	
+	public String getImageUrl() {
+		return imageUrl;
+		
+	}
+	
+	public void setImageUrl(String imageUrl) {
+		this.imageUrl = imageUrl;
+	}
 
 	public LocalDateTime getUpdatedAt() {
 		return updatedAt;
@@ -274,10 +297,11 @@ public class Offer {
 
 	@Override
 	public String toString() {
-		return "Offer{" + "offerId=" + offerId + ", pickupDatetime=" + pickupDatetime + ", price=" + price
-				+ ", description='"
-				+ (description != null ? description.substring(0, Math.min(50, description.length())) + "..." : "null")
-				+ '\'' + '}';
+		return "Offer [offerId=" + offerId + ", pickupLocation=" + pickupLocation + ", returnLocation=" + returnLocation
+				+ ", mobilityService=" + mobilityService + ", admin=" + admin + ", pickupDatetime=" + pickupDatetime
+				+ ", description=" + description + ", price=" + price + ", imageUrl=" + imageUrl + ", createdAt="
+				+ createdAt + ", updatedAt=" + updatedAt + ", status=" + status + ", version=" + version + ", active="
+				+ active + "]";
 	}
 
 	// gestion administrateur

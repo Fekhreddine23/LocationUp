@@ -11,14 +11,16 @@ public class CityMapper {
 		if (city == null) {
 			return null;
 		}
-		return new CityDTO(city.getCityId(), city.getName());
+		return new CityDTO(city.getCityId(), city.getName(), city.getPostalCode(), city.getLatitude(),
+				city.getLongitude());
 	}
 
 	public static City toEntity(CityDTO cityDTO) {
 		if (cityDTO == null) {
 			return null;
 		}
-		City city = new City(cityDTO.getName());
+		City city = new City(cityDTO.getName(), cityDTO.getPostalCode(), cityDTO.getLatitude(),
+				cityDTO.getLongitude());
 		city.setId(cityDTO.getId()); // ✅ CORRIGER setId → setCityId
 		return city;
 	}
