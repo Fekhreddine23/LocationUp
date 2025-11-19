@@ -13,7 +13,7 @@ describe('Simple Login Fix', () => {
     cy.url().then(currentUrl => {
       if (!currentUrl.includes('login')) {
         cy.log('✅ Successfully logged in!')
-        cy.contains('MonApp').should('be.visible')
+        cy.contains('LocationUp').should('be.visible')
       } else {
         cy.log('❌ Login failed - still on login page')
         // Prend une capture pour debug

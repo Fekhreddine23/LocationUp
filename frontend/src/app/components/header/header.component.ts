@@ -20,6 +20,7 @@ export class HeaderComponent {
   isLoggedIn = false;
   currentUser: User | null = null;
   isMenuOpen = false;
+  isMobileMenuOpen = false;
 
   // gestion du theme 
   currentTheme$: Observable<Theme>; 
@@ -49,9 +50,18 @@ export class HeaderComponent {
     this.isMenuOpen = !this.isMenuOpen;
   }
 
+  toggleMobileMenu(): void {
+    this.isMobileMenuOpen = !this.isMobileMenuOpen;
+  }
+
+  closeMobileMenu(): void {
+    this.isMobileMenuOpen = false;
+  }
+
   logout(): void {
     this.authService.logout();
     this.isMenuOpen = false;
+    this.isMobileMenuOpen = false;
     this.router.navigate(['/']);
   }
 

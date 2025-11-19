@@ -13,6 +13,7 @@
   padding: 1rem 2rem;
   max-width: 1200px;
   margin: 0 auto;
+  width: 100%;
 }
 
 .logo a {
@@ -185,8 +186,78 @@ app-notification .notification-panel {
   z-index: 1000;
 }
 
+.mobile-menu-toggle {
+  display: none;
+  flex-direction: column;
+  gap: 5px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.35rem;
+  margin-left: 1rem;
+
+  span {
+    width: 26px;
+    height: 3px;
+    background: var(--text-color);
+    border-radius: 2px;
+    transition: background-color 0.3s ease;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--primary-color);
+    border-radius: 6px;
+  }
+}
+
 /* Responsive */
 @media (max-width: 768px) {
+  .nav {
+    flex-wrap: wrap;
+    padding: 1rem;
+  }
+
+  .mobile-menu-toggle {
+    display: flex;
+  }
+
+  .nav-links {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+    margin-top: 1rem;
+    display: none;
+  }
+
+  .nav-links.open {
+    display: flex;
+  }
+
+  .nav-link {
+    width: 100%;
+    text-align: left;
+  }
+
+  .nav-link.button {
+    text-align: center;
+  }
+
+  .user-menu,
+  app-notification {
+    width: 100%;
+  }
+
+  .theme-toggle {
+    align-self: flex-start;
+    margin-top: 0.5rem;
+  }
+
+  .user-btn {
+    width: 100%;
+    justify-content: space-between;
+  }
+
   app-notification .notification-panel {
     position: fixed;
     top: 70px;

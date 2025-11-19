@@ -2,8 +2,8 @@ describe('Navigation Test', () => {
   it('should have working navigation', () => {
     cy.visit('/')
     
-    // Vérifie que MonApp est visible
-    cy.contains('MonApp').should('be.visible')
+    // Vérifie que LocationUp est visible
+    cy.contains('LocationUp').should('be.visible')
     
     // Cherche des liens de navigation communs
     const commonLinks = ['Connexion', 'Login', 'Accueil', 'Dashboard', 'Admin']

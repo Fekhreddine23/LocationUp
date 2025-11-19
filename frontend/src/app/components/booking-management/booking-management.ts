@@ -5,10 +5,13 @@ import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { Breadcrumbs } from '../breadcrumbs/breadcrumbs';
 import { AdminBooking, BookingResponse } from '../../core/models/AdminBooking.model';
 import { AdminService } from '../../core/services/admin.service';
-import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import { AdminUser } from '../../core/models/AdminUser.model';
+import { Offer } from '../../core/models/offer.model';
+import { Subject, forkJoin, Observable, of } from 'rxjs';
+import { catchError, map, takeUntil, tap } from 'rxjs/operators';
 
 type BookingStatus = AdminBooking['status'] | 'ALL';
+type NormalizedBookingOffer = NonNullable<AdminBooking['offer']>;
 
 @Component({
   selector: 'app-booking-management',
@@ -50,6 +53,8 @@ export class BookingManagement implements OnInit, OnDestroy {
   // Filtre utilisateur actif
   private activeUserFilter: { id: number, name: string } | null = null;
   private readonly destroy$ = new Subject<void>();
+  private userCache = new Map<number, AdminUser>();
+  private offerCache = new Map<number, Offer>();
 
   breadcrumbItems = [
     { label: 'Administration', url: '/admin' },
@@ -84,13 +89,14 @@ export class BookingManagement implements OnInit, OnDestroy {
 
   loadBookings(): void {
     this.isLoading = true;
-    this.adminService.getAllBookings(this.currentPage, this.pageSize).subscribe({
+    this.adminService.getAllBookings(this.currentPage, this.pageSize).pipe(
+      takeUntil(this.destroy$)
+    ).subscribe({
       next: (response: BookingResponse) => {
         this.bookings = response.content ?? [];
         this.totalElements = response.totalElements ?? this.bookings.length;
         this.totalPages = response.totalPages ?? Math.max(1, Math.ceil(this.totalElements / this.pageSize));
-        this.applyFilters(); // Applique les filtres après chargement
-        this.isLoading = false;
+        this.hydrateBookings(this.bookings);
       },
       error: (error) => {
         console.error('Erreur chargement réservations:', error);
@@ -114,13 +120,14 @@ export class BookingManagement implements OnInit, OnDestroy {
   searchBookings(): void {
     if (this.searchQuery.trim()) {
       this.isLoading = true;
-      this.adminService.searchBookings(this.searchQuery, this.currentPage, this.pageSize).subscribe({
+      this.adminService.searchBookings(this.searchQuery, this.currentPage, this.pageSize).pipe(
+        takeUntil(this.destroy$)
+      ).subscribe({
         next: (response: BookingResponse) => {
           this.bookings = response.content ?? [];
           this.totalElements = response.totalElements ?? this.bookings.length;
           this.totalPages = response.totalPages ?? Math.max(1, Math.ceil(this.totalElements / this.pageSize));
-          this.applyFilters(); // Applique les filtres après recherche
-          this.isLoading = false;
+          this.hydrateBookings(this.bookings);
         },
         error: (error) => {
           console.error('Erreur recherche:', error);
@@ -160,6 +167,184 @@ export class BookingManagement implements OnInit, OnDestroy {
     }
 
     this.commitFilteredBookings(filtered);
+  }
+
+  private hydrateBookings(bookings: AdminBooking[]): void {
+    this.enrichBookingsWithDetails(bookings).pipe(
+      takeUntil(this.destroy$)
+    ).subscribe({
+      next: () => {
+        this.applyFilters();
+        this.isLoading = false;
+      },
+      error: () => {
+        this.applyFilters();
+        this.isLoading = false;
+      }
+    });
+  }
+
+  private enrichBookingsWithDetails(bookings: AdminBooking[]): Observable<void> {
+    this.applyCachedUserData(bookings);
+    this.applyCachedOfferData(bookings);
+
+    const requests = [
+      ...this.buildUserRequests(bookings),
+      ...this.buildOfferRequests(bookings)
+    ];
+
+    if (!requests.length) {
+      return of(void 0);
+    }
+
+    return forkJoin(requests).pipe(map(() => void 0));
+  }
+
+  private buildUserRequests(bookings: AdminBooking[]): Observable<AdminUser | null>[] {
+    const idsToFetch = Array.from(new Set(
+      bookings
+        .map(booking => booking.user?.id)
+        .filter((id): id is number => typeof id === 'number')
+    )).filter(id => this.shouldFetchUserDetails(id));
+
+    return idsToFetch.map(id =>
+      this.adminService.getUserById(id).pipe(
+        tap(user => {
+          if (user) {
+            this.userCache.set(id, user);
+            this.applyUserToBookings(user);
+          }
+        }),
+        catchError(error => {
+          console.error('Erreur chargement utilisateur:', error);
+          return of(null);
+        })
+      )
+    );
+  }
+
+  private buildOfferRequests(bookings: AdminBooking[]): Observable<Offer | null>[] {
+    const idsToFetch = Array.from(new Set(
+      bookings
+        .map(booking => booking.offer?.offerId)
+        .filter((id): id is number => typeof id === 'number')
+    )).filter(id => this.shouldFetchOfferDetails(id));
+
+    return idsToFetch.map(id =>
+      this.adminService.getOfferById(id).pipe(
+        tap(offer => {
+          if (offer) {
+            this.offerCache.set(id, offer);
+            this.applyOfferToBookings(offer);
+          }
+        }),
+        catchError(error => {
+          console.error('Erreur chargement offre:', error);
+          return of(null);
+        })
+      )
+    );
+  }
+
+  private applyCachedUserData(bookings: AdminBooking[]): void {
+    bookings.forEach(booking => {
+      const userId = booking.user?.id;
+      if (!userId) {
+        return;
+      }
+      const cached = this.userCache.get(userId);
+      if (cached) {
+        booking.user = {
+          id: cached.id,
+          username: cached.username,
+          email: cached.email
+        };
+      }
+    });
+  }
+
+  private applyCachedOfferData(bookings: AdminBooking[]): void {
+    bookings.forEach(booking => {
+      const offerId = booking.offer?.offerId;
+      if (!offerId) {
+        return;
+      }
+      const cached = this.offerCache.get(offerId);
+      if (cached) {
+        const mappedOffer = this.mapOfferToBookingOffer(cached);
+        booking.offer = mappedOffer;
+        booking.totalPrice = booking.totalPrice ?? mappedOffer.price;
+      }
+    });
+  }
+
+  private shouldFetchUserDetails(userId: number): boolean {
+    if (this.userCache.has(userId)) {
+      return false;
+    }
+    const booking = this.bookings.find(item => item.user?.id === userId);
+    if (!booking) {
+      return false;
+    }
+    const username = booking.user?.username ?? '';
+    const email = booking.user?.email ?? '';
+    const placeholderUsername = !username || username.startsWith('Utilisateur #');
+    return placeholderUsername || !email;
+  }
+
+  private shouldFetchOfferDetails(offerId: number): boolean {
+    if (this.offerCache.has(offerId)) {
+      return false;
+    }
+    const booking = this.bookings.find(item => item.offer?.offerId === offerId);
+    if (!booking || !booking.offer) {
+      return false;
+    }
+    const service = booking.offer.mobilityService ?? '';
+    const hasReadableService = service.length > 0 && !service.startsWith('Service #');
+    const hasLocation = !!booking.offer.pickupLocation;
+    return !hasReadableService || !hasLocation;
+  }
+
+  private applyUserToBookings(user: AdminUser): void {
+    this.bookings.forEach(booking => {
+      if (booking.user?.id === user.id) {
+        booking.user = {
+          id: user.id,
+          username: user.username,
+          email: user.email
+        };
+      }
+    });
+  }
+
+  private applyOfferToBookings(offer: Offer): void {
+    const mappedOffer = this.mapOfferToBookingOffer(offer);
+    this.bookings.forEach(booking => {
+      if (booking.offer?.offerId === offer.offerId) {
+        booking.offer = mappedOffer;
+        booking.totalPrice = booking.totalPrice ?? mappedOffer.price;
+      }
+    });
+  }
+
+  private mapOfferToBookingOffer(offer: Offer): NormalizedBookingOffer {
+    return {
+      offerId: offer.offerId,
+      mobilityService: this.getOfferServiceLabel(offer),
+      pickupLocation: offer.pickupLocationName || offer.pickupLocation || offer.pickupLocationCity,
+      price: offer.price
+    };
+  }
+
+  private getOfferServiceLabel(offer: Offer): string {
+    if (offer.mobilityService && offer.mobilityService.trim().length > 0) {
+      return offer.mobilityService;
+    }
+    if (offer.mobilityServiceId) {
+      return `Service #${offer.mobilityServiceId}`;
+    }
+    return offer.description?.substring(0, 40) ?? 'Service inconnu';
   }
 
   // 🆕 MÉTHODE : Applique le filtre utilisateur spécifique

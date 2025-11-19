@@ -27,48 +27,6 @@
   <!-- Main Content -->
   <div *ngIf="!isLoading && !errorMessage" class="dashboard-content">
     
-    <!-- Statistics Cards -->
-    <div class="dashboard-section">
-      <h2>Statistiques Globales</h2>
-      <div class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-icon">👤</div>
-          <div class="stat-content">
-            <div class="stat-number">{{ formatNumber(adminStats.totalUsers) }}</div>
-            <div class="stat-label">Utilisateurs Totaux</div>
-            <div class="stat-trend">{{ adminStats.activeUsers }} actifs</div>
-          </div>
-        </div>
-
-        <div class="stat-card warning-card" *ngIf="adminStats.pendingReservations > 0">
-          <div class="stat-icon">📋</div>
-          <div class="stat-content">
-            <div class="stat-number">{{ formatNumber(adminStats.pendingReservations) }}</div>
-            <div class="stat-label">En Attente</div>
-            <div class="stat-trend warning">Action requise</div>
-          </div>
-        </div>
-
-        <div class="stat-card">
-          <div class="stat-icon">🚗</div>
-          <div class="stat-content">
-            <div class="stat-number">{{ formatNumber(adminStats.totalOffers) }}</div>
-            <div class="stat-label">Offres Actives</div>
-            <div class="stat-trend">Disponibles</div>
-          </div>
-        </div>
-
-        <div class="stat-card revenue-card">
-          <div class="stat-icon">💰</div>
-          <div class="stat-content">
-            <div class="stat-number">{{ formatCurrency(adminStats.totalRevenue) }}</div>
-            <div class="stat-label">Revenu Total</div>
-            <div class="stat-trend">CA mensuel</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
     <!-- ✅ NOUVELLE SECTION : Analytics avec Charts -->
     <div class="dashboard-section">
       <h2>📊 Analytics en Temps Réel</h2>

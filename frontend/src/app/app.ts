@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, OnInit, signal } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { RouterOutlet, RouterLink } from '@angular/router';
 import { Observable } from 'rxjs';
 
 import { HeaderComponent } from '../../src/app/components/header/header.component';
@@ -9,12 +9,11 @@ import { Offer } from './core/models/offer.model';
 import { ToastContainer } from './components/toast-container/toast-container';
 import { BreadcrumbService } from './core/services/breadcrumb';
 import { BreadcrumbItem } from './core/models/BreadcrumbItem.model';
-import { IntegrationTest } from "./components/integration-test/integration-test";
 
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, CommonModule, HeaderComponent, ToastContainer, IntegrationTest],
+  imports: [RouterOutlet, RouterLink, CommonModule, HeaderComponent, ToastContainer],
   templateUrl: './app.html',
   styleUrl: './app.scss'
 })
@@ -24,6 +23,7 @@ export class App implements OnInit {
   error: string = '';
   loading: boolean = true;
   breadcrumbs: any[] = [];
+  currentYear: number = new Date().getFullYear();
 
   // ⚠️ CORRECTION : Utiliser OffersService au lieu de HttpClient direct
   constructor(private offersService: OffersService

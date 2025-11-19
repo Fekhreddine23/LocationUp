@@ -105,3 +105,61 @@ input {
         }
     }
 }
+
+.security-banner {
+    background: #fff4e5;
+    color: #a66321;
+    padding: 0.75rem;
+    border-radius: 6px;
+    border-left: 4px solid #f0ad4e;
+    margin-bottom: 1rem;
+}
+
+.security-tip {
+    margin-top: 1rem;
+    font-size: 0.85rem;
+    color: #7f8c8d;
+    text-align: center;
+}
+
+.password-strength {
+    margin-top: 0.5rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-transform: uppercase;
+
+    &.faible { color: #e74c3c; }
+    &.moyen { color: #f39c12; }
+    &.fort { color: #27ae60; }
+    &.excellent { color: #1abc9c; }
+}
+
+.password-criteria {
+    margin: 0.5rem 0 0;
+    padding-left: 1.25rem;
+    font-size: 0.85rem;
+    color: #888;
+
+    li {
+        margin-bottom: 0.25rem;
+
+        &.met {
+            color: #27ae60;
+            font-weight: 600;
+        }
+    }
+}
+
+.security-consent {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    color: #555;
+    margin: 1rem 0;
+
+    input {
+        width: auto;
+        margin-top: 0.2rem;
+    }
+}

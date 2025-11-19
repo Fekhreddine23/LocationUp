@@ -184,12 +184,22 @@ export class AdminService {
   }
 
   private transformBookingResponse(response: any): BookingResponse {
-    const content = Array.isArray(response?.content) ? response.content : [];
+    const content = Array.isArray(response?.content)
+      ? response.content
+      : Array.isArray(response?.bookings)
+        ? response.bookings
+        : Array.isArray(response)
+          ? response
+          : [];
+
+    const totalElements = response?.totalElements ?? content.length ?? 0;
+    const size = response?.size ?? content.length ?? 0;
+
     return {
       content: content.map((booking: any) => this.transformBooking(booking)),
-      totalElements: response?.totalElements ?? content.length ?? 0,
-      totalPages: response?.totalPages ?? 1,
-      size: response?.size ?? content.length ?? 0,
+      totalElements,
+      totalPages: response?.totalPages ?? (size ? Math.max(1, Math.ceil(totalElements / size)) : 1),
+      size,
       number: response?.number ?? 0
     };
   }
@@ -203,28 +213,119 @@ export class AdminService {
       };
     }
 
+    const user = this.mapBookingUser(rawBooking);
+    const offer = this.mapBookingOffer(rawBooking);
+    const reservationDate = rawBooking.reservationDate
+      ?? rawBooking.date
+      ?? rawBooking.reservation_datetime
+      ?? new Date().toISOString();
+    const createdAt = rawBooking.createdAt
+      ?? rawBooking.created_at
+      ?? rawBooking.creationDate
+      ?? rawBooking.createdDate
+      ?? reservationDate;
+
     return {
       reservationId: rawBooking.reservationId ?? rawBooking.id ?? 0,
-      reservationDate: rawBooking.reservationDate ?? rawBooking.date ?? new Date().toISOString(),
+      reservationDate,
       status: this.normalizeBookingStatus(rawBooking.status),
-      createdAt: rawBooking.createdAt ?? rawBooking.created_at,
-      totalPrice: rawBooking.totalPrice ?? rawBooking.price,
-      user: rawBooking.user
-        ? {
-            id: rawBooking.user.id,
-            username: rawBooking.user.username,
-            email: rawBooking.user.email
-          }
-        : undefined,
-      offer: rawBooking.offer
-        ? {
-            offerId: rawBooking.offer.offerId ?? rawBooking.offer.id ?? 0,
-            mobilityService: rawBooking.offer.mobilityService ?? rawBooking.offer.serviceName,
-            pickupLocation: rawBooking.offer.pickupLocation,
-            price: rawBooking.offer.price
-          }
-        : undefined
+      createdAt,
+      totalPrice: rawBooking.totalPrice ?? rawBooking.price ?? offer?.price,
+      user,
+      offer
     };
+  }
+
+  private mapBookingUser(rawBooking: any): AdminBooking['user'] | undefined {
+    const rawUser = rawBooking.user
+      ?? rawBooking.customer
+      ?? rawBooking.client
+      ?? rawBooking.account
+      ?? rawBooking.userAccount
+      ?? null;
+    const fallbackId = rawUser?.id ?? rawBooking.userId ?? rawBooking.customerId ?? rawBooking.clientId;
+
+    if (!rawUser && !fallbackId) {
+      return undefined;
+    }
+
+    const username =
+      rawUser?.username
+      ?? rawUser?.login
+      ?? rawUser?.name
+      ?? rawBooking.username
+      ?? rawBooking.userName
+      ?? (fallbackId ? `Utilisateur #${fallbackId}` : undefined);
+
+    const email =
+      rawUser?.email
+      ?? rawUser?.emailAddress
+      ?? rawBooking.email
+      ?? rawBooking.userEmail;
+
+    return {
+      id: fallbackId ?? 0,
+      username: username ?? 'Utilisateur',
+      email: email ?? undefined
+    };
+  }
+
+  private mapBookingOffer(rawBooking: any): AdminBooking['offer'] | undefined {
+    const rawOffer = rawBooking.offer
+      ?? rawBooking.offerDetails
+      ?? rawBooking.offerDto
+      ?? null;
+    const fallbackOfferId = rawOffer?.offerId ?? rawOffer?.id ?? rawBooking.offerId;
+
+    if (!rawOffer && !fallbackOfferId) {
+      return undefined;
+    }
+
+    const mobilityServiceName =
+      rawOffer?.mobilityService?.name
+      ?? rawOffer?.mobilityServiceName
+      ?? rawOffer?.serviceName
+      ?? rawOffer?.name
+      ?? (typeof rawOffer?.mobilityService === 'string' ? rawOffer.mobilityService : undefined)
+      ?? rawBooking.mobilityService
+      ?? rawBooking.serviceName;
+
+    const mobilityServiceCategory =
+      rawOffer?.mobilityService?.categorie
+      ?? rawOffer?.mobilityService?.category
+      ?? rawOffer?.categorie
+      ?? rawOffer?.category
+      ?? rawOffer?.mobilityServiceCategory;
+
+    const pickupLocationName =
+      rawOffer?.pickupLocation?.name
+      ?? rawOffer?.pickupLocationName
+      ?? rawOffer?.pickupLocation
+      ?? rawBooking.pickupLocationName
+      ?? rawBooking.pickupLocation;
+
+    const price =
+      rawOffer?.price
+      ?? rawBooking.totalPrice
+      ?? rawBooking.price;
+
+    return {
+      offerId: fallbackOfferId ?? 0,
+      mobilityService: this.buildMobilityServiceLabel(mobilityServiceName, mobilityServiceCategory),
+      pickupLocation: pickupLocationName ?? undefined,
+      price
+    };
+  }
+
+  private buildMobilityServiceLabel(name?: string, category?: string): string | undefined {
+    const cleanName = (name ?? '').trim();
+    const cleanCategory = (category ?? '').trim();
+
+    if (cleanName && cleanCategory) {
+      return `${cleanName} (${cleanCategory})`;
+    }
+
+    return cleanName || cleanCategory || undefined;
   }
 
   private normalizeBookingStatus(status?: string | null): AdminBooking['status'] {
@@ -243,6 +344,10 @@ export class AdminService {
     const pickupLocationName = rawOffer.pickupLocation?.name ?? rawOffer.pickupLocationName ?? rawOffer.pickupLocation ?? '';
     const returnLocationName = rawOffer.returnLocation?.name ?? rawOffer.returnLocationName ?? rawOffer.returnLocation ?? '';
     const mobilityServiceName = rawOffer.mobilityService?.name ?? rawOffer.mobilityServiceName ?? rawOffer.mobilityService ?? '';
+    const pickupLatitude = rawOffer.pickupLatitude ?? rawOffer.pickupLocation?.latitude ?? rawOffer.pickupLocationLat;
+    const pickupLongitude = rawOffer.pickupLongitude ?? rawOffer.pickupLocation?.longitude ?? rawOffer.pickupLocationLng;
+    const returnLatitude = rawOffer.returnLatitude ?? rawOffer.returnLocation?.latitude ?? rawOffer.returnLocationLat;
+    const returnLongitude = rawOffer.returnLongitude ?? rawOffer.returnLocation?.longitude ?? rawOffer.returnLocationLng;
 
     return {
       offerId: rawOffer.offerId ?? rawOffer.id,
@@ -260,6 +365,10 @@ export class AdminService {
       returnLocationName,
       pickupLocationCity: rawOffer.pickupLocationCity ?? pickupLocationName,
       returnLocationCity: rawOffer.returnLocationCity ?? returnLocationName,
+      pickupLatitude,
+      pickupLongitude,
+      returnLatitude,
+      returnLongitude,
       status: this.normalizeOfferStatus(rawOffer.status),
       mobilityService: mobilityServiceName,
       pickupLocation: pickupLocationName,
@@ -737,14 +846,14 @@ changeUserRole(userId: number, newRole: string): Observable<AdminUser> {
   }
 
 
-   /**
+  /**
    * Récupère une offre par son ID
    * GET /api/admin/offers/{id}
    */
   getOfferById(offerId: number): Observable<Offer> {
     return this.http.get<Offer>(`${this.apiUrl}/offers/${offerId}`).pipe(
-   catchError(error => this.handleApiError('récupération de l\'offre', error))
-      
+      map(response => this.transformOffer(response)),
+      catchError(error => this.handleApiError('récupération de l\'offre', error))
     );
   }
 

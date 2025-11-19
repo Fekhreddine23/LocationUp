@@ -39,6 +39,14 @@
         required
         (input)="checkPasswords()"
         [disabled]="isLoading">
+      <div class="password-strength" [ngClass]="passwordStrengthLabel">
+        <span>Solidité : {{ passwordStrengthLabel | titlecase }}</span>
+      </div>
+      <ul class="password-criteria">
+        <li *ngFor="let rule of passwordCriteria" [class.met]="rule.met">
+          {{ rule.label }}
+        </li>
+      </ul>
     </div>
 
     <div class="form-group">
@@ -57,10 +65,19 @@
       </div>
     </div>
 
+    <label class="security-consent">
+      <input 
+        type="checkbox" 
+        [(ngModel)]="hasConsentedToSecurityPolicy" 
+        name="securityConsent"
+        [disabled]="isLoading">
+      J'accepte les règles de sécurité (mots de passe robustes, protection MFA, déconnexion automatique).
+    </label>
+
     <button 
       type="submit" 
       class="btn-primary" 
-      [disabled]="!registerForm.form.valid || !passwordsMatch || isLoading">
+      [disabled]="!registerForm.form.valid || !passwordsMatch || !isPasswordCompliant || !hasConsentedToSecurityPolicy || isLoading">
       
       <span *ngIf="!isLoading">S'inscrire</span>
       <span *ngIf="isLoading">Inscription...</span>

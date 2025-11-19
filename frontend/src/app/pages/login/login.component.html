@@ -2,6 +2,10 @@
     <form (ngSubmit)="onLogin()" #loginForm="ngForm">
         <h2>Connexion</h2>
 
+        <div class="security-banner" *ngIf="isLockedOut">
+            Trop de tentatives de connexion. Réessayez dans {{ remainingLockDuration }}.
+        </div>
+
         <!-- Message d'erreur -->
         <div class="error-message" *ngIf="errorMessage">
             {{ errorMessage }}
@@ -15,7 +19,7 @@
                 name="username" 
                 [(ngModel)]="credentials.username" 
                 required 
-                [disabled]="isLoading"
+                [disabled]="isLoading || twoFactorRequired"
                 placeholder="Entrez votre nom d'utilisateur">
         </div>
 
@@ -27,21 +31,51 @@
                 name="password" 
                 [(ngModel)]="credentials.password" 
                 required 
-                [disabled]="isLoading"
+                [disabled]="isLoading || twoFactorRequired"
                 placeholder="Entrez votre mot de passe">
+        </div>
+
+        <div class="twofactor-section" *ngIf="twoFactorRequired">
+            <p>{{ twoFactorMessage }}</p>
+            <div class="form-group">
+                <label for="twoFactorCode">Code 2FA</label>
+                <input 
+                    type="text" 
+                    id="twoFactorCode" 
+                    name="twoFactorCode" 
+                    [(ngModel)]="twoFactorCode"
+                    maxlength="6"
+                    minlength="6"
+                    pattern="\\d{6}"
+                    required
+                    [disabled]="isVerifyingTwoFactor"
+                    placeholder="000000">
+            </div>
+            <div class="error-message" *ngIf="twoFactorError">
+                {{ twoFactorError }}
+            </div>
+            <button type="button" class="btn-link" (click)="cancelTwoFactorStep()" [disabled]="isVerifyingTwoFactor">
+                ↩️ Changer d'utilisateur
+            </button>
         </div>
 
         <button 
             type="submit" 
             class="btn-primary" 
-            [disabled]="!loginForm.form.valid || isLoading">
+            [disabled]="twoFactorRequired ? (isVerifyingTwoFactor || twoFactorCode.trim().length !== 6) : (!loginForm.form.valid || isLoading)">
             
-            <span *ngIf="!isLoading">Se connecter</span>
-            <span *ngIf="isLoading">Connexion...</span>
+            <span *ngIf="twoFactorRequired && !isVerifyingTwoFactor">Valider le code</span>
+            <span *ngIf="twoFactorRequired && isVerifyingTwoFactor">Vérification...</span>
+            <span *ngIf="!twoFactorRequired && !isLoading">Se connecter</span>
+            <span *ngIf="!twoFactorRequired && isLoading">Connexion...</span>
         </button>
 
         <p class="register-link">
             Pas de compte ? <a routerLink="/register">Créer un compte</a>
+        </p>
+
+        <p class="security-tip">
+            Conseil sécurité : utilisez des gestionnaires de mots de passe et activez/désactivez la MFA depuis votre profil.
         </p>
     </form>
 </div>

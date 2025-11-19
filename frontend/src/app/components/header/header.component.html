@@ -1,23 +1,33 @@
 <header class="header">
   <nav class="nav">
     <div class="logo">
-      <a routerLink="/">MonApp</a>
+      <a routerLink="/">LocationUp</a>
     </div>
+    <button 
+      type="button" 
+      class="mobile-menu-toggle" 
+      (click)="toggleMobileMenu()" 
+      [attr.aria-expanded]="isMobileMenuOpen"
+      aria-label="Menu principal">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
 
-    <div class="nav-links">
-      <a routerLink="/" class="nav-link">Accueil</a>
+    <div class="nav-links" [class.open]="isMobileMenuOpen">
+      <a routerLink="/" class="nav-link" (click)="closeMobileMenu()">Accueil</a>
 
       <ng-container *ngIf="!isLoggedIn; else userMenu">
-        <a routerLink="/login" class="nav-link">Connexion</a>
-        <a routerLink="/register" class="nav-link button">Inscription</a>
+        <a routerLink="/login" class="nav-link" (click)="closeMobileMenu()">Connexion</a>
+        <a routerLink="/register" class="nav-link button" (click)="closeMobileMenu()">Inscription</a>
       </ng-container>
 
       <ng-template #userMenu>
-        <a [routerLink]="dashboardRoute" class="nav-link">
+        <a [routerLink]="dashboardRoute" class="nav-link" (click)="closeMobileMenu()">
           {{ isAdmin ? 'Admin' : 'Dashboard' }}
         </a>
-        <a [routerLink]="offersRoute" class="nav-link">Offres</a>
-        <a [routerLink]="bookingsRoute" class="nav-link">Réservations</a>
+        <a [routerLink]="offersRoute" class="nav-link" (click)="closeMobileMenu()">Offres</a>
+        <a [routerLink]="bookingsRoute" class="nav-link" (click)="closeMobileMenu()">Réservations</a>
 
         <!-- ✅ INTÉGRATION DE LA NOTIFICATION -->
         <app-notification></app-notification>

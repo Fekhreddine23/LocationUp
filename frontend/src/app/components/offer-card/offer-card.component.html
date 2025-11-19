@@ -1,4 +1,15 @@
 <div class="offer-card">
+  <div class="offer-visual">
+    <img
+      [src]="getOfferImage(offer)"
+      [alt]="offer.description || 'Offre de mobilité'"
+      loading="eager"
+    />
+    <span class="visual-chip">
+      {{ getOfferCategoryLabel(offer) }}
+    </span>
+  </div>
+
   <div class="offer-header">
     <h3>{{ offer.description || 'Offre #' + offer.offerId }}</h3>
     <span class="price">{{ formatPrice(offer.price) }}</span>

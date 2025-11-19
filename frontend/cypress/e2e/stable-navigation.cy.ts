@@ -13,7 +13,7 @@ describe('Stable Navigation', () => {
       
       // Chaque test commence sur une page fraîche
       cy.visit('/')
-      cy.contains('MonApp').should('be.visible')
+      cy.contains('LocationUp').should('be.visible')
       cy.wait(1000) // Stabilisation Angular
       
       // Clique et vérifie
@@ -30,7 +30,7 @@ describe('Stable Navigation', () => {
 
   it('should handle quick navigation sequence', () => {
     cy.visit('/')
-    cy.contains('MonApp').should('be.visible')
+    cy.contains('LocationUp').should('be.visible')
     
     // Navigation rapide mais avec des visites séparées
     cy.contains('button', '👥 Tester Utilisateurs').click()

@@ -14,6 +14,7 @@ import { Offer, OfferStatus } from '../../core/models/offer.model';
 export class OfferCardComponent {
 
   @Input() offer!: Offer;
+  private readonly defaultImage = 'https://images.unsplash.com/photo-1477847616630-cf9cf8815fda?auto=format&fit=crop&w=900&q=80';
 
   constructor(
     private offersService: OffersService,
@@ -60,6 +61,43 @@ export class OfferCardComponent {
       COMPLETED: 'status-completed'
     };
     return map[this.normalizeStatus(status)];
+  }
+
+  getOfferImage(offer: Offer): string {
+    return offer.imageUrl || this.defaultImage;
+  }
+
+  getOfferCategoryLabel(offer: Offer): string {
+    const description = this.normalizeText(offer.description || '').toLowerCase();
+    const service = this.normalizeText(offer.mobilityService || '').toLowerCase();
+    const source = `${description} ${service}`;
+
+    if (source.includes('velo') || source.includes('bike')) {
+      return 'Vélo';
+    }
+    if (source.includes('trottinette') || source.includes('trotinette')) {
+      return 'Trottinette';
+    }
+    if (source.includes('scooter')) {
+      return 'Scooter';
+    }
+    if (source.includes('moto')) {
+      return 'Moto';
+    }
+    if (source.includes('camion') || source.includes('cargo')) {
+      return 'Cargo';
+    }
+    if (source.includes('voiture') || source.includes('car')) {
+      return 'Voiture';
+    }
+    if (source.includes('van') || source.includes('utilitaire')) {
+      return 'Van';
+    }
+    return 'Mobilité';
+  }
+
+  private normalizeText(value: string): string {
+    return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   }
 
   isOfferConfirmed(offer: Offer): boolean {

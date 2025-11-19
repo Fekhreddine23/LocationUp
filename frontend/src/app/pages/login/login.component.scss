@@ -104,3 +104,50 @@ input {
         }
     }
 }
+
+.security-banner {
+    background: #fff4e5;
+    color: #a66321;
+    padding: 0.75rem;
+    border-radius: 6px;
+    border-left: 4px solid #f0ad4e;
+    margin-bottom: 1rem;
+}
+
+.security-tip {
+    margin-top: 1rem;
+    font-size: 0.85rem;
+    color: #7f8c8d;
+    text-align: center;
+}
+
+.twofactor-section {
+    padding: 1rem;
+    border: 1px solid #e5e9f2;
+    border-radius: 8px;
+    background: #f8f9ff;
+    margin-bottom: 1rem;
+
+    p {
+        font-size: 0.9rem;
+        color: #4c4f5a;
+        margin-bottom: 0.75rem;
+    }
+
+    .btn-link {
+        background: none;
+        border: none;
+        padding: 0;
+        color: #5a67d8;
+        font-weight: 600;
+        cursor: pointer;
+        margin-top: 0.5rem;
+        text-decoration: underline;
+
+        &:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            text-decoration: none;
+        }
+    }
+}

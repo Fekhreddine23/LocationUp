@@ -21,8 +21,11 @@ export interface Offer {
   pickupLocation?: string;
   returnLocation?: string;
   adminName?: string;
-
-
+  imageUrl?: string;
+  pickupLatitude?: number;
+  pickupLongitude?: number;
+  returnLatitude?: number;
+  returnLongitude?: number;
 }
 
 export interface CreateOfferRequest {

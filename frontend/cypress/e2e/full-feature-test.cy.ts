@@ -1,7 +1,7 @@
 describe('Full Feature Test', () => {
   beforeEach(() => {
     cy.visit('/')
-    cy.contains('MonApp').should('be.visible')
+    cy.contains('LocationUp').should('be.visible')
   })
 
   it('should test user management', () => {

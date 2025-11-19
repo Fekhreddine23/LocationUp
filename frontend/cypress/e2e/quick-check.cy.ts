@@ -3,7 +3,7 @@ describe('Quick Check', () => {
     cy.visit('/')
     
     // Vérifie la page d'accueil
-    cy.contains('MonApp').should('be.visible')
+    cy.contains('LocationUp').should('be.visible')
     cy.log('✅ Homepage loaded')
     
     // Teste un bouton rapidement

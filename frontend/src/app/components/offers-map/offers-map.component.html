@@ -1,0 +1,13 @@
+<div class="map-wrapper">
+  <div
+    class="map-container"
+    leaflet
+    [leafletOptions]="mapOptions"
+    [leafletLayers]="markerLayers"
+    (leafletMapReady)="onMapReady($event)">
+  </div>
+
+  <div class="map-empty-state" *ngIf="markerLayers.length === 0">
+    <p>Aucune coordonnée disponible pour les offres actuellement.</p>
+  </div>
+</div>

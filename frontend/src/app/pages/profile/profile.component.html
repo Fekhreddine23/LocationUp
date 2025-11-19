@@ -71,7 +71,7 @@
         </div>
 
         <!-- MODE ÉDITION -->
-        <div *ngIf="isEditing" class="profile-details">
+        <div *ngIf="isEditing" class="profile-details edit-form">
           <div class="info-item">
             <label for="username">Nom d'utilisateur</label>
             <input 
@@ -154,20 +154,35 @@
     <!-- Actions -->
     <div class="profile-actions">
       <!-- Mode Lecture -->
-      <div *ngIf="!isEditing" class="action-buttons">
-        <button class="btn btn-primary" (click)="editProfile()">
-          ✏️ Modifier le profil
+      <div *ngIf="!isEditing" class="action-buttons quick-actions">
+        <button class="action-card primary" (click)="editProfile()">
+          <span class="action-icon">✏️</span>
+          <div class="action-text">
+            <span class="action-title">Modifier le profil</span>
+            <span class="action-subtitle">Mettez à jour vos informations personnelles</span>
+          </div>
+          <span class="action-arrow">→</span>
         </button>
-        <button class="btn btn-outline" (click)="goToBookings()">
-          📋 Voir mes réservations
+        <button class="action-card surface" (click)="goToBookings()">
+          <span class="action-icon">📋</span>
+          <div class="action-text">
+            <span class="action-title">Voir mes réservations</span>
+            <span class="action-subtitle">Consultez l'historique et les réservations actives</span>
+          </div>
+          <span class="action-arrow">→</span>
         </button>
-        <button class="btn btn-outline" (click)="goToDashboard()">
-          📊 Tableau de bord
+        <button class="action-card ghost" (click)="goToDashboard()">
+          <span class="action-icon">📊</span>
+          <div class="action-text">
+            <span class="action-title">Tableau de bord</span>
+            <span class="action-subtitle">Accédez à vos statistiques globales</span>
+          </div>
+          <span class="action-arrow">→</span>
         </button>
       </div>
 
       <!-- Mode Édition -->
-      <div *ngIf="isEditing" class="action-buttons">
+      <div *ngIf="isEditing" class="action-buttons edit-mode">
         <button class="btn btn-success" (click)="saveProfile()" [disabled]="isLoading">
           💾 Sauvegarder
         </button>

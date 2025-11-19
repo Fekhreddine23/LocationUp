@@ -2,8 +2,8 @@ describe('Test Buttons', () => {
   it('should test all functionality buttons', () => {
     cy.visit('/')
     
-    // Vérifie que MonApp est visible
-    cy.contains('MonApp').should('be.visible')
+    // Vérifie que LocationUp est visible
+    cy.contains('LocationUp').should('be.visible')
     cy.screenshot('main-page')
     
     // Teste le bouton Stats

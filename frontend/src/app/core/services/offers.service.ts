@@ -10,7 +10,7 @@ import { AuthService } from './auth.service';
 })
 export class OffersService {
   private apiUrl = '/api/offers';
-  private useMocks = true; // ⚠️ Passez à false quand l'API backend sera prête
+  private useMocks = environment.useMockOffers ?? false;
 
   constructor(private http: HttpClient, 
     private businessEvents: BusinessEventsService,
@@ -228,5 +228,4 @@ export class OffersService {
     }
   }
 }
-
 

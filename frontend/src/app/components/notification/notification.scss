@@ -244,49 +244,6 @@
   background: rgba(220, 53, 69, 0.08);
 }
 
-.test-buttons {
-  padding: 8px 16px;
-  border-top: 1px solid var(--border-color);
-  background: var(--surface-color);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-
-  small {
-    color: var(--text-secondary);
-  }
-}
-
-.test-btn {
-  background: var(--card-bg);
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  padding: 4px 8px;
-  cursor: pointer;
-  font-size: 0.9em;
-  color: var(--text-color);
-
-  &:hover {
-    background: var(--hover-color);
-  }
-
-  &.success {
-    border-color: #28a745;
-  }
-
-  &.error {
-    border-color: #dc3545;
-  }
-
-  &.warning {
-    border-color: #ffc107;
-  }
-
-  &.info {
-    border-color: #17a2b8;
-  }
-}
-
 // Responsive
 @media (max-width: 768px) {
   .notification-panel {
