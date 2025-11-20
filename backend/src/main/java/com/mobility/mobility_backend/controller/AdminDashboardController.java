@@ -10,9 +10,11 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.mobility.mobility_backend.dto.AdminStatsDTO;
+import com.mobility.mobility_backend.dto.DashboardTrendsDTO;
 import com.mobility.mobility_backend.dto.RecentActivityDTO;
 import com.mobility.mobility_backend.entity.User;
 import com.mobility.mobility_backend.service.DashboardService;
@@ -37,6 +39,11 @@ public class AdminDashboardController {
 	public ResponseEntity<AdminStatsDTO> getDashboardStats() {
 		AdminStatsDTO stats = dashboardService.getAdminStats();
 		return ResponseEntity.ok(stats);
+	}
+
+	@GetMapping("/stats/trends")
+	public ResponseEntity<DashboardTrendsDTO> getDashboardTrends(@RequestParam(value = "months", defaultValue = "6") int months) {
+		return ResponseEntity.ok(dashboardService.getDashboardTrends(months));
 	}
 
 

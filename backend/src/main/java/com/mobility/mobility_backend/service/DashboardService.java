@@ -1,7 +1,15 @@
 package com.mobility.mobility_backend.service;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.time.YearMonth;
+import java.time.format.TextStyle;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,6 +19,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.mobility.mobility_backend.dto.AdminStatsDTO;
+import com.mobility.mobility_backend.dto.CategoryStatDTO;
+import com.mobility.mobility_backend.dto.CityStatDTO;
+import com.mobility.mobility_backend.dto.DashboardTrendsDTO;
+import com.mobility.mobility_backend.dto.MonthlyReservationStatDTO;
 import com.mobility.mobility_backend.dto.RecentActivityDTO;
 import com.mobility.mobility_backend.dto.UserInfoDTO;
 import com.mobility.mobility_backend.entity.Reservation;
@@ -156,5 +168,73 @@ public class DashboardService {
 		
 		// Recalculer et remettre en cache
 		return getAdminStats();
+	}
+
+	public DashboardTrendsDTO getDashboardTrends(int months) {
+		int range = Math.max(1, Math.min(months, 12));
+		List<MonthlyReservationStatDTO> monthlyStats = buildMonthlyReservationStats(range);
+		List<CategoryStatDTO> categoryStats = buildCategoryStats();
+		List<CityStatDTO> cityStats = buildCityStats();
+		return new DashboardTrendsDTO(monthlyStats, categoryStats, cityStats);
+	}
+
+	private List<MonthlyReservationStatDTO> buildMonthlyReservationStats(int months) {
+		Map<YearMonth, MonthlyReservationStatDTO> statsMap = new LinkedHashMap<>();
+		YearMonth current = YearMonth.now();
+		for (int i = months - 1; i >= 0; i--) {
+			YearMonth month = current.minusMonths(i);
+			String label = month.getMonth().getDisplayName(TextStyle.SHORT, Locale.FRENCH) + " " + month.getYear();
+			statsMap.put(month, new MonthlyReservationStatDTO(label, 0, 0));
+		}
+
+		reservationRepository.findAll().forEach(reservation -> {
+			YearMonth month = YearMonth.from(reservation.getReservationDate());
+			if (statsMap.containsKey(month)) {
+				MonthlyReservationStatDTO stat = statsMap.get(month);
+				stat.setReservations(stat.getReservations() + 1);
+				BigDecimal price = reservation.getOffer() != null && reservation.getOffer().getPrice() != null
+						? reservation.getOffer().getPrice()
+						: BigDecimal.ZERO;
+				stat.setRevenue(round(stat.getRevenue() + price.doubleValue()));
+			}
+		});
+
+		return new ArrayList<>(statsMap.values());
+	}
+
+	private List<CategoryStatDTO> buildCategoryStats() {
+		Map<String, Long> counts = offerRepository.findAll().stream()
+				.collect(Collectors.groupingBy(
+						offer -> {
+							if (offer.getMobilityService() != null
+									&& offer.getMobilityService().getCategorie() != null
+									&& !offer.getMobilityService().getCategorie().isBlank()) {
+								return offer.getMobilityService().getCategorie();
+							}
+							return "Autre";
+						},
+						Collectors.counting()));
+
+		return counts.entrySet().stream()
+				.map(entry -> new CategoryStatDTO(entry.getKey(), entry.getValue()))
+				.sorted((a, b) -> Long.compare(b.getCount(), a.getCount()))
+				.collect(Collectors.toList());
+	}
+
+	private List<CityStatDTO> buildCityStats() {
+		Map<String, Long> counts = offerRepository.findAll().stream()
+				.collect(Collectors.groupingBy(
+						offer -> offer.getPickupLocation() != null ? offer.getPickupLocation().getName() : "Inconnu",
+						Collectors.counting()));
+
+		return counts.entrySet().stream()
+				.sorted((a, b) -> Long.compare(b.getValue(), a.getValue()))
+				.limit(5)
+				.map(entry -> new CityStatDTO(entry.getKey(), entry.getValue()))
+				.collect(Collectors.toList());
+	}
+
+	private double round(double value) {
+		return BigDecimal.valueOf(value).setScale(2, RoundingMode.HALF_UP).doubleValue();
 	}
 }
