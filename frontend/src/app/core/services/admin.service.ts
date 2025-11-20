@@ -9,6 +9,7 @@ import { UserResponse } from '../models/UserResponse.model';
 import { OfferResponse } from '../models/OfferReponse.model';
 import { CreateOfferRequest, Offer, OfferStatus } from '../models/offer.model';
 import { AdminBooking, BookingResponse } from '../models/AdminBooking.model';
+import { DashboardTrends } from '../models/DashboardTrends.model';
 import { BusinessEventsService } from './business-events/business-events';
 import { AuthService } from './auth.service';
 
@@ -36,6 +37,20 @@ export class AdminService {
       catchError(error => {
         console.error('Erreur API stats:', error);
         return of(this.getMockStats());
+      })
+    );
+  }
+
+  getDashboardTrends(months: number = 6): Observable<DashboardTrends> {
+    const params = new HttpParams().set('months', months.toString());
+    return this.http.get<DashboardTrends>(`${this.apiUrl}/stats/trends`, { params }).pipe(
+      catchError(error => {
+        console.error('Erreur API trends:', error);
+        return of({
+          reservationsByMonth: [],
+          offersByCategory: [],
+          topPickupCities: []
+        });
       })
     );
   }

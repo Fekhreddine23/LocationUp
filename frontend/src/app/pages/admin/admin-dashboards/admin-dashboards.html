@@ -64,6 +64,65 @@
       </div>
     </div>
 
+    <div class="dashboard-section">
+      <div class="section-header">
+        <h2>📈 Tendances</h2>
+        <div class="trend-controls">
+          <div class="range-buttons">
+            <button
+              *ngFor="let range of trendRanges"
+              type="button"
+              (click)="changeTrendRange(range)"
+              [class.active]="selectedTrendRange === range">
+              {{ range }} mois
+            </button>
+          </div>
+          <button type="button" class="export-btn" (click)="exportTrendsCSV()" [disabled]="!dashboardTrends || trendsLoading">
+            ⬇️ Exporter CSV
+          </button>
+        </div>
+      </div>
+      <div class="analytics-grid trends-grid">
+        <div class="analytics-card span-2">
+          <div class="card-header">
+            <h3>📈 Évolution mensuelle</h3>
+          </div>
+          <div class="chart-container" *ngIf="!trendsLoading; else trendsSpinner">
+            <canvas baseChart
+              [data]="trendsLineData"
+              [options]="trendsLineOptions"
+              [type]="'line'">
+            </canvas>
+          </div>
+        </div>
+        <div class="analytics-card">
+          <div class="card-header">
+            <h3>🚗 Offres par catégorie</h3>
+          </div>
+          <div class="chart-container" *ngIf="!trendsLoading; else trendsSpinner">
+            <canvas baseChart
+              [data]="categoryChartData"
+              [type]="'doughnut'">
+            </canvas>
+          </div>
+        </div>
+        <div class="analytics-card">
+          <div class="card-header">
+            <h3>📍 Villes les plus actives</h3>
+          </div>
+          <div class="chart-container" *ngIf="!trendsLoading; else trendsSpinner">
+            <canvas baseChart
+              [data]="cityChartData"
+              [type]="'bar'">
+            </canvas>
+          </div>
+        </div>
+      </div>
+      <ng-template #trendsSpinner>
+        <div class="chart-placeholder">Chargement des tendances...</div>
+      </ng-template>
+    </div>
+
     <!-- Quick Actions -->
     <div class="dashboard-section">
       <h2>Actions Rapides</h2>

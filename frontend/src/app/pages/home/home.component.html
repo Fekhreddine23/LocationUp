@@ -5,8 +5,52 @@
   </header>
 
   <main>
+    <section class="filters" *ngIf="!loading && !error">
+      <div class="filter-item">
+        <label for="categoryFilter">Catégorie</label>
+        <select id="categoryFilter" [(ngModel)]="selectedCategory" (ngModelChange)="onCategoryChange($event)">
+          <option value="ALL">Toutes</option>
+          <option *ngFor="let category of categories" [value]="category">{{ category }}</option>
+        </select>
+      </div>
+      <div class="filter-item">
+        <label for="priceFilter">Prix maximum (€)</label>
+        <input
+          id="priceFilter"
+          type="number"
+          min="0"
+          [ngModel]="maxPrice"
+          (ngModelChange)="onMaxPriceChange($event)"
+          placeholder="ex : 80" />
+      </div>
+      <div class="filter-item">
+        <label for="radiusFilter">Rayon de recherche (km)</label>
+        <input
+          id="radiusFilter"
+          type="number"
+          min="1"
+          [disabled]="!userPosition"
+          [ngModel]="radiusKm"
+          (ngModelChange)="onRadiusChange($event)"
+          placeholder="ex : 25" />
+      </div>
+      <div class="filter-item action">
+        <button type="button" (click)="requestUserLocation()" [disabled]="locatingUser">
+          {{ locatingUser ? 'Localisation...' : (userPosition ? 'Recentrer sur moi' : 'Me géolocaliser') }}
+        </button>
+        <small *ngIf="userPosition">
+          Position détectée ({{ userPosition.lat | number:'1.2-2' }}, {{ userPosition.lng | number:'1.2-2' }})
+        </small>
+      </div>
+    </section>
+
     <section class="map-section" *ngIf="!loading && !error">
-      <app-offers-map [offers]="offers"></app-offers-map>
+      <app-offers-map
+        [offers]="filteredOffers"
+        [userLocation]="userPosition"
+        [radiusKm]="radiusKm"
+        [offerDistances]="offerDistances">
+      </app-offers-map>
     </section>
 
     <div *ngIf="loading" class="loading-state">
@@ -22,12 +66,12 @@
         📋 Offres Disponibles ({{ offers.length }})
       </h2>
       
-      <div *ngIf="offers.length === 0" class="empty-state">
-        Aucune offre disponible pour le moment
+      <div *ngIf="filteredOffers.length === 0" class="empty-state">
+        Aucune offre disponible avec les filtres sélectionnés
       </div>
 
-      <div *ngIf="offers.length > 0" class="offers-container">
-        <div *ngFor="let offer of offers" class="offer-card">
+      <div *ngIf="filteredOffers.length > 0" class="offers-container">
+        <div *ngFor="let offer of filteredOffers" class="offer-card">
           <div class="offer-visual">
             <img [src]="getOfferImage(offer)" [alt]="offer.description" loading="eager" />
             <span class="visual-chip">{{ getOfferCategoryLabel(offer) }}</span>
@@ -41,6 +85,9 @@
             <span class="offer-price">{{ offer.price }}€</span>
             <span class="offer-date">
               {{ offer.pickupDatetime | date: 'dd/MM/yyyy HH:mm' }}
+            </span>
+            <span class="offer-distance" *ngIf="getDistanceLabel(offer) as distance">
+              📍 À {{ distance }}
             </span>
           </div>
         </div>

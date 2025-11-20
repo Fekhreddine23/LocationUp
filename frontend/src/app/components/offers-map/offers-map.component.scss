@@ -39,3 +39,60 @@
     height: 320px;
   }
 }
+:host ::ng-deep .leaflet-popup-content .popup-content {
+  font-family: 'Inter', sans-serif;
+  color: #111827;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+:host ::ng-deep .leaflet-popup-content .popup-title {
+  font-weight: 700;
+  font-size: 1rem;
+  color: #0f172a;
+}
+
+:host ::ng-deep .leaflet-popup-content .popup-row {
+  font-size: 0.9rem;
+  color: #1f2937;
+}
+
+:host ::ng-deep .leaflet-popup-content .popup-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+  color: #fff;
+  font-weight: 600;
+  text-decoration: none;
+  transition: transform 0.2s ease;
+  margin-top: 0.4rem;
+}
+
+:host ::ng-deep .leaflet-popup-content .popup-action:hover {
+  transform: translateY(-1px);
+}
+
+:host ::ng-deep .leaflet-popup-content .popup-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+:host ::ng-deep .leaflet-popup-content .popup-route {
+  border: 1px solid #2563eb;
+  border-radius: 999px;
+  padding: 0.4rem 1rem;
+  background: #fff;
+  color: #2563eb;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background-color 0.2s ease;
+}
+
+:host ::ng-deep .leaflet-popup-content .popup-route:hover {
+  background: rgba(37, 99, 235, 0.08);
+}

@@ -11,6 +11,77 @@
   gap: 1.5rem;
 }
 
+.filters {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-end;
+  background: var(--card-bg);
+  padding: 1rem;
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border-color);
+  flex-wrap: wrap;
+
+  .filter-item {
+    display: flex;
+    flex-direction: column;
+    min-width: 200px;
+    flex: 1;
+
+    label {
+      font-weight: 600;
+      margin-bottom: 0.35rem;
+      color: var(--text-secondary);
+    }
+
+    select,
+    input {
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 0.6rem 0.8rem;
+      background: var(--input-bg);
+      color: var(--text-color);
+      font-size: 1rem;
+    }
+
+    input::-webkit-outer-spin-button,
+    input::-webkit-inner-spin-button {
+      margin: 0;
+    }
+
+    &.action {
+      align-items: flex-start;
+      gap: 0.3rem;
+
+      button {
+        border: none;
+        border-radius: 8px;
+        padding: 0.7rem 1.1rem;
+        background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+        color: #fff;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.2s ease;
+        width: 100%;
+      }
+
+      button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+
+      button:not(:disabled):hover {
+        transform: translateY(-1px);
+      }
+
+      small {
+        color: var(--text-secondary);
+        font-size: 0.85rem;
+      }
+    }
+  }
+}
+
 .app-header {
   display: flex;
   flex-direction: column;
@@ -88,6 +159,15 @@ main {
 @media (max-width: 768px) {
   .app-header {
     padding: 1.5rem 1rem;
+  }
+
+  .filters {
+    flex-direction: column;
+
+    .filter-item {
+      width: 100%;
+      min-width: unset;
+    }
   }
 
   .offers-container {

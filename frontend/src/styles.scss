@@ -143,6 +143,8 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
   margin-top: 20px;
   padding-top: 15px;
   border-top: 1px solid var(--border-color);
@@ -157,6 +159,14 @@ body {
 .offer-date {
   color: var(--text-secondary);
   font-size: 0.9em;
+}
+
+.offer-distance {
+  color: var(--text-secondary);
+  font-size: 0.9em;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
 }
 
 /* États de chargement et erreurs */

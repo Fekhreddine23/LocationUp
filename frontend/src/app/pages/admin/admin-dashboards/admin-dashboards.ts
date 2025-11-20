@@ -14,6 +14,7 @@ import { HealthStatusService } from '../../../core/services/health/healthStatusS
 import { HeathStatus } from '../../../components/heath-status/heath-status';
 import { BaseChartDirective, provideCharts, withDefaultRegisterables } from 'ng2-charts';
 import { ChartConfiguration, ChartData, ChartType } from 'chart.js';
+import { DashboardTrends } from '../../../core/models/DashboardTrends.model';
 
 @Component({
   selector: 'app-admin-dashboards',
@@ -27,6 +28,7 @@ export class AdminDashboards implements OnInit, OnDestroy {
 
   isLoading = false;
   errorMessage = '';
+  trendsLoading = false;
 
   systemHealth: any; //variable pour stocker le statut de santé du système
 
@@ -42,6 +44,9 @@ export class AdminDashboards implements OnInit, OnDestroy {
 
   recentUsers: AdminUser[] = [];
   recentActivity: RecentActivity[] = [];
+  dashboardTrends: DashboardTrends | null = null;
+  trendRanges = [3, 6, 12];
+  selectedTrendRange = 6;
 
   breadcrumbItems = [
     { label: 'Administration', url: '/admin', active: true }
@@ -88,6 +93,7 @@ export class AdminDashboards implements OnInit, OnDestroy {
         this.adminStats = stats;
         this.updateCharts(); // ← AJOUT CHARTS.JS
         this.loadRecentUsers();
+        this.loadDashboardTrends();
       },
       error: (error) => {
         console.error('Erreur chargement stats admin:', error);
@@ -275,6 +281,67 @@ export class AdminDashboards implements OnInit, OnDestroy {
 
   public pieChartType: ChartType = 'pie';
 
+  public trendsLineOptions: ChartConfiguration['options'] = {
+    responsive: true,
+    plugins: {
+      legend: { display: true },
+      title: { display: true, text: 'Évolution des réservations' }
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        position: 'left'
+      },
+      y1: {
+        beginAtZero: true,
+        position: 'right'
+      }
+    }
+  };
+
+  public trendsLineData: ChartData<'line'> = {
+    labels: [],
+    datasets: [
+      {
+        data: [],
+        label: 'Réservations',
+        borderColor: '#2563eb',
+        backgroundColor: 'rgba(37, 99, 235, 0.2)',
+        fill: true,
+        tension: 0.3
+      },
+      {
+        data: [],
+        label: 'Revenu (€)',
+        borderColor: '#16a34a',
+        backgroundColor: 'rgba(22, 163, 74, 0.2)',
+        fill: true,
+        yAxisID: 'y1'
+      }
+    ]
+  };
+
+  public categoryChartData: ChartData<'doughnut', number[]> = {
+    labels: [],
+    datasets: [
+      {
+        data: [],
+        backgroundColor: ['#2563eb', '#7c3aed', '#f97316', '#0ea5e9', '#22c55e', '#facc15']
+      }
+    ]
+  };
+
+  public cityChartData: ChartData<'bar'> = {
+    labels: [],
+    datasets: [
+      {
+        data: [],
+        label: 'Offres par ville',
+        backgroundColor: '#7c3aed'
+      }
+    ]
+  };
+
 
   // Mettre à jour les charts avec les données
   private updateCharts(): void {
@@ -291,5 +358,74 @@ export class AdminDashboards implements OnInit, OnDestroy {
       this.adminStats.activeUsers,
       this.adminStats.totalUsers - this.adminStats.activeUsers
     ];
+  }
+
+  loadDashboardTrends(): void {
+    this.trendsLoading = true;
+    this.adminService.getDashboardTrends(this.selectedTrendRange).subscribe({
+      next: (trends) => {
+        this.dashboardTrends = trends;
+        this.updateTrendCharts();
+        this.trendsLoading = false;
+      },
+      error: () => {
+        this.trendsLoading = false;
+      }
+    });
+  }
+
+  private updateTrendCharts(): void {
+    if (!this.dashboardTrends) {
+      return;
+    }
+    const months = this.dashboardTrends.reservationsByMonth.map((item) => item.month);
+    this.trendsLineData.labels = months;
+    this.trendsLineData.datasets[0].data = this.dashboardTrends.reservationsByMonth.map((item) => item.reservations);
+    this.trendsLineData.datasets[1].data = this.dashboardTrends.reservationsByMonth.map((item) => item.revenue);
+
+    this.categoryChartData.labels = this.dashboardTrends.offersByCategory.map((item) => item.category);
+    this.categoryChartData.datasets[0].data = this.dashboardTrends.offersByCategory.map((item) => item.count);
+
+    this.cityChartData.labels = this.dashboardTrends.topPickupCities.map((item) => item.city);
+    this.cityChartData.datasets[0].data = this.dashboardTrends.topPickupCities.map((item) => item.count);
+  }
+
+  changeTrendRange(range: number): void {
+    if (this.selectedTrendRange === range) {
+      return;
+    }
+    this.selectedTrendRange = range;
+    this.loadDashboardTrends();
+  }
+
+  exportTrendsCSV(): void {
+    if (!this.dashboardTrends) {
+      return;
+    }
+    const lines: string[] = [];
+    lines.push('"Mois","Réservations","Revenu (€)"');
+    this.dashboardTrends.reservationsByMonth.forEach((stat) => {
+      lines.push(`"${stat.month}",${stat.reservations},${stat.revenue}`);
+    });
+    lines.push('');
+    lines.push('"Catégorie","Nombre d\'offres"');
+    this.dashboardTrends.offersByCategory.forEach((cat) => {
+      lines.push(`"${cat.category}",${cat.count}`);
+    });
+    lines.push('');
+    lines.push('"Ville","Offres pickup"');
+    this.dashboardTrends.topPickupCities.forEach((city) => {
+      lines.push(`"${city.city}",${city.count}`);
+    });
+
+    const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `dashboard-trends-${Date.now()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   }
 }

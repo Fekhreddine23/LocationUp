@@ -2,8 +2,10 @@ import { CommonModule } from '@angular/common';
 import { Component, Input, OnChanges, OnDestroy, SimpleChanges } from '@angular/core';
 import { LeafletModule } from '@bluehalo/ngx-leaflet';
 import * as L from 'leaflet';
+import 'leaflet.markercluster';
 import { Offer } from '../../core/models/offer.model';
 import { GeocodingCacheService } from '../../core/services/geocoding-cache.service';
+import { RoutingService, RouteResult } from '../../core/services/routing.service';
 import { Subscription } from 'rxjs';
 
 @Component({
@@ -15,6 +17,9 @@ import { Subscription } from 'rxjs';
 })
 export class OffersMapComponent implements OnChanges, OnDestroy {
   @Input() offers: Offer[] = [];
+  @Input() userLocation: { lat: number; lng: number } | null = null;
+  @Input() radiusKm: number | null = null;
+  @Input() offerDistances: Map<number, number> | null = null;
   private static readonly FALLBACK_COORDS: Record<string, [number, number]> = {
     paris: [48.8566, 2.3522],
     lyon: [45.764, 4.8357],
@@ -43,13 +48,19 @@ export class OffersMapComponent implements OnChanges, OnDestroy {
   private cachedCoordinates = new Map<string, L.LatLngExpression>();
   private pendingCityRequests = new Set<string>();
   private subscriptions: Subscription[] = [];
+  private routeLayer: L.Polyline | null = null;
+  private routeSummary: RouteResult | null = null;
+  private selectedRouteOfferId: number | null = null;
 
-  constructor(private geocodingCache: GeocodingCacheService) {
+  constructor(
+    private geocodingCache: GeocodingCacheService,
+    private routingService: RoutingService
+  ) {
     this.configureLeafletIcons();
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['offers']) {
+    if (changes['offers'] || changes['userLocation'] || changes['radiusKm']) {
       this.updateMarkers();
     }
   }
@@ -60,6 +71,8 @@ export class OffersMapComponent implements OnChanges, OnDestroy {
 
   onMapReady(map: L.Map): void {
     this.mapInstance = map;
+    map.on('popupopen', (event) => this.attachPopupActions(event));
+    map.on('click', () => this.removeRoute());
     this.updateMapView();
   }
 
@@ -76,7 +89,37 @@ export class OffersMapComponent implements OnChanges, OnDestroy {
       })
       .filter((marker): marker is L.Marker => !!marker);
 
-    this.markerLayers = markers;
+    const layers: L.Layer[] = [];
+    if (markers.length) {
+      const clusterGroup = L.markerClusterGroup();
+      clusterGroup.addLayers(markers);
+      layers.push(clusterGroup);
+    }
+
+    if (this.userLocation) {
+      const userMarker = L.circleMarker(this.userLocation, {
+        radius: 8,
+        color: '#2563eb',
+        weight: 2,
+        fillColor: '#60a5fa',
+        fillOpacity: 0.8
+      });
+      layers.push(userMarker);
+
+      if (this.radiusKm && this.radiusKm > 0) {
+        const radiusCircle = L.circle(this.userLocation, {
+          radius: this.radiusKm * 1000,
+          color: '#2563eb',
+          weight: 1,
+          fillColor: '#60a5fa',
+          fillOpacity: 0.1
+        });
+        layers.push(radiusCircle);
+      }
+    }
+
+    this.markerLayers = layers;
+
     this.updateMapView();
   }
 
@@ -89,9 +132,18 @@ export class OffersMapComponent implements OnChanges, OnDestroy {
       this.mapInstance.setView(L.latLng(46.603354, 1.888334), 5);
       return;
     }
-
-    const markerGroup = L.featureGroup(this.markerLayers.filter((layer): layer is L.Marker => layer instanceof L.Marker));
-    const bounds = markerGroup.getBounds();
+    const group = L.featureGroup(
+      this.markerLayers.flatMap((layer) => {
+        if (layer instanceof L.Marker || layer instanceof L.Circle || layer instanceof L.CircleMarker) {
+          return [layer];
+        }
+        if (this.isMarkerClusterGroup(layer)) {
+          return layer.getLayers().filter((child): child is L.Marker => child instanceof L.Marker);
+        }
+        return [];
+      })
+    );
+    const bounds = group.getBounds();
 
     if (bounds.isValid()) {
       this.mapInstance.fitBounds(bounds.pad(0.2));
@@ -156,8 +208,20 @@ export class OffersMapComponent implements OnChanges, OnDestroy {
     const service = offer.mobilityService || offer.mobilityServiceId ? `Service : ${offer.mobilityService || `#${offer.mobilityServiceId}`}` : '';
     const location = offer.pickupLocationName || offer.pickupLocation ? `Lieu : ${offer.pickupLocationName || offer.pickupLocation}` : '';
     const price = offer.price ? `Tarif : ${offer.price.toFixed(2)}€` : '';
+    const distanceValue = this.offerDistances?.get(offer.offerId);
+    const distance = distanceValue !== undefined ? `Distance : ${distanceValue.toFixed(1)} km` : '';
+    const segments = [service, location, price, distance].filter(Boolean).map((segment) => `<div class="popup-row">${segment}</div>`);
+    const actions = `<div class="popup-actions">
+      <a class="popup-action" href="/bookings/new?offerId=${offer.offerId}" target="_blank" rel="noopener">Réserver</a>
+      <button class="popup-route" data-offer-id="${offer.offerId}">Itinéraire</button>
+    </div>`;
 
-    return [offer.description, service, location, price].filter(Boolean).join('<br/>');
+    return `<div class="popup-content">
+      <div class="popup-title">${offer.description}</div>
+      ${segments.join('')}
+      ${actions}
+      <div class="popup-route-info" data-route-info="${offer.offerId}"></div>
+    </div>`;
   }
 
   private configureLeafletIcons(): void {
@@ -177,5 +241,76 @@ export class OffersMapComponent implements OnChanges, OnDestroy {
     });
 
     L.Marker.prototype.options.icon = defaultIcon;
+  }
+
+  private isMarkerClusterGroup(layer: L.Layer): layer is L.MarkerClusterGroup {
+    return typeof (layer as L.MarkerClusterGroup).getLayers === 'function';
+  }
+
+  private attachPopupActions(event: any): void {
+    const popup = event.popup;
+    const button: HTMLButtonElement | null = popup.getElement()?.querySelector('.popup-route');
+    if (!button) {
+      return;
+    }
+    button.addEventListener('click', () => {
+      const offerId = Number(button.dataset['offerId']);
+      const offer = this.offers.find((item) => item.offerId === offerId);
+      if (offer) {
+        this.selectedRouteOfferId = offerId;
+        this.requestRoute(offer);
+      }
+    });
+  }
+
+  private requestRoute(offer: Offer): void {
+    const sub = this.routingService.getRoute(offer).subscribe((result) => {
+      this.routeSummary = result;
+      this.drawRoute(result);
+      this.updatePopupRouteInfo(offer.offerId, result);
+    });
+    this.subscriptions.push(sub);
+  }
+
+  private drawRoute(route: RouteResult | null): void {
+    if (!this.mapInstance) {
+      return;
+    }
+    if (this.routeLayer) {
+      this.mapInstance.removeLayer(this.routeLayer);
+      this.routeLayer = null;
+    }
+    if (!route) {
+      return;
+    }
+    this.routeLayer = L.polyline(route.polyline.map(([lng, lat]) => [lat, lng]), {
+      color: '#2563eb',
+      weight: 3
+    }).addTo(this.mapInstance);
+    this.mapInstance.fitBounds(this.routeLayer.getBounds(), { padding: [30, 30] });
+  }
+
+  private updatePopupRouteInfo(offerId: number, route: RouteResult | null): void {
+    const popupContent = document.querySelector(`.popup-route-info[data-route-info="${offerId}"]`);
+    if (!popupContent) {
+      return;
+    }
+    if (!route) {
+      popupContent.innerHTML = '<em>Itinéraire indisponible</em>';
+      return;
+    }
+    popupContent.innerHTML = `
+      <div>Distance : ${route.distanceKm.toFixed(1)} km</div>
+      <div>Durée : ${route.durationMinutes.toFixed(0)} min</div>
+    `;
+  }
+
+  private removeRoute(): void {
+    if (this.routeLayer && this.mapInstance) {
+      this.mapInstance.removeLayer(this.routeLayer);
+      this.routeLayer = null;
+      this.routeSummary = null;
+      this.selectedRouteOfferId = null;
+    }
   }
 }

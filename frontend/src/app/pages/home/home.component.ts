@@ -1,23 +1,37 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { OffersService } from '../../core/services/offers.service';
 import { OffersMapComponent } from '../../components/offers-map/offers-map.component';
-
+import { Offer } from '../../core/models/offer.model';
+import { GeocodingCacheService } from '../../core/services/geocoding-cache.service';
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, OffersMapComponent],
+  imports: [CommonModule, FormsModule, OffersMapComponent],
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.scss']
 })
 export class HomeComponent {
   loading = false;
   error = '';
-  offers: any[] = [];
+  offers: Offer[] = [];
+  filteredOffers: Offer[] = [];
+  categories: string[] = [];
+  selectedCategory = 'ALL';
+  maxPrice: number | null = null;
+  offerDistances = new Map<number, number>();
   private readonly defaultOfferImage = 'https://images.unsplash.com/photo-1502877338535-766e1452684a?auto=format&fit=crop&w=900&q=80';
 
-  constructor(private offersService: OffersService) { }
+  userPosition: { lat: number; lng: number } | null = null;
+  radiusKm: number | null = null;
+  locatingUser = false;
+
+  constructor(
+    private offersService: OffersService,
+    private geocodingCache: GeocodingCacheService
+  ) { }
 
   ngOnInit(): void {
     this.loadOffers();
@@ -30,6 +44,9 @@ export class HomeComponent {
     this.offersService.getAllOffers().subscribe({
       next: (offers) => {
         this.offers = offers;
+        this.categories = this.extractCategories(offers);
+        this.updateDistances();
+        this.applyFilters();
         this.loading = false;
       },
       error: (error) => {
@@ -37,6 +54,140 @@ export class HomeComponent {
         this.loading = false;
         console.error('Error loading offers:', error);
       }
+    });
+  }
+
+  onCategoryChange(value: string): void {
+    this.selectedCategory = value;
+    this.applyFilters();
+  }
+
+  onMaxPriceChange(value: string | number | null): void {
+    const numeric = typeof value === 'string' ? Number(value) : value;
+    this.maxPrice = Number.isFinite(numeric as number) ? Number(numeric) : null;
+    this.applyFilters();
+  }
+
+  onRadiusChange(value: string | number | null): void {
+    const numeric = typeof value === 'string' ? Number(value) : value;
+    this.radiusKm = Number.isFinite(numeric as number) && Number(numeric) > 0 ? Number(numeric) : null;
+    this.applyFilters();
+  }
+
+  requestUserLocation(): void {
+    if (this.locatingUser) {
+      return;
+    }
+    if (!navigator.geolocation) {
+      this.error = 'La géolocalisation n’est pas supportée sur ce navigateur.';
+      return;
+    }
+    this.locatingUser = true;
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        this.userPosition = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude
+        };
+        this.locatingUser = false;
+        this.applyFilters();
+      },
+      () => {
+        this.error = 'Impossible de récupérer votre position.';
+        this.locatingUser = false;
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000
+      }
+    );
+  }
+
+  private applyFilters(): void {
+    let result = [...this.offers];
+    if (this.userPosition) {
+      this.updateDistances();
+    }
+
+    if (this.selectedCategory !== 'ALL') {
+      result = result.filter((offer) => this.getOfferCategoryLabel(offer).toLowerCase() === this.selectedCategory.toLowerCase());
+    }
+
+    if (this.maxPrice !== null && Number.isFinite(this.maxPrice)) {
+      result = result.filter((offer) => offer.price <= (this.maxPrice as number));
+    }
+
+    if (this.userPosition && this.radiusKm !== null) {
+      result = result.filter((offer) => this.isWithinRadius(offer, this.userPosition!, this.radiusKm!));
+    }
+
+    this.filteredOffers = result;
+  }
+
+  private extractCategories(offers: Offer[]): string[] {
+    const unique = new Set<string>();
+    offers.forEach((offer) => unique.add(this.getOfferCategoryLabel(offer)));
+    return Array.from(unique).sort((a, b) => a.localeCompare(b));
+  }
+
+  getDistanceLabel(offer: Offer): string | null {
+    const value = this.offerDistances.get(offer.offerId);
+    if (value === undefined) {
+      return null;
+    }
+    return `${value.toFixed(1)} km`;
+  }
+
+  private isWithinRadius(offer: Offer, center: { lat: number; lng: number }, radiusKm: number): boolean {
+    const coords = this.getOfferCoordinates(offer);
+    if (!coords) {
+      return false;
+    }
+    const distance = this.haversineDistance(center.lat, center.lng, coords.lat, coords.lng);
+    return distance <= radiusKm;
+  }
+
+  private getOfferCoordinates(offer: Offer): { lat: number; lng: number } | null {
+    if (typeof offer.pickupLatitude === 'number' && typeof offer.pickupLongitude === 'number') {
+      return { lat: offer.pickupLatitude, lng: offer.pickupLongitude };
+    }
+
+    const cityKey = this.normalizeText(offer.pickupLocationName || offer.pickupLocation || '');
+    if (!cityKey) {
+      return null;
+    }
+    const cached = this.geocodingCache.getCachedCoordinate(cityKey);
+    if (cached) {
+      return { lat: cached.lat, lng: cached.lng };
+    }
+    return null;
+  }
+
+  private haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+    const R = 6371;
+    const toRad = (value: number) => (value * Math.PI) / 180;
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  }
+
+  private updateDistances(): void {
+    this.offerDistances.clear();
+    if (!this.userPosition) {
+      return;
+    }
+    this.offers.forEach((offer) => {
+      const coords = this.getOfferCoordinates(offer);
+      if (!coords) {
+        return;
+      }
+      const distance = this.haversineDistance(this.userPosition!.lat, this.userPosition!.lng, coords.lat, coords.lng);
+      this.offerDistances.set(offer.offerId, distance);
     });
   }
 
