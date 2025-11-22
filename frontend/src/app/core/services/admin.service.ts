@@ -8,7 +8,7 @@ import { RecentActivity } from '../models/RecentActivity.model';
 import { UserResponse } from '../models/UserResponse.model';
 import { OfferResponse } from '../models/OfferReponse.model';
 import { CreateOfferRequest, Offer, OfferStatus } from '../models/offer.model';
-import { AdminBooking, BookingResponse } from '../models/AdminBooking.model';
+import { AdminBooking, BookingResponse, PaymentStatus } from '../models/AdminBooking.model';
 import { DashboardTrends } from '../models/DashboardTrends.model';
 import { BusinessEventsService } from './business-events/business-events';
 import { AuthService } from './auth.service';
@@ -246,6 +246,9 @@ export class AdminService {
       status: this.normalizeBookingStatus(rawBooking.status),
       createdAt,
       totalPrice: rawBooking.totalPrice ?? rawBooking.price ?? offer?.price,
+      paymentStatus: this.normalizePaymentStatus(rawBooking.paymentStatus ?? rawBooking.payment_status),
+      paymentReference: rawBooking.paymentReference ?? rawBooking.payment_reference ?? undefined,
+      paymentDate: rawBooking.paymentDate ?? rawBooking.payment_date ?? undefined,
       user,
       offer
     };
@@ -353,6 +356,15 @@ export class AdminService {
     return allowed.includes(upper as AdminBooking['status'])
       ? (upper as AdminBooking['status'])
       : 'PENDING';
+  }
+
+  private normalizePaymentStatus(status?: string | null): PaymentStatus | undefined {
+    if (!status) {
+      return undefined;
+    }
+    const upper = status.toUpperCase();
+    const allowed: PaymentStatus[] = ['PENDING', 'REQUIRES_ACTION', 'PAID', 'FAILED', 'REFUNDED'];
+    return allowed.includes(upper as PaymentStatus) ? (upper as PaymentStatus) : undefined;
   }
 
   private transformOffer(rawOffer: any): Offer {
@@ -479,6 +491,24 @@ export class AdminService {
     return this.http.post<any>(`${this.apiUrl}/bookings/${bookingId}/status`, { status: newStatus }).pipe(
       map(booking => this.transformBooking(booking)),
       catchError(error => this.handleApiError('mise à jour du statut de réservation', error))
+    );
+  }
+
+  /**
+   * Crée une session de paiement Stripe pour une réservation existante
+   * POST /api/admin/bookings/{id}/payment-session
+   */
+  createBookingPaymentSession(bookingId: number, successUrl?: string, cancelUrl?: string): Observable<{ paymentUrl: string; sessionId: string }> {
+    const payload = {
+      successUrl: successUrl ?? `${window.location.origin}/admin/bookings?payment=success`,
+      cancelUrl: cancelUrl ?? `${window.location.origin}/admin/bookings?payment=cancel`
+    };
+
+    return this.http.post<{ paymentUrl: string; sessionId: string }>(
+      `${this.apiUrl}/bookings/${bookingId}/payment-session`,
+      payload
+    ).pipe(
+      catchError(error => this.handleApiError('création de la session de paiement', error))
     );
   }
 

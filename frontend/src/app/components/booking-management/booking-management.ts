@@ -404,6 +404,38 @@ export class BookingManagement implements OnInit, OnDestroy {
     });
   }
 
+  canCollectPayment(booking: AdminBooking): boolean {
+    const status = BookingManagement.normalizeStatus(booking.status);
+    const paymentStatus = booking.paymentStatus?.toUpperCase();
+    return status === 'PENDING' && paymentStatus !== 'PAID';
+  }
+
+  collectPayment(booking: AdminBooking): void {
+    if (!booking.reservationId) {
+      this.errorMessage = 'ID de réservation manquant';
+      this.clearMessagesAfterDelay();
+      return;
+    }
+
+    this.adminService.createBookingPaymentSession(booking.reservationId).subscribe({
+      next: (response) => {
+        if (response?.paymentUrl) {
+          window.open(response.paymentUrl, '_blank', 'noreferrer');
+          booking.paymentStatus = 'REQUIRES_ACTION';
+          this.successMessage = 'Lien de paiement généré. Vérifiez l’onglet ouvert pour encaisser.';
+        } else {
+          this.errorMessage = 'URL de paiement introuvable';
+        }
+        this.clearMessagesAfterDelay();
+      },
+      error: (error) => {
+        console.error('Erreur paiement manuel:', error);
+        this.errorMessage = 'Impossible de créer la session de paiement';
+        this.clearMessagesAfterDelay();
+      }
+    });
+  }
+
   cancelBooking(booking: AdminBooking): void {
     if (!booking.reservationId) {
       this.errorMessage = 'ID de réservation manquant';

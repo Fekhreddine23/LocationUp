@@ -14,6 +14,14 @@ export const routes: Routes = [
     data: { breadcrumb: 'Inscription' }
   },
   {
+    path: 'payments/success',
+    loadComponent: () => import('./pages/payments/payment-success.component').then(m => m.PaymentSuccessComponent)
+  },
+  {
+    path: 'payments/cancel',
+    loadComponent: () => import('./pages/payments/payment-cancel.component').then(m => m.PaymentCancelComponent)
+  },
+  {
     path: 'home',
     loadComponent: () => import('./pages/home/home.component').then(m => m.HomeComponent),
     data: { breadcrumb: 'Accueil' }

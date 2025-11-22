@@ -434,6 +434,15 @@
         background: #a7f3d0;
       }
     }
+
+    &.btn-payment {
+      background: #fce7f3;
+      color: #9d174d;
+      
+      &:hover {
+        background: #fbcfe8;
+      }
+    }
     
     &.btn-cancel {
       background: #fef3c7;
@@ -616,6 +625,15 @@
         
         &:hover {
           background: #059669;
+        }
+      }
+
+      &.btn-payment {
+        background: #ec4899;
+        color: white;
+        
+        &:hover {
+          background: #db2777;
         }
       }
       

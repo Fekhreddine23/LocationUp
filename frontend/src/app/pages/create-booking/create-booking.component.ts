@@ -8,6 +8,7 @@ import { OffersService } from '../../core/services/offers.service';
 import { User } from '../../core/models/auth.models';
 import { Offer } from '../../core/models/offer.model';
 import { Breadcrumbs } from "../../components/breadcrumbs/breadcrumbs"; 
+import { PaymentService } from '../../core/services/payment.service';
 
 @Component({
   selector: 'app-create-booking',
@@ -40,7 +41,8 @@ export class CreateBookingComponent implements OnInit {
     private authService: AuthService,
     private offersService: OffersService,
     private router: Router,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private paymentService: PaymentService
   ) { }
 
   ngOnInit(): void {
@@ -134,8 +136,11 @@ private loadOfferDetails(offerId: number): void {
     this.bookingsService.createBooking(this.bookingRequest).subscribe({
       next: (booking) => {
         this.isLoading = false;
-        this.successMessage = `Réservation #${booking.reservationId} créée avec succès !`;
+        this.successMessage = `Réservation #${booking.reservationId} créée avec succès ! Redirection vers le paiement...`;
         console.log('✅ Reservation created:', booking);
+        if (booking.reservationId) {
+          this.launchPayment(booking.reservationId);
+        }
       },
       error: (error: any) => {
         this.isLoading = false;
@@ -159,6 +164,16 @@ private loadOfferDetails(offerId: number): void {
 
   navigateToBookings(): void {
     this.router.navigate(['/bookings']);
+  }
+
+  private async launchPayment(reservationId: number): Promise<void> {
+    try {
+      await this.paymentService.startCheckout(reservationId);
+    } catch (error: any) {
+      console.error('❌ Payment error:', error);
+      this.errorMessage = error?.message || 'Impossible de rediriger vers le paiement. Réessayez depuis vos réservations.';
+      this.successMessage = '';
+    }
   }
 
   private getCurrentUserId(): number {

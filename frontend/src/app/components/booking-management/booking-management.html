@@ -203,6 +203,13 @@
               ✅
             </button>
             <button 
+              *ngIf="canCollectPayment(booking)"
+              (click)="collectPayment(booking)" 
+              class="btn-payment" 
+              title="Encaisser via Stripe">
+              💳
+            </button>
+            <button 
               *ngIf="canCancel(booking)"
               (click)="cancelBooking(booking)" 
               class="btn-cancel" 
@@ -323,6 +330,12 @@
             (click)="confirmBooking(selectedBooking)" 
             class="btn-confirm">
             ✅ Confirmer
+          </button>
+          <button 
+            *ngIf="canCollectPayment(selectedBooking)"
+            (click)="collectPayment(selectedBooking)" 
+            class="btn-payment">
+            💳 Encaisser
           </button>
           <button 
             *ngIf="canCancel(selectedBooking)"

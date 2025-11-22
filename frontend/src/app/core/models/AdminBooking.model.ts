@@ -1,9 +1,14 @@
+export type PaymentStatus = 'PENDING' | 'REQUIRES_ACTION' | 'PAID' | 'FAILED' | 'REFUNDED';
+
 export interface AdminBooking {
   reservationId: number;
   reservationDate: string;
   status: 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED';
   createdAt?: string;
   totalPrice?: number;
+  paymentStatus?: PaymentStatus;
+  paymentReference?: string;
+  paymentDate?: string;
   user?: {
     id: number;
     username: string;
