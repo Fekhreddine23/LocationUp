@@ -24,6 +24,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.mobility.mobility_backend.dto.ReservationDTO;
+import com.mobility.mobility_backend.dto.timeline.ReservationTimelineDTO;
+import com.mobility.mobility_backend.service.ReservationDocumentService;
 import com.mobility.mobility_backend.service.ReservationService;
 
 @RestController
@@ -32,10 +34,13 @@ import com.mobility.mobility_backend.service.ReservationService;
 public class ReservationController {
 
 	private final ReservationService reservationService;
+	private final ReservationDocumentService reservationDocumentService;
 
 	@Autowired
-	public ReservationController(ReservationService reservationService) {
+	public ReservationController(ReservationService reservationService,
+			ReservationDocumentService reservationDocumentService) {
 		this.reservationService = reservationService;
+		this.reservationDocumentService = reservationDocumentService;
 	}
 
 	// tests
@@ -73,7 +78,7 @@ public class ReservationController {
 
 	// Récupérer toutes les réservations
 	@GetMapping
-	@PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_USER','ROLE_ADMIN')")
 	public ResponseEntity<List<ReservationDTO>> getAllReservations() {
 		List<ReservationDTO> reservations = reservationService.getAllReservations();
 		return new ResponseEntity<>(reservations, HttpStatus.OK);
@@ -81,7 +86,7 @@ public class ReservationController {
 
 	// Récupérer une réservation par ID
 	@GetMapping("/{id}")
-	@PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_USER','ROLE_ADMIN')")
 	public ResponseEntity<ReservationDTO> getReservationById(@PathVariable Integer id) {
 		Optional<ReservationDTO> reservation = reservationService.getReservationById(id);
 		return reservation.map(value -> new ResponseEntity<>(value, HttpStatus.OK))
@@ -90,15 +95,30 @@ public class ReservationController {
 
 	// Récupérer les réservations d'un utilisateur
 	@GetMapping("/user/{userId}")
-	@PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_USER','ROLE_ADMIN')")
 	public ResponseEntity<List<ReservationDTO>> getReservationsByUserId(@PathVariable Integer userId) {
 		List<ReservationDTO> reservations = reservationService.getReservationsByUserId(userId);
 		return new ResponseEntity<>(reservations, HttpStatus.OK);
 	}
 
+	@GetMapping("/{id}/timeline")
+	@PreAuthorize("hasAnyAuthority('ROLE_USER','ROLE_ADMIN')")
+	public ResponseEntity<ReservationTimelineDTO> getTimeline(@PathVariable Integer id) {
+		return ResponseEntity.ok(reservationService.getReservationTimeline(id));
+	}
+
+	@GetMapping("/{id}/receipt")
+	@PreAuthorize("hasAnyAuthority('ROLE_USER','ROLE_ADMIN')")
+	public ResponseEntity<byte[]> downloadReceipt(@PathVariable Integer id) {
+		byte[] pdf = reservationDocumentService.buildReceipt(id);
+		return ResponseEntity.ok()
+				.header("Content-Disposition", "attachment; filename=reservation-" + id + "-receipt.pdf")
+				.contentType(org.springframework.http.MediaType.APPLICATION_PDF).body(pdf);
+	}
+
 	// Créer une nouvelle réservation
 	@PostMapping
-	@PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_USER','ROLE_ADMIN')")
 	public ResponseEntity<ReservationDTO> createReservation(@RequestBody ReservationDTO reservationDTO) {
 		try {
 			ReservationDTO createdReservation = reservationService.createReservation(reservationDTO);
@@ -110,7 +130,7 @@ public class ReservationController {
 
 	// Mettre à jour une réservation
 	@PutMapping("/{id}")
-	@PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_USER','ROLE_ADMIN')")
 	public ResponseEntity<ReservationDTO> updateReservation(@PathVariable Integer id,
 			@RequestBody ReservationDTO reservationDTO) {
 		Optional<ReservationDTO> updatedReservation = reservationService.updateReservation(id, reservationDTO);
@@ -120,7 +140,7 @@ public class ReservationController {
 
 	// Supprimer une réservation
 	@DeleteMapping("/{id}")
-	@PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_USER','ROLE_ADMIN')")
 	public ResponseEntity<Void> deleteReservation(@PathVariable Integer id) {
 		boolean deleted = reservationService.deleteReservation(id);
 		return deleted ? new ResponseEntity<>(HttpStatus.NO_CONTENT) : new ResponseEntity<>(HttpStatus.NOT_FOUND);
@@ -128,7 +148,7 @@ public class ReservationController {
 
 	// Confirmer une réservation
 	@PatchMapping("/{id}/confirm")
-	@PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_USER','ROLE_ADMIN')")
 	public ResponseEntity<ReservationDTO> confirmReservation(@PathVariable Integer id) {
 		Optional<ReservationDTO> confirmedReservation = reservationService.confirmReservation(id);
 		return confirmedReservation.map(value -> new ResponseEntity<>(value, HttpStatus.OK))
@@ -137,7 +157,7 @@ public class ReservationController {
 
 	// Annuler une réservation
 	@PatchMapping("/{id}/cancel")
-	@PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_USER','ROLE_ADMIN')")
 	public ResponseEntity<ReservationDTO> cancelReservation(@PathVariable Integer id) {
 		Optional<ReservationDTO> cancelledReservation = reservationService.cancelReservation(id);
 		return cancelledReservation.map(value -> new ResponseEntity<>(value, HttpStatus.OK))

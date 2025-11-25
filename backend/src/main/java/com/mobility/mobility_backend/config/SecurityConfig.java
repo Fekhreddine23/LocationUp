@@ -47,11 +47,13 @@ public class SecurityConfig {
 		http.csrf(csrf -> csrf.disable()).cors(cors -> cors.configurationSource(corsConfigurationSource()))
 				.headers(headers -> headers.frameOptions(frame -> frame.disable()).contentSecurityPolicy(
 						csp -> csp.policyDirectives("frame-ancestors 'self' http://localhost:8088")))
-				.authorizeHttpRequests(auth -> auth
+			.authorizeHttpRequests(auth -> auth
 						// Routes publiques - DOIVENT ÊTRE EN PREMIER
-						.requestMatchers("/api/notifications/**").permitAll().requestMatchers("/api/debug/**")
-						.permitAll().requestMatchers("/ws/**").permitAll() // Pour WebSocket si utilisé plus tard
-						.requestMatchers("/api/auth/**").permitAll()
+				.requestMatchers("/api/notifications/**").permitAll().requestMatchers("/api/debug/**")
+				.permitAll().requestMatchers("/ws/**").permitAll() // Pour WebSocket si utilisé plus tard
+				.requestMatchers("/api/auth/**").permitAll()
+				.requestMatchers(HttpMethod.POST, "/api/payments/webhook").permitAll()
+				.requestMatchers("/api/payments/**").authenticated()
 						.requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
 						.requestMatchers("/h2-console/**").permitAll().requestMatchers("/actuator/**").permitAll()
 

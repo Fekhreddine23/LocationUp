@@ -6,8 +6,12 @@ public class ReservationDTO {
 	private Integer reservationId;
 	private Integer userId;
 	private Integer offerId;
-	private LocalDateTime reservationDate;
+private LocalDateTime reservationDate;
 	private String status;
+	private String paymentStatus;
+	private String paymentReference;
+	private LocalDateTime paymentDate;
+	private Double paymentAmount;
 	private LocalDateTime createdAt;
 	private LocalDateTime updatedAt;
 
@@ -35,6 +39,10 @@ public class ReservationDTO {
 		private Integer offerId;
 		private LocalDateTime reservationDate;
 		private String status;
+		private String paymentStatus;
+		private String paymentReference;
+		private LocalDateTime paymentDate;
+		private Double paymentAmount;
 
 		public Builder reservationId(Integer reservationId) {
 			this.reservationId = reservationId;
@@ -61,8 +69,33 @@ public class ReservationDTO {
 			return this;
 		}
 
+		public Builder paymentStatus(String paymentStatus) {
+			this.paymentStatus = paymentStatus;
+			return this;
+		}
+
+		public Builder paymentReference(String paymentReference) {
+			this.paymentReference = paymentReference;
+			return this;
+		}
+
+		public Builder paymentDate(LocalDateTime paymentDate) {
+			this.paymentDate = paymentDate;
+			return this;
+		}
+
+		public Builder paymentAmount(Double paymentAmount) {
+			this.paymentAmount = paymentAmount;
+			return this;
+		}
+
 		public ReservationDTO build() {
-			return new ReservationDTO(reservationId, userId, offerId, reservationDate, status);
+			ReservationDTO dto = new ReservationDTO(reservationId, userId, offerId, reservationDate, status);
+			dto.setPaymentStatus(paymentStatus);
+			dto.setPaymentReference(paymentReference);
+			dto.setPaymentDate(paymentDate);
+			dto.setPaymentAmount(paymentAmount);
+			return dto;
 		}
 	}
 
@@ -105,6 +138,38 @@ public class ReservationDTO {
 
 	public void setStatus(String status) {
 		this.status = status;
+	}
+
+	public String getPaymentStatus() {
+		return paymentStatus;
+	}
+
+	public void setPaymentStatus(String paymentStatus) {
+		this.paymentStatus = paymentStatus;
+	}
+
+	public String getPaymentReference() {
+		return paymentReference;
+	}
+
+	public void setPaymentReference(String paymentReference) {
+		this.paymentReference = paymentReference;
+	}
+
+	public LocalDateTime getPaymentDate() {
+		return paymentDate;
+	}
+
+	public void setPaymentDate(LocalDateTime paymentDate) {
+		this.paymentDate = paymentDate;
+	}
+
+	public Double getPaymentAmount() {
+		return paymentAmount;
+	}
+
+	public void setPaymentAmount(Double paymentAmount) {
+		this.paymentAmount = paymentAmount;
 	}
 
 	public LocalDateTime getCreatedAt() {

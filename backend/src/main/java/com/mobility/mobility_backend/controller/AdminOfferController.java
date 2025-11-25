@@ -44,6 +44,12 @@ public class AdminOfferController {
 		return ResponseEntity.ok(offers);
 	}
 
+	// 🔍 Détail d'une offre
+	@GetMapping("/offers/{id}")
+	public ResponseEntity<OfferDTO> getOfferById(@PathVariable Integer id) {
+		return offerService.getOfferById(id).map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
+	}
+
 	// 📊 Statistiques des offres
 	@GetMapping("/offers/stats")
 	public ResponseEntity<?> getOfferStats() {

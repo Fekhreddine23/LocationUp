@@ -1,5 +1,6 @@
 package com.mobility.mobility_backend.service;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -13,6 +14,8 @@ import org.springframework.stereotype.Service;
 
 import com.mobility.mobility_backend.dto.ReservationDTO;
 import com.mobility.mobility_backend.dto.ReservationMapper;
+import com.mobility.mobility_backend.dto.timeline.ReservationTimelineDTO;
+import com.mobility.mobility_backend.dto.timeline.TimelineEventDTO;
 import com.mobility.mobility_backend.entity.Offer;
 import com.mobility.mobility_backend.entity.Reservation;
 import com.mobility.mobility_backend.entity.User;
@@ -27,14 +30,17 @@ public class ReservationService {
 	private final UserRepository userRepository;
 	private final OfferRepository offerRepository;
 	private final ReservationMapper reservationMapper;
+	private final PaymentNotificationService paymentNotificationService;
 
 	@Autowired
 	public ReservationService(ReservationRepository reservationRepository, UserRepository userRepository,
-			OfferRepository offerRepository, ReservationMapper reservationMapper) {
+			OfferRepository offerRepository, ReservationMapper reservationMapper,
+			PaymentNotificationService paymentNotificationService) {
 		this.reservationRepository = reservationRepository;
 		this.userRepository = userRepository;
 		this.offerRepository = offerRepository;
 		this.reservationMapper = reservationMapper;
+		this.paymentNotificationService = paymentNotificationService;
 	}
 
 	// Récupérer toutes les réservations
@@ -99,6 +105,12 @@ public class ReservationService {
 		reservation.setUser(user);
 		reservation.setOffer(offer);
 		reservation.setStatus(Reservation.ReservationStatus.PENDING);
+		if (offer.getPrice() != null) {
+			reservation.setPaymentAmount(offer.getPrice());
+		}
+		reservation.setPaymentStatus(Reservation.PaymentStatus.PENDING);
+		reservation.setCreatedAt(LocalDateTime.now());
+		reservation.setUpdatedAt(LocalDateTime.now());
 
 		System.out.println("🟡 [ReservationService] Saving reservation...");
 		Reservation savedReservation = reservationRepository.save(reservation);
@@ -180,6 +192,89 @@ public class ReservationService {
 		return reservationsPage.map(reservationMapper::toDTO);
 	}
 
+	public ReservationTimelineDTO getReservationTimeline(Integer reservationId) {
+		Reservation reservation = reservationRepository.findById(reservationId)
+				.orElseThrow(() -> new IllegalArgumentException("Réservation introuvable"));
+		ReservationTimelineDTO timeline = new ReservationTimelineDTO();
+		timeline.setReservationId(reservation.getReservationId());
+		timeline.setStatus(reservation.getStatus() != null ? reservation.getStatus().name() : null);
+		timeline.setPaymentStatus(reservation.getPaymentStatus() != null ? reservation.getPaymentStatus().name() : null);
+
+		List<TimelineEventDTO> events = new java.util.ArrayList<>();
+		LocalDateTime created = reservation.getCreatedAt() != null ? reservation.getCreatedAt()
+				: (reservation.getReservationDate() != null ? reservation.getReservationDate() : LocalDateTime.now());
+		LocalDateTime lastUpdate = reservation.getUpdatedAt() != null ? reservation.getUpdatedAt() : created;
+		events.add(new TimelineEventDTO("Réservation créée",
+				"La réservation a été enregistrée dans le système", "CREATED", created));
+
+		if (reservation.getReservationDate() != null) {
+			events.add(new TimelineEventDTO("Trajet planifié",
+					"Départ prévu le " + reservation.getReservationDate().toLocalDate(), "SCHEDULED",
+					reservation.getReservationDate()));
+		}
+
+		if (reservation.getPaymentStatus() == Reservation.PaymentStatus.PENDING) {
+			events.add(new TimelineEventDTO("Paiement en attente",
+					"Le paiement doit être confirmé pour finaliser la réservation", "PAYMENT_PENDING", lastUpdate));
+		}
+
+		if (reservation.getPaymentStatus() == Reservation.PaymentStatus.REQUIRES_ACTION) {
+			events.add(new TimelineEventDTO("Paiement lancé",
+					"Session Stripe créée. Finalisez le paiement pour confirmer la réservation.", "PAYMENT_STARTED",
+					lastUpdate));
+		}
+
+		if (reservation.getPaymentDate() != null
+				&& reservation.getPaymentStatus() == Reservation.PaymentStatus.PAID) {
+			events.add(new TimelineEventDTO("Paiement confirmé",
+					"Paiement reçu via Stripe. Référence: "
+							+ (reservation.getPaymentReference() != null ? reservation.getPaymentReference() : "N/A"),
+					"PAID", reservation.getPaymentDate()));
+		} else if (reservation.getPaymentStatus() == Reservation.PaymentStatus.PAID) {
+			events.add(new TimelineEventDTO("Paiement confirmé",
+					"Paiement validé. Référence: "
+							+ (reservation.getPaymentReference() != null ? reservation.getPaymentReference() : "N/A"),
+					"PAID", lastUpdate));
+		} else if (reservation.getPaymentStatus() == Reservation.PaymentStatus.FAILED) {
+			events.add(new TimelineEventDTO("Paiement échoué",
+					"Echec du paiement. Veuillez réessayer ou contacter le support.", "PAYMENT_FAILED", lastUpdate));
+		} else if (reservation.getPaymentStatus() == Reservation.PaymentStatus.REFUNDED) {
+			events.add(new TimelineEventDTO("Paiement remboursé",
+					"Le paiement a été remboursé sur votre moyen de paiement initial.", "PAYMENT_REFUNDED",
+					lastUpdate));
+		}
+
+		if (reservation.getStatus() == Reservation.ReservationStatus.CONFIRMED) {
+			events.add(new TimelineEventDTO("Réservation confirmée",
+					"L'équipe a validé votre réservation.", "CONFIRMED",
+					reservation.getUpdatedAt() != null ? reservation.getUpdatedAt() : created));
+		} else if (reservation.getStatus() == Reservation.ReservationStatus.CANCELLED) {
+			events.add(new TimelineEventDTO("Réservation annulée",
+					"La réservation a été annulée.", "CANCELLED",
+					reservation.getUpdatedAt() != null ? reservation.getUpdatedAt() : created));
+		} else if (reservation.getStatus() == Reservation.ReservationStatus.COMPLETED) {
+			events.add(new TimelineEventDTO("Service terminé",
+					"Votre location est terminée. Merci pour votre confiance.", "COMPLETED",
+					reservation.getUpdatedAt() != null ? reservation.getUpdatedAt() : created));
+		}
+
+		events.sort((a, b) -> {
+			if (a.getTimestamp() == null && b.getTimestamp() == null) {
+				return 0;
+			}
+			if (a.getTimestamp() == null) {
+				return 1;
+			}
+			if (b.getTimestamp() == null) {
+				return -1;
+			}
+			return a.getTimestamp().compareTo(b.getTimestamp());
+		});
+
+		timeline.setEvents(events);
+		return timeline;
+	}
+
 	public Object getReservationStats() {
 		System.out.println("📊 Calculating reservation stats...");
 
@@ -220,8 +315,21 @@ public class ReservationService {
 		if (reservationOpt.isPresent()) {
 			Reservation reservation = reservationOpt.get();
 			reservation.setStatus(newStatus);
+			if (newStatus == Reservation.ReservationStatus.CONFIRMED
+					|| newStatus == Reservation.ReservationStatus.COMPLETED) {
+				reservation.setPaymentStatus(Reservation.PaymentStatus.PAID);
+			} else if (newStatus == Reservation.ReservationStatus.CANCELLED) {
+				reservation.setPaymentStatus(Reservation.PaymentStatus.FAILED);
+			}
+			reservation.setUpdatedAt(LocalDateTime.now());
 
 			Reservation savedReservation = reservationRepository.save(reservation);
+			if (newStatus == Reservation.ReservationStatus.CONFIRMED
+					|| newStatus == Reservation.ReservationStatus.COMPLETED) {
+				paymentNotificationService.notifyPaymentSuccess(savedReservation);
+			} else if (newStatus == Reservation.ReservationStatus.CANCELLED) {
+				paymentNotificationService.notifyPaymentFailure(savedReservation, "Réservation annulée");
+			}
 			return reservationMapper.toDTO(savedReservation);
 		} else {
 			throw new RuntimeException("Réservation non trouvée avec l'ID: " + reservationId);

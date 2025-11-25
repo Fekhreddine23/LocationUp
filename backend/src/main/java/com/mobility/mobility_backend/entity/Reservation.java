@@ -1,5 +1,6 @@
 package com.mobility.mobility_backend.entity;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 import jakarta.persistence.Column;
@@ -40,6 +41,25 @@ public class Reservation {
 	@Column(name = "status", nullable = false)
 	@Enumerated(EnumType.STRING)
 	private ReservationStatus status;
+
+	@Column(name = "payment_status")
+	@Enumerated(EnumType.STRING)
+	private PaymentStatus paymentStatus = PaymentStatus.PENDING;
+
+	@Column(name = "payment_reference", length = 120)
+	private String paymentReference;
+
+	@Column(name = "payment_date")
+	private LocalDateTime paymentDate;
+
+	@Column(name = "payment_amount", precision = 10, scale = 2)
+	private BigDecimal paymentAmount;
+
+	@Column(name = "created_at")
+	private LocalDateTime createdAt;
+
+	@Column(name = "updated_at")
+	private LocalDateTime updatedAt;
 
 	// Getters and Setters
 
@@ -84,8 +104,60 @@ public class Reservation {
 		this.status = status;
 	}
 
+	public PaymentStatus getPaymentStatus() {
+		return paymentStatus;
+	}
+
+	public void setPaymentStatus(PaymentStatus paymentStatus) {
+		this.paymentStatus = paymentStatus;
+	}
+
+	public String getPaymentReference() {
+		return paymentReference;
+	}
+
+	public void setPaymentReference(String paymentReference) {
+		this.paymentReference = paymentReference;
+	}
+
+	public LocalDateTime getPaymentDate() {
+		return paymentDate;
+	}
+
+	public void setPaymentDate(LocalDateTime paymentDate) {
+		this.paymentDate = paymentDate;
+	}
+
+	public BigDecimal getPaymentAmount() {
+		return paymentAmount;
+	}
+
+	public void setPaymentAmount(BigDecimal paymentAmount) {
+		this.paymentAmount = paymentAmount;
+	}
+
+	public LocalDateTime getCreatedAt() {
+		return createdAt;
+	}
+
+	public void setCreatedAt(LocalDateTime createdAt) {
+		this.createdAt = createdAt;
+	}
+
+	public LocalDateTime getUpdatedAt() {
+		return updatedAt;
+	}
+
+	public void setUpdatedAt(LocalDateTime updatedAt) {
+		this.updatedAt = updatedAt;
+	}
+
 	public enum ReservationStatus {
 		PENDING, CONFIRMED, CANCELLED, COMPLETED
+	}
+
+	public enum PaymentStatus {
+		PENDING, REQUIRES_ACTION, PAID, FAILED, REFUNDED
 	}
 
 }

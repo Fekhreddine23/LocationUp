@@ -3,8 +3,10 @@ package com.mobility.mobility_backend; // Assure-toi que ton package racine est 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
+@EnableScheduling
 @ComponentScan("com.mobility.mobility_backend") // Assure-toi de scanner tout le package et ses sous-packages
 public class MobilityApplication {
 

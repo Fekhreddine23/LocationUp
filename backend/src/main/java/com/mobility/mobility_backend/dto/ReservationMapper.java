@@ -12,11 +12,19 @@ public class ReservationMapper {
 			return null;
 		}
 
-		return ReservationDTO.builder().reservationId(reservation.getReservationId())
+		ReservationDTO dto = ReservationDTO.builder().reservationId(reservation.getReservationId())
 				.userId(reservation.getUser() != null ? reservation.getUser().getId() : null)
 				.offerId(reservation.getOffer() != null ? reservation.getOffer().getOfferId() : null)
 				.reservationDate(reservation.getReservationDate())
-				.status(reservation.getStatus() != null ? reservation.getStatus().name() : null).build();
+				.status(reservation.getStatus() != null ? reservation.getStatus().name() : null)
+				.paymentStatus(reservation.getPaymentStatus() != null ? reservation.getPaymentStatus().name() : null)
+				.paymentReference(reservation.getPaymentReference())
+				.paymentDate(reservation.getPaymentDate())
+				.paymentAmount(reservation.getPaymentAmount() != null ? reservation.getPaymentAmount().doubleValue() : null)
+				.build();
+		dto.setCreatedAt(reservation.getCreatedAt());
+		dto.setUpdatedAt(reservation.getUpdatedAt());
+		return dto;
 	}
 
 	public Reservation toEntity(ReservationDTO reservationDTO) {
@@ -36,6 +44,27 @@ public class ReservationMapper {
 			}
 		}
 
+		if (reservationDTO.getPaymentStatus() != null) {
+			try {
+				reservation.setPaymentStatus(Reservation.PaymentStatus.valueOf(reservationDTO.getPaymentStatus()));
+			} catch (IllegalArgumentException e) {
+				reservation.setPaymentStatus(Reservation.PaymentStatus.PENDING);
+			}
+		}
+		reservation.setPaymentReference(reservationDTO.getPaymentReference());
+		if (reservationDTO.getPaymentDate() != null) {
+			reservation.setPaymentDate(reservationDTO.getPaymentDate());
+		}
+		if (reservationDTO.getPaymentAmount() != null) {
+			reservation.setPaymentAmount(new java.math.BigDecimal(reservationDTO.getPaymentAmount()));
+		}
+		if (reservationDTO.getCreatedAt() != null) {
+			reservation.setCreatedAt(reservationDTO.getCreatedAt());
+		}
+		if (reservationDTO.getUpdatedAt() != null) {
+			reservation.setUpdatedAt(reservationDTO.getUpdatedAt());
+		}
+
 		return reservation;
 	}
 
@@ -53,6 +82,29 @@ public class ReservationMapper {
 			} catch (IllegalArgumentException e) {
 				// Garder le statut actuel en cas d'erreur
 			}
+		}
+
+		if (reservationDTO.getPaymentStatus() != null) {
+			try {
+				reservation.setPaymentStatus(Reservation.PaymentStatus.valueOf(reservationDTO.getPaymentStatus()));
+			} catch (IllegalArgumentException e) {
+				// keep previous
+			}
+		}
+		if (reservationDTO.getPaymentReference() != null) {
+			reservation.setPaymentReference(reservationDTO.getPaymentReference());
+		}
+		if (reservationDTO.getPaymentDate() != null) {
+			reservation.setPaymentDate(reservationDTO.getPaymentDate());
+		}
+		if (reservationDTO.getPaymentAmount() != null) {
+			reservation.setPaymentAmount(new java.math.BigDecimal(reservationDTO.getPaymentAmount()));
+		}
+		if (reservationDTO.getCreatedAt() != null) {
+			reservation.setCreatedAt(reservationDTO.getCreatedAt());
+		}
+		if (reservationDTO.getUpdatedAt() != null) {
+			reservation.setUpdatedAt(reservationDTO.getUpdatedAt());
 		}
 	}
 }

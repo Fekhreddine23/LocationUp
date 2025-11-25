@@ -136,6 +136,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 		return path.startsWith("/api/notifications/") || path.startsWith("/api/debug/") || path.startsWith("/api/auth/")
 				|| path.startsWith("/swagger-ui/") || path.startsWith("/v3/api-docs/")
 				|| path.startsWith("/h2-console/") || path.startsWith("/actuator/") || path.startsWith("/api/offers/")
+				|| path.startsWith("/api/payments/webhook")
 				|| path.startsWith("/api/reservations/test-public") || path.startsWith("/api/reservations/test-simple")
 				|| path.startsWith("/api/test/");
 	}

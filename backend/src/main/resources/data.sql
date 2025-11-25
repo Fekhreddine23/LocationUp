@@ -70,12 +70,12 @@ INSERT INTO offers (pickup_location_id, return_location_id, mobility_service_id,
  'https://images.pexels.com/photos/1007410/pexels-photo-1007410.jpeg?auto=compress&cs=tinysrgb&w=600', 'CONFIRMED', true);
 
 -- 6. Insertion des réservations
-INSERT INTO reservations (user_id, offer_id, reservation_date, status) VALUES
-(1, 1, '2024-03-15 14:30:00', 'COMPLETED'),
-(2, 3, '2024-03-18 11:15:00', 'CONFIRMED'),
-(3, 2, '2024-03-19 09:45:00', 'PENDING'),
-(4, 5, '2024-03-20 16:20:00', 'CONFIRMED'),
-(5, 4, '2024-03-21 13:10:00', 'COMPLETED'),
-(1, 6, '2024-03-22 10:30:00', 'PENDING'),
-(2, 7, '2024-03-23 15:45:00', 'CONFIRMED'),
-(3, 8, '2024-03-24 12:00:00', 'CANCELLED');
+INSERT INTO reservations (user_id, offer_id, reservation_date, status, payment_status, payment_reference, payment_date, payment_amount, created_at, updated_at) VALUES
+(1, 1, '2024-03-15 14:30:00', 'COMPLETED', 'PAID', 'demo_ref_1', '2024-03-15 15:00:00', 45.00, '2024-03-10 09:00:00', '2024-03-15 15:00:00'),
+(2, 3, '2024-03-18 11:15:00', 'CONFIRMED', 'PAID', 'demo_ref_2', '2024-03-18 11:20:00', 65.00, '2024-03-12 12:00:00', '2024-03-18 11:20:00'),
+(3, 2, '2024-03-19 09:45:00', 'PENDING', 'PENDING', NULL, NULL, 42.00, '2024-03-13 13:00:00', '2024-03-13 13:00:00'),
+(4, 5, '2024-03-20 16:20:00', 'CONFIRMED', 'PAID', 'demo_ref_3', '2024-03-20 16:25:00', 38.00, '2024-03-14 08:00:00', '2024-03-20 16:25:00'),
+(5, 4, '2024-03-21 13:10:00', 'COMPLETED', 'PAID', 'demo_ref_4', '2024-03-21 13:20:00', 89.00, '2024-03-14 09:30:00', '2024-03-21 13:20:00'),
+(1, 6, '2024-03-22 10:30:00', 'PENDING', 'PENDING', NULL, NULL, 72.00, '2024-03-15 10:00:00', '2024-03-15 10:00:00'),
+(2, 7, '2024-03-23 15:45:00', 'CONFIRMED', 'PAID', 'demo_ref_5', '2024-03-23 15:50:00', 55.00, '2024-03-16 11:00:00', '2024-03-23 15:50:00'),
+(3, 8, '2024-03-24 12:00:00', 'CANCELLED', 'FAILED', 'demo_ref_6', '2024-03-24 12:05:00', 58.00, '2024-03-16 14:00:00', '2024-03-24 12:05:00');
