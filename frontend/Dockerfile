@@ -4,6 +4,11 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 COPY . .
+ARG STRIPE_PUBLIC_KEY=pk_test_placeholder
+ENV STRIPE_PUBLIC_KEY=${STRIPE_PUBLIC_KEY}
+RUN sed -i "s|publishableKey: '.*'|publishableKey: '${STRIPE_PUBLIC_KEY}'|" \
+  src/environments/environment.ts \
+  src/environments/environment.prod.ts
 RUN npm run build --prod
 
 # Production stage

@@ -2,13 +2,15 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule, ActivatedRoute } from '@angular/router';
-import { BookingsService, CreateBookingRequest } from '../../core/services/bookings';
+import { BookingsService, CreateBookingRequest, Booking } from '../../core/services/bookings';
 import { AuthService } from '../../core/services/auth.service';
 import { OffersService } from '../../core/services/offers.service';
 import { User } from '../../core/models/auth.models';
 import { Offer } from '../../core/models/offer.model';
 import { Breadcrumbs } from "../../components/breadcrumbs/breadcrumbs"; 
 import { PaymentService } from '../../core/services/payment.service';
+
+type BookingStep = 'offer' | 'details' | 'payment';
 
 @Component({
   selector: 'app-create-booking',
@@ -24,17 +26,26 @@ export class CreateBookingComponent implements OnInit {
     reservationDate: ''
   };
 
-  offers: Offer[] = [];
   currentUser: User | null = null;
   preselectedOffer: Offer | null = null;
-  
 
   selectedOffer: Offer | null = null; // ← Offre sélectionnée
 
-  isLoading = false;
   isLoadingOffer = false;
   errorMessage = '';
   successMessage = '';
+  creationLoading = false;
+  paymentLoading = false;
+  paymentError = '';
+  paymentStatusMessage = '';
+  createdBooking: Booking | null = null;
+  private paymentTriggered = false;
+  currentStep: BookingStep = 'offer';
+  readonly steps = [
+    { id: 'offer' as BookingStep, label: 'Offre', icon: '🎯' },
+    { id: 'details' as BookingStep, label: 'Détails', icon: '📝' },
+    { id: 'payment' as BookingStep, label: 'Paiement', icon: '💳' }
+  ];
 
   constructor(
     private bookingsService: BookingsService,
@@ -54,16 +65,6 @@ export class CreateBookingComponent implements OnInit {
      // Charger uniquement l'offre spécifique depuis l'URL
     this.loadSelectedOffer();
     
-    // Vérifier l'offerId dans l'URL
-    this.route.queryParams.subscribe(params => {
-      if (params['offerId']) {
-        const offerId = +params['offerId'];
-        if (offerId > 0) {
-          this.bookingRequest.offerId = offerId;
-          console.log('🎯 Offer preselected from URL:', offerId);
-        }
-      }
-    });
   }
 
   private loadSelectedOffer(): void {
@@ -74,6 +75,7 @@ export class CreateBookingComponent implements OnInit {
           this.bookingRequest.offerId = offerId;
           console.log('🎯 Offer ID from URL:', offerId);
           this.loadOfferDetails(offerId);
+          this.currentStep = 'offer';
         } else {
           this.errorMessage = 'ID d\'offre invalide';
         }
@@ -114,48 +116,60 @@ private loadOfferDetails(offerId: number): void {
     return oneYearFromNow.toISOString().slice(0, 16);
   }
 
-  onSubmit(): void {
-    if (!this.isFormValid()) {
-      this.errorMessage = 'Veuillez remplir tous les champs obligatoires';
-      return;
-    }
-
-    this.isLoading = true;
-    this.errorMessage = '';
-    this.successMessage = '';
-
-  console.log('=== 🧪 DEBUG BOOKING CREATION ===');
-  console.log('🔐 Current user:', this.authService.currentUserValue);
-  console.log('🔐 User ID in request:', this.bookingRequest.userId);
-  console.log('🔐 Token exists:', !!this.authService.getToken());
-  console.log('📦 Booking request:', this.bookingRequest);
-  console.log('=== 🧪 DEBUG END ===');
-
-    console.log('📦 Creating reservation:', this.bookingRequest);
-
-    this.bookingsService.createBooking(this.bookingRequest).subscribe({
-      next: (booking) => {
-        this.isLoading = false;
-        this.successMessage = `Réservation #${booking.reservationId} créée avec succès ! Redirection vers le paiement...`;
-        console.log('✅ Reservation created:', booking);
-        if (booking.reservationId) {
-          this.launchPayment(booking.reservationId);
-        }
-      },
-      error: (error: any) => {
-        this.isLoading = false;
-        this.errorMessage = error.error?.message || 'Erreur lors de la création de la réservation';
-        console.error('❌ Error creating booking:', error);
-      }
-    });
-  }
-
   
   private isFormValid(): boolean {
     return this.bookingRequest.userId > 0 &&
            this.bookingRequest.offerId > 0 &&
            this.bookingRequest.reservationDate !== '' &&
            this.selectedOffer !== null;
+  }
+
+  goToDetailsStep(): void {
+    if (!this.selectedOffer) {
+      this.errorMessage = 'Aucune offre sélectionnée';
+      return;
+    }
+    this.errorMessage = '';
+    this.currentStep = 'details';
+  }
+
+  goBackToOffer(): void {
+    this.currentStep = 'offer';
+  }
+
+  submitDetails(): void {
+    if (!this.isFormValid()) {
+      this.errorMessage = 'Veuillez remplir tous les champs obligatoires';
+      return;
+    }
+
+    this.creationLoading = true;
+    this.errorMessage = '';
+    this.paymentError = '';
+    this.bookingsService.createBooking(this.bookingRequest).subscribe({
+      next: (booking) => {
+        this.creationLoading = false;
+        this.createdBooking = booking;
+        this.successMessage = `Réservation #${booking.reservationId} créée !`;
+        this.currentStep = 'payment';
+        this.paymentStatusMessage = 'Initialisation du paiement...';
+        this.paymentTriggered = false;
+        this.launchPaymentFromWizard();
+      },
+      error: (error: any) => {
+        this.creationLoading = false;
+        this.errorMessage = error.error?.message || 'Erreur lors de la création de la réservation';
+        console.error('❌ Error creating booking:', error);
+      }
+    });
+  }
+
+  private launchPaymentFromWizard(): void {
+    if (this.paymentTriggered || !this.createdBooking?.reservationId) {
+      return;
+    }
+    this.paymentTriggered = true;
+    this.startPayment(this.createdBooking.reservationId);
   }
 
   onCancel(): void {
@@ -166,14 +180,32 @@ private loadOfferDetails(offerId: number): void {
     this.router.navigate(['/bookings']);
   }
 
-  private async launchPayment(reservationId: number): Promise<void> {
+  async startPayment(reservationId: number): Promise<void> {
     try {
+      this.paymentError = '';
+      this.paymentStatusMessage = 'Redirection vers Stripe...';
+      this.paymentLoading = true;
       await this.paymentService.startCheckout(reservationId);
     } catch (error: any) {
       console.error('❌ Payment error:', error);
       this.errorMessage = error?.message || 'Impossible de rediriger vers le paiement. Réessayez depuis vos réservations.';
       this.successMessage = '';
+      this.paymentError = this.errorMessage;
+      this.paymentStatusMessage = 'Nous n\'avons pas pu initier le paiement.';
+      this.paymentLoading = false;
     }
+  }
+
+  getStepIndex(step: BookingStep): number {
+    return this.steps.findIndex(s => s.id === step);
+  }
+
+  isStepCompleted(step: BookingStep): boolean {
+    return this.getStepIndex(step) < this.getStepIndex(this.currentStep);
+  }
+
+  isStepActive(step: BookingStep): boolean {
+    return this.currentStep === step;
   }
 
   private getCurrentUserId(): number {

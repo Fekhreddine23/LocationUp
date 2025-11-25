@@ -6,12 +6,13 @@ import { CommonModule } from "@angular/common";
 import { AuthService } from "../../core/services/auth.service";
 import { ConfirmationModal } from "../../components/confirmation-modal/confirmation-modal";
 import { DeleteConfirmationModal } from "../../components/delete-confirmation-modal/delete-confirmation-modal";
-import { BookingsService, Booking } from '../../core/services/bookings'; // ← Utiliser Booking du service
+import { BookingsService, Booking, BookingTimeline } from '../../core/services/bookings'; // ← Utiliser Booking du service
 import { NotificationService } from "../../core/services/notification.service";
 import { LoadingService } from "../../core/services/loading.service";
 import { Spinner } from "../../components/spinner/spinner";
 import { BreadcrumbService } from "../../core/services/breadcrumb";
 import { Breadcrumbs } from "../../components/breadcrumbs/breadcrumbs";
+import { PaymentService } from '../../core/services/payment.service';
 
 
 
@@ -48,6 +49,10 @@ export class BookingsComponent implements OnInit {
   // Variables pour le modal de suppression
   showDeleteModal = false;
   bookingToDelete: Booking | null = null;
+  timelines: { [reservationId: number]: BookingTimeline } = {};
+  timelineVisibility: { [reservationId: number]: boolean } = {};
+  timelineLoading: { [reservationId: number]: boolean } = {};
+  paymentSyncLoading: { [reservationId: number]: boolean } = {};
 
 
   constructor(
@@ -57,6 +62,7 @@ export class BookingsComponent implements OnInit {
     private router: Router,
     private notificationService: NotificationService,
     private loadingService: LoadingService,
+    private paymentService: PaymentService,
 
   ) { }
 
@@ -170,6 +176,79 @@ export class BookingsComponent implements OnInit {
     }
   }
 
+  getPaymentStatusText(status?: string): string {
+    if (!status) {
+      return 'Paiement en attente';
+    }
+    const map: { [key: string]: string } = {
+      PENDING: 'Paiement en attente',
+      REQUIRES_ACTION: 'Action requise',
+      PAID: 'Payé',
+      FAILED: 'Échec du paiement',
+      REFUNDED: 'Remboursé'
+    };
+    return map[status.toUpperCase()] || status;
+  }
+
+  getPaymentBadgeClass(status?: string): string {
+    switch (status?.toUpperCase()) {
+      case 'PAID':
+        return 'payment-paid';
+      case 'FAILED':
+        return 'payment-failed';
+      case 'REFUNDED':
+        return 'payment-refunded';
+      case 'REQUIRES_ACTION':
+        return 'payment-action';
+      default:
+        return 'payment-pending';
+    }
+  }
+
+  syncPayment(booking: Booking): void {
+    if (!booking.reservationId) {
+      return;
+    }
+    const reservationId = booking.reservationId;
+    this.paymentSyncLoading[reservationId] = true;
+    this.paymentService.syncPaymentStatus(reservationId).subscribe({
+      next: (response) => {
+        this.paymentSyncLoading[reservationId] = false;
+        const status = (response.paymentStatus || booking.paymentStatus || '').toUpperCase();
+
+        if (status === 'PAID' || response.updated) {
+          this.notificationService.success('Paiement synchronisé avec succès', 4000);
+          this.loadBookings();
+          return;
+        }
+
+        const stripeStatus = response.stripeStatus?.toLowerCase();
+        if (status === 'REQUIRES_ACTION' || stripeStatus === 'unpaid') {
+          this.notificationService.success('Redirection vers Stripe pour finaliser le paiement', 4000);
+          this.paymentService.startCheckout(reservationId).catch((err) => {
+            console.error('Relance paiement échouée', err);
+            this.notificationService.error('Impossible de relancer le paiement pour le moment', 5000);
+          });
+          return;
+        }
+
+        if (status === 'FAILED') {
+          this.notificationService.error('Le paiement est expiré/échoué. Relancez depuis une nouvelle réservation.', 5000);
+          this.loadBookings();
+          return;
+        }
+
+        this.notificationService.success(`Paiement synchronisé (${status || 'UNKNOWN'})`, 4000);
+        this.loadBookings();
+      },
+      error: (err) => {
+        this.paymentSyncLoading[reservationId] = false;
+        console.error('Sync paiement échoué', err);
+        this.notificationService.error('Impossible de vérifier le paiement', 5000);
+      }
+    });
+  }
+
   createNewBooking(): void {
     this.router.navigate(['/offers']);
   }
@@ -189,6 +268,69 @@ export class BookingsComponent implements OnInit {
         this.notificationService.error('❌ Erreur lors de la confirmation', 5000)
       }
     });
+  }
+
+  toggleTimeline(booking: Booking): void {
+    if (!booking.reservationId) {
+      return;
+    }
+    this.timelineVisibility[booking.reservationId] = !this.timelineVisibility[booking.reservationId];
+    if (this.timelineVisibility[booking.reservationId] && !this.timelines[booking.reservationId]) {
+      this.loadTimeline(booking.reservationId);
+    }
+  }
+
+  private loadTimeline(reservationId: number): void {
+    this.timelineLoading[reservationId] = true;
+    this.bookingsService.getTimeline(reservationId).subscribe({
+      next: (timeline) => {
+        this.timelines[reservationId] = timeline;
+        this.timelineLoading[reservationId] = false;
+      },
+      error: () => {
+        this.timelineLoading[reservationId] = false;
+        this.notificationService.error('Impossible de charger la timeline', 4000);
+      }
+    });
+  }
+
+  downloadReceipt(reservationId: number): void {
+    this.bookingsService.downloadReceipt(reservationId).subscribe({
+      next: (blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `reservation-${reservationId}-receipt.pdf`;
+        link.click();
+        window.URL.revokeObjectURL(url);
+      },
+      error: () => this.notificationService.error('Reçu indisponible pour le moment', 4000)
+    });
+  }
+
+  getTimelineEvents(booking: Booking): BookingTimeline | null {
+    if (!booking.reservationId) {
+      return null;
+    }
+    return this.timelines[booking.reservationId] || null;
+  }
+
+  getTimelineStatusClass(status: string): string {
+    switch (status?.toUpperCase()) {
+      case 'PAID':
+      case 'COMPLETED':
+      case 'CONFIRMED':
+        return 'timeline-status-success';
+      case 'PAYMENT_FAILED':
+      case 'FAILED':
+      case 'CANCELLED':
+        return 'timeline-status-danger';
+      case 'PAYMENT_PENDING':
+      case 'PENDING':
+        return 'timeline-status-warning';
+      default:
+        return 'timeline-status-default';
+    }
   }
 
   // SUPPRIMER L'ANCIENNE MÉTHODE cancelBooking (celle en commentaire)
@@ -263,7 +405,10 @@ export class BookingsComponent implements OnInit {
     }
   }
 
-  formatDate(dateString: string): string {
+  formatDate(dateString?: string): string {
+    if (!dateString) {
+      return '—';
+    }
     return new Date(dateString).toLocaleDateString('fr-FR', {
       day: '2-digit',
       month: '2-digit',

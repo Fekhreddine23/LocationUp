@@ -8,6 +8,13 @@ interface PaymentSessionResponse {
   sessionId: string;
 }
 
+export interface PaymentStatusResponse {
+  reservationId: number;
+  paymentStatus?: string;
+  stripeStatus?: string;
+  updated: boolean;
+}
+
 @Injectable({ providedIn: 'root' })
 export class PaymentService {
 
@@ -29,5 +36,12 @@ export class PaymentService {
     }
 
     throw new Error('Paiement indisponible');
+  }
+
+  syncPaymentStatus(reservationId: number) {
+    return this.http.post<PaymentStatusResponse>(
+      `${environment.apiUrl}/api/payments/session/${reservationId}/sync`,
+      {}
+    );
   }
 }

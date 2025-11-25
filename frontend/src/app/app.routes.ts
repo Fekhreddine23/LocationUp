@@ -74,6 +74,12 @@ export const routes: Routes = [
     data: { breadcrumb: 'Administration' }
   },
   {
+    path: 'admin/finance',
+    loadComponent: () => import('./pages/admin/admin-finance/admin-finance').then(m => m.AdminFinanceComponent),
+    canActivate: [AdminGuard],
+    data: { breadcrumb: 'Finances' }
+  },
+  {
     path: 'admin/users',
     loadComponent: () => import('./components/user-management/user-management').then(m => m.UserManagement),
     canActivate: [AdminGuard],

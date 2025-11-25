@@ -1,29 +1,103 @@
 .payment-feedback {
-  max-width: 560px;
+  max-width: 640px;
   margin: 4rem auto;
-  padding: 2rem;
-  border-radius: 16px;
-  box-shadow: 0 15px 40px rgba(15, 23, 42, 0.15);
-  text-align: center;
+  padding: 2.5rem;
+  border-radius: 18px;
+  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.15);
+  text-align: left;
   background: #fff;
 
   h1 {
-    margin-bottom: 1rem;
+    margin-bottom: 0.75rem;
+    text-align: center;
   }
 
-  p {
+  > p {
     color: #475569;
+    text-align: center;
     margin-bottom: 1.5rem;
   }
 
-  button {
-    border: none;
-    border-radius: 999px;
-    padding: 0.75rem 1.5rem;
-    font-weight: 600;
-    cursor: pointer;
-    background: #2563eb;
-    color: #fff;
+  .alert {
+    border-radius: 10px;
+    padding: 12px;
+    margin-bottom: 16px;
+    background: #fef3c7;
+    color: #92400e;
+  }
+
+  .loading-state {
+    text-align: center;
+    margin-bottom: 1.5rem;
+
+    .spinner {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      border: 4px solid #e2e8f0;
+      border-top-color: #2563eb;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 12px;
+    }
+
+    &.subtle {
+      background: #f8fafc;
+      border-radius: 12px;
+      padding: 0.75rem;
+    }
+  }
+
+  .booking-recap {
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+    background: #f8fafc;
+  }
+
+  .recap-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+    color: #475569;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+
+    strong {
+      color: #111827;
+    }
+  }
+
+  .actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+
+    .btn {
+      width: 100%;
+      border: none;
+      border-radius: 999px;
+      padding: 0.85rem 1.5rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.15s ease;
+
+      &:hover:not(:disabled) {
+        transform: translateY(-1px);
+      }
+
+      &.primary {
+        background: #2563eb;
+        color: #fff;
+      }
+
+      &.secondary {
+        background: #e2e8f0;
+        color: #1f2937;
+      }
+    }
   }
 
   &.success {
@@ -32,5 +106,14 @@
 
   &.cancel {
     border: 2px solid #f97316;
+  }
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
   }
 }

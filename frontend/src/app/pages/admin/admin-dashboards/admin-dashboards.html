@@ -7,9 +7,14 @@
       <h1>Tableau de Bord Administrateur</h1>
       <p class="subtitle">Vue d'ensemble de votre espace de coworking</p>
     </div>
-    <button (click)="refreshData()" class="refresh-btn" [disabled]="isLoading">
-      🔄 Actualiser
-    </button>
+    <div class="header-actions">
+      <button routerLink="/admin/finance" class="finance-btn">
+        💰 Vue Finances
+      </button>
+      <button (click)="refreshData()" class="refresh-btn" [disabled]="isLoading">
+        🔄 Actualiser
+      </button>
+    </div>
   </div>
 
   <!-- Loading State -->

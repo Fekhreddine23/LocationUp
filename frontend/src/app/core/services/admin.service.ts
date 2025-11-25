@@ -10,6 +10,7 @@ import { OfferResponse } from '../models/OfferReponse.model';
 import { CreateOfferRequest, Offer, OfferStatus } from '../models/offer.model';
 import { AdminBooking, BookingResponse, PaymentStatus } from '../models/AdminBooking.model';
 import { DashboardTrends } from '../models/DashboardTrends.model';
+import { FinanceOverview, PaymentAlert, PaymentEventLogEntry } from '../models/admin-finance.model';
 import { BusinessEventsService } from './business-events/business-events';
 import { AuthService } from './auth.service';
 
@@ -53,6 +54,28 @@ export class AdminService {
         });
       })
     );
+  }
+
+  /**
+   * Finance overview
+   */
+  getFinanceOverview(months: number = 6): Observable<FinanceOverview> {
+    const params = new HttpParams().set('months', months.toString());
+    return this.http.get<FinanceOverview>(`${this.apiUrl}/finance/overview`, { params });
+  }
+
+  getFinanceAlerts(): Observable<PaymentAlert[]> {
+    return this.http.get<PaymentAlert[]>(`${this.apiUrl}/finance/alerts`);
+  }
+
+  getFinanceEvents(limit: number = 20): Observable<PaymentEventLogEntry[]> {
+    const params = new HttpParams().set('size', limit.toString());
+    return this.http.get<PaymentEventLogEntry[]>(`${this.apiUrl}/finance/events`, { params });
+  }
+
+  exportFinanceCsv(months: number = 6): Observable<Blob> {
+    const params = new HttpParams().set('months', months.toString());
+    return this.http.get(`${this.apiUrl}/finance/export`, { params, responseType: 'blob' });
   }
 
   /**

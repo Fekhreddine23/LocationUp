@@ -14,6 +14,23 @@ export interface Booking {
   status: 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED';
   createdAt?: string;
   updatedAt?: string;
+  paymentStatus?: 'PENDING' | 'REQUIRES_ACTION' | 'PAID' | 'FAILED' | 'REFUNDED';
+  paymentReference?: string;
+  paymentDate?: string;
+}
+
+export interface BookingTimelineEvent {
+  title: string;
+  description: string;
+  status: string;
+  timestamp: string;
+}
+
+export interface BookingTimeline {
+  reservationId: number;
+  status?: string;
+  paymentStatus?: string;
+  events: BookingTimelineEvent[];
 }
 
 export interface CreateBookingRequest {
@@ -128,6 +145,19 @@ export class BookingsService {
     return this.withLoading(`booking-${id}`,
       this.http.get<Booking>(`${this.apiUrl}/${id}`, { headers: this.getHeaders() })
     );
+  }
+
+  getTimeline(reservationId: number): Observable<BookingTimeline> {
+    return this.withLoading(`timeline-${reservationId}`,
+      this.http.get<BookingTimeline>(`${this.apiUrl}/${reservationId}/timeline`, { headers: this.getHeaders() })
+    );
+  }
+
+  downloadReceipt(reservationId: number): Observable<Blob> {
+    return this.http.get(`${this.apiUrl}/${reservationId}/receipt`, {
+      headers: this.getHeaders(),
+      responseType: 'blob'
+    });
   }
 
   // Créer une nouvelle réservation

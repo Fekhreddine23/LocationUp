@@ -76,6 +76,9 @@
             <span [class]="'status-badge ' + getStatusBadgeClass(booking.status)">
               {{ getStatusText(booking.status) }}
             </span>
+            <span class="payment-badge" [ngClass]="getPaymentBadgeClass(booking.paymentStatus)">
+              💳 {{ getPaymentStatusText(booking.paymentStatus) }}
+            </span>
           </div>
         </div>
 
@@ -187,6 +190,44 @@
               Terminé
             </button>
           </div>
+          <div class="timeline-actions">
+            <button class="btn btn-outline btn-sm" (click)="toggleTimeline(booking)">
+              {{ timelineVisibility[booking.reservationId!] ? 'Masquer la timeline' : 'Afficher la timeline' }}
+            </button>
+            <button class="btn btn-outline btn-sm" (click)="downloadReceipt(booking.reservationId!)">
+              📄 Reçu PDF
+            </button>
+            <button class="btn btn-outline btn-sm"
+                    *ngIf="booking.paymentStatus !== 'PAID' && booking.paymentStatus !== 'REFUNDED'"
+                    (click)="syncPayment(booking)"
+                    [disabled]="paymentSyncLoading[booking.reservationId!]">
+              <ng-container *ngIf="!paymentSyncLoading[booking.reservationId!]">🔄 Vérifier le paiement</ng-container>
+              <ng-container *ngIf="paymentSyncLoading[booking.reservationId!]">⏳ Vérification...</ng-container>
+            </button>
+          </div>
+        </div>
+
+        <div class="booking-timeline" *ngIf="timelineVisibility[booking.reservationId!]">
+          <div *ngIf="timelineLoading[booking.reservationId!]" class="timeline-loading">
+            <app-spinner size="small" text="Chargement de la timeline..."></app-spinner>
+          </div>
+          <ng-container *ngIf="!timelineLoading[booking.reservationId!]">
+            <div *ngIf="getTimelineEvents(booking) as timeline; else emptyTimeline">
+              <div class="timeline-event" *ngFor="let event of timeline.events">
+                <div [class]="'event-indicator ' + getTimelineStatusClass(event.status)"></div>
+                <div class="event-content">
+                  <div class="event-header">
+                    <h4>{{ event.title }}</h4>
+                    <span class="event-date">{{ formatDate(event.timestamp) }}</span>
+                  </div>
+                  <p>{{ event.description }}</p>
+                </div>
+              </div>
+            </div>
+            <ng-template #emptyTimeline>
+              <p class="timeline-empty">Aucun événement disponible pour cette réservation.</p>
+            </ng-template>
+          </ng-container>
         </div>
       </div>
     </div>

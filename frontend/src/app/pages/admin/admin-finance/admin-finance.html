@@ -1,0 +1,123 @@
+<div class="finance-container" *ngIf="overview as data">
+  <app-breadcrumbs [items]="breadcrumbItems"></app-breadcrumbs>
+
+  <div class="header">
+    <div>
+      <h1>Finances</h1>
+      <p>Suivi temps réel des revenus et des paiements</p>
+    </div>
+    <div class="actions">
+      <select [(ngModel)]="selectedRange" (change)="refreshRange(selectedRange)">
+        <option [value]="3">3 derniers mois</option>
+        <option [value]="6">6 derniers mois</option>
+        <option [value]="12">12 derniers mois</option>
+      </select>
+      <button (click)="downloadCsv()">⬇️ Export CSV</button>
+    </div>
+  </div>
+
+  <div class="metrics">
+    <div class="metric-card">
+      <span>Total revenus</span>
+      <strong>{{ data.totalRevenue | number:'1.2-2' }} €</strong>
+    </div>
+    <div class="metric-card">
+      <span>Mois en cours</span>
+      <strong>{{ data.monthToDateRevenue | number:'1.2-2' }} €</strong>
+    </div>
+    <div class="metric-card warning">
+      <span>En attente</span>
+      <strong>{{ data.outstandingRevenue | number:'1.2-2' }} €</strong>
+    </div>
+  </div>
+
+  <div class="chart-card">
+    <h3>Évolution des revenus</h3>
+    <canvas baseChart
+      [data]="lineChartData"
+      [options]="lineChartOptions"
+      [type]="'line'">
+    </canvas>
+  </div>
+
+  <div class="status-grid">
+    <div class="status-card" *ngFor="let status of data.paymentsByStatus">
+      <div class="status-icon" [class]="getStatusClass(status.status)"></div>
+      <div>
+        <p>{{ status.status }}</p>
+        <strong>{{ status.amount | number:'1.2-2' }} €</strong>
+        <small>{{ status.count }} paiements</small>
+      </div>
+    </div>
+  </div>
+
+  <div class="alerts-card">
+    <div class="card-header">
+      <h3>Alertes paiements</h3>
+      <button (click)="loadAlerts()">↻ Actualiser</button>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Réservation</th>
+          <th>Client</th>
+          <th>Montant</th>
+          <th>Statut</th>
+          <th>Message</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let alert of alerts">
+          <td>#{{ alert.reservationId }}</td>
+          <td>{{ alert.customer }}</td>
+          <td>{{ alert.amount | number:'1.2-2' }} €</td>
+          <td><span [class]="'badge ' + getStatusClass(alert.paymentStatus)">{{ alert.paymentStatus }}</span></td>
+          <td>{{ alert.message }}</td>
+        </tr>
+        <tr *ngIf="alerts.length === 0">
+          <td colspan="5">Aucune alerte en attente 🎉</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="events-card">
+    <div class="card-header">
+      <h3>Événements Stripe récents</h3>
+      <button (click)="loadEvents()">↻ Rafraîchir</button>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Type</th>
+          <th>Statut</th>
+          <th>Référence</th>
+          <th>Erreur</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let event of events">
+          <td>{{ event.receivedAt | date:'dd/MM HH:mm' }}</td>
+          <td>{{ event.type }}</td>
+          <td><span [class]="'badge ' + getStatusClass(event.status)">{{ event.status }}</span></td>
+          <td>{{ event.reservationReference || 'N/A' }}</td>
+          <td>
+            <span *ngIf="event.errorMessage; else okMsg">{{ event.errorMessage }}</span>
+            <ng-template #okMsg>—</ng-template>
+          </td>
+        </tr>
+        <tr *ngIf="eventsLoading">
+          <td colspan="5">Chargement des événements...</td>
+        </tr>
+        <tr *ngIf="!eventsLoading && events.length === 0">
+          <td colspan="5">Aucun événement récent</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="finance-container" *ngIf="!overview && isLoading">
+  <p>Chargement des données financières...</p>
+</div>

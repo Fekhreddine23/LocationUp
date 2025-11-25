@@ -1,137 +1,181 @@
 <app-breadcrumbs [items]="breadcrumbItems"></app-breadcrumbs>
 
-
 <div class="create-booking-container">
   <div class="booking-form-card">
-    <h2>Nouvelle Réservation</h2>
+    <div class="wizard-header">
+      <div>
+        <h2>Nouvelle Réservation</h2>
+        <p>Validez votre offre, renseignez vos détails puis lancez le paiement en toute simplicité.</p>
+      </div>
+    </div>
 
-    <!-- Messages -->
-    <div *ngIf="successMessage" class="alert alert-success">
-      ✅ {{ successMessage }}
-      <p>Redirection automatique dans 2 secondes...</p>
+    <div class="wizard-steps">
+      <div 
+        class="wizard-step"
+        *ngFor="let step of steps; index as i"
+        [class.active]="isStepActive(step.id)"
+        [class.completed]="isStepCompleted(step.id)">
+        <div class="step-index">{{ i + 1 }}</div>
+        <div class="step-icon">{{ step.icon }}</div>
+        <div class="step-label">{{ step.label }}</div>
+      </div>
     </div>
 
     <div *ngIf="errorMessage" class="alert alert-error">
       ❌ {{ errorMessage }}
     </div>
 
-    <!-- Chargement de l'offre -->
-    <div *ngIf="isLoadingOffer" class="loading-offer">
-      <div class="spinner"></div>
-      <p>Chargement de l'offre sélectionnée...</p>
+    <div *ngIf="successMessage && currentStep === 'payment'" class="alert alert-success">
+      ✅ {{ successMessage }}
     </div>
 
-    <form (ngSubmit)="onSubmit()" #bookingForm="ngForm" 
-          *ngIf="!successMessage && !isLoadingOffer && selectedOffer">
-      
-      <!-- Offre présélectionnée (affichage seulement) -->
-      <div class="selected-offer-section">
-        <h3>🎯 Offre Sélectionnée</h3>
-        <div class="offer-card selected">
-          <div class="offer-header">
-            <h4>{{ selectedOffer.description }}</h4>
-            <span class="price-tag">{{ selectedOffer.price | currency:'EUR' }}</span>
+    <ng-container [ngSwitch]="currentStep">
+      <!-- Step 1 -->
+      <section *ngSwitchCase="'offer'">
+        <div *ngIf="isLoadingOffer" class="loading-offer">
+          <div class="spinner"></div>
+          <p>Chargement de l'offre sélectionnée...</p>
+        </div>
+
+        <ng-container *ngIf="!isLoadingOffer">
+          <div *ngIf="selectedOffer; else noOffer">
+            <div class="selected-offer-section">
+              <h3>🎯 Offre sélectionnée</h3>
+              <div class="offer-card selected">
+                <div class="offer-header">
+                  <div>
+                    <h4>{{ selectedOffer.description }}</h4>
+                    <p class="offer-id">ID Offre: {{ selectedOffer.offerId }}</p>
+                  </div>
+                  <span class="price-tag">{{ selectedOffer.price | currency:'EUR' }}</span>
+                </div>
+                <div class="offer-details">
+                  <p><strong>Service:</strong> {{ selectedOffer.mobilityService || '—' }}</p>
+                  <p>
+                    <strong>Disponibilité:</strong>
+                    {{ selectedOffer.pickupDatetime | date:'dd/MM/yyyy à HH:mm' }}
+                  </p>
+                </div>
+                <div class="offer-note">
+                  <small>Cette offre provient de votre sélection dans le catalogue.</small>
+                </div>
+              </div>
+            </div>
+
+            <div class="step-actions">
+              <button class="btn btn-secondary" type="button" (click)="onCancel()">
+                🔎 Choisir une autre offre
+              </button>
+              <button class="btn btn-primary" type="button" (click)="goToDetailsStep()">
+                Continuer vers les détails →
+              </button>
+            </div>
           </div>
-          
-          <div class="offer-details">
-            <p class="pickup-time">
-              <strong>📅 Disponible le:</strong> 
-              {{ selectedOffer.pickupDatetime | date:'dd/MM/yyyy à HH:mm' }}
-            </p>
-            <p class="offer-id">
-              <strong>ID Offre:</strong> {{ selectedOffer.offerId }}
-            </p>
+          <ng-template #noOffer>
+            <div class="no-offer-message">
+              <div class="warning-icon">⚠️</div>
+              <h3>Aucune offre sélectionnée</h3>
+              <p>Choisissez une offre depuis le catalogue pour poursuivre la réservation.</p>
+              <button class="btn btn-primary" (click)="onCancel()">
+                📋 Voir les offres disponibles
+              </button>
+            </div>
+          </ng-template>
+        </ng-container>
+      </section>
+
+      <!-- Step 2 -->
+      <section *ngSwitchCase="'details'">
+        <form (ngSubmit)="submitDetails()" #detailsForm="ngForm">
+          <div class="form-group">
+            <label for="reservationDate">Date et heure de réservation *</label>
+            <input 
+              type="datetime-local"
+              id="reservationDate"
+              name="reservationDate"
+              [(ngModel)]="bookingRequest.reservationDate"
+              required
+              class="form-control"
+              [disabled]="creationLoading"
+              [min]="getMinDate()"
+              [max]="getMaxDate()">
+            <small class="form-help">
+              Choisissez l'heure exacte de votre trajet pour cette offre.
+            </small>
           </div>
 
-          <div class="offer-note">
-            <small>✅ Cette offre a été sélectionnée depuis le catalogue</small>
+          <div class="form-group" *ngIf="bookingRequest.userId > 0">
+            <label>Utilisateur</label>
+            <div class="user-info">
+              <strong>ID:</strong> {{ bookingRequest.userId }}
+              <span *ngIf="currentUser">({{ currentUser.username }})</span>
+            </div>
+          </div>
+
+          <div *ngIf="bookingRequest.reservationDate" class="preview-section">
+            <h4>📋 Aperçu</h4>
+            <div class="preview-details">
+              <div class="preview-item">
+                <strong>Offre :</strong> {{ selectedOffer?.description }}
+              </div>
+              <div class="preview-item">
+                <strong>Date :</strong> {{ bookingRequest.reservationDate | date:'dd/MM/yyyy HH:mm' }}
+              </div>
+              <div class="preview-item">
+                <strong>Montant :</strong> {{ selectedOffer?.price | currency:'EUR' }}
+              </div>
+            </div>
+          </div>
+
+          <div class="step-actions">
+            <button type="button" class="btn btn-secondary" (click)="goBackToOffer()">
+              ← Retour à l'offre
+            </button>
+            <button 
+              type="submit"
+              class="btn btn-primary"
+              [disabled]="!detailsForm.form.valid || creationLoading">
+              {{ creationLoading ? '⏳ Création en cours...' : 'Valider et passer au paiement' }}
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <!-- Step 3 -->
+      <section *ngSwitchCase="'payment'" class="payment-step">
+        <div *ngIf="createdBooking as booking">
+          <div class="payment-summary">
+            <h3>💳 Paiement sécurisé</h3>
+            <p>Réservation #{{ booking.reservationId }} — {{ selectedOffer?.description }}</p>
+            <ul>
+              <li><strong>Date :</strong> {{ booking.reservationDate | date:'dd/MM/yyyy HH:mm' }}</li>
+              <li><strong>Montant :</strong> {{ selectedOffer?.price | currency:'EUR' }}</li>
+              <li><strong>Statut :</strong> {{ booking.status }}</li>
+            </ul>
+          </div>
+          <div class="payment-status" [class.error]="paymentError">
+            <p *ngIf="paymentStatusMessage">{{ paymentStatusMessage }}</p>
+            <p *ngIf="paymentLoading">Vous allez être redirigé vers Stripe...</p>
+            <div *ngIf="paymentError" class="alert alert-warning">
+              ❌ {{ paymentError }}
+              <p>Vous pourrez relancer le paiement ci-dessous.</p>
+            </div>
+          </div>
+
+          <div class="step-actions">
+            <button type="button" class="btn btn-secondary" (click)="navigateToBookings()">
+              📋 Voir mes réservations
+            </button>
+            <button
+              type="button"
+              class="btn btn-primary"
+              [disabled]="paymentLoading || !booking.reservationId"
+              (click)="startPayment(booking.reservationId!)">
+              {{ paymentLoading ? 'Redirection en cours...' : '💳 Relancer le paiement' }}
+            </button>
           </div>
         </div>
-      </div>
-
-      <!-- Date et heure de réservation -->
-      <div class="form-group">
-        <label for="reservationDate">Date et heure de réservation *</label>
-        <input 
-          type="datetime-local"
-          id="reservationDate"
-          name="reservationDate"
-          [(ngModel)]="bookingRequest.reservationDate"
-          required
-          class="form-control"
-          [disabled]="isLoading"
-          [min]="getMinDate()"
-          [max]="getMaxDate()">
-        <small class="form-help">
-          Sélectionnez la date et l'heure souhaitées pour votre réservation
-        </small>
-      </div>
-
-      <!-- Informations de l'utilisateur -->
-      <div class="form-group" *ngIf="bookingRequest.userId > 0">
-        <label>Utilisateur</label>
-        <div class="user-info">
-          <strong>ID:</strong> {{ bookingRequest.userId }}
-          <span *ngIf="currentUser">({{ currentUser.username }})</span>
-        </div>
-        <small class="form-help">Votre identifiant utilisateur</small>
-      </div>
-
-      <!-- Aperçu de la réservation -->
-      <div *ngIf="bookingRequest.reservationDate" class="preview-section">
-        <h4>📋 Aperçu de la réservation :</h4>
-        <div class="preview-details final-preview">
-          <div class="preview-item">
-            <strong>Offre :</strong> {{ selectedOffer.description }}
-          </div>
-          <div class="preview-item">
-            <strong>Prix :</strong> {{ selectedOffer.price | currency:'EUR' }}
-          </div>
-          <div class="preview-item">
-            <strong>Date de réservation :</strong> {{ bookingRequest.reservationDate | date:'dd/MM/yyyy HH:mm' }}
-          </div>
-          <div class="preview-item">
-            <strong>Utilisateur :</strong> ID {{ bookingRequest.userId }}
-          </div>
-        </div>
-      </div>
-
-      <!-- Actions -->
-      <div class="form-actions">
-        <button 
-          type="button" 
-          class="btn btn-secondary"
-          (click)="onCancel()"
-          [disabled]="isLoading">
-          Annuler
-        </button>
-        
-        <button 
-          type="submit" 
-          class="btn btn-primary"
-          [disabled]="!bookingForm.form.valid || isLoading">
-          {{ isLoading ? '⏳ Création en cours...' : '✅ Confirmer la réservation' }}
-        </button>
-      </div>
-    </form>
-
-    <!-- Message si aucune offre -->
-    <div *ngIf="!isLoadingOffer && !selectedOffer && !successMessage" class="no-offer-message">
-      <div class="warning-icon">⚠️</div>
-      <h3>Aucune offre sélectionnée</h3>
-      <p>Veuillez sélectionner une offre depuis le catalogue pour pouvoir réserver.</p>
-      <button class="btn btn-primary" (click)="onCancel()">
-        📋 Voir les offres disponibles
-      </button>
-    </div>
-
-    <div *ngIf="successMessage" class="success-actions">
-      <button 
-        type="button" 
-        class="btn btn-primary"
-        (click)="navigateToBookings()">
-        📋 Voir mes réservations
-      </button>
-    </div>
+      </section>
+    </ng-container>
   </div>
 </div>
