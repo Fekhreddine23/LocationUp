@@ -1,4 +1,4 @@
-export type PaymentStatus = 'PENDING' | 'REQUIRES_ACTION' | 'PAID' | 'FAILED' | 'REFUNDED';
+export type PaymentStatus = 'PENDING' | 'REQUIRES_ACTION' | 'PAID' | 'FAILED' | 'REFUNDED' | 'EXPIRED';
 
 export interface AdminBooking {
   reservationId: number;

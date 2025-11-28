@@ -7,8 +7,11 @@ import { AdminBooking, BookingResponse } from '../../core/models/AdminBooking.mo
 import { AdminService } from '../../core/services/admin.service';
 import { AdminUser } from '../../core/models/AdminUser.model';
 import { Offer } from '../../core/models/offer.model';
+import { PaymentEvent } from '../../core/models/payment-event.model';
+import { ReservationAdminAction } from '../../core/models/reservation-admin-action.model';
 import { Subject, forkJoin, Observable, of } from 'rxjs';
-import { catchError, map, takeUntil, tap } from 'rxjs/operators';
+import { catchError, finalize, map, takeUntil, tap } from 'rxjs/operators';
+import { NotificationService } from '../../core/services/notification.service';
 
 type BookingStatus = AdminBooking['status'] | 'ALL';
 type NormalizedBookingOffer = NonNullable<AdminBooking['offer']>;
@@ -26,6 +29,12 @@ export class BookingManagement implements OnInit, OnDestroy {
   filteredBookings: AdminBooking[] = [];
   displayedBookingsCount = 0;
   selectedBooking: AdminBooking | null = null;
+  paymentEvents: PaymentEvent[] = [];
+  paymentEventsLoading = false;
+  paymentEventsError = '';
+  adminActions: ReservationAdminAction[] = [];
+  adminActionsLoading = false;
+  adminActionsError = '';
   
   // Pagination
   currentPage = 0;
@@ -42,6 +51,7 @@ export class BookingManagement implements OnInit, OnDestroy {
   isLoading = false;
   isDetailModalOpen = false;
   isDeleteModalOpen = false;
+  paymentActionLoading: Record<number, boolean> = {};
   
   // Messages
   successMessage = '';
@@ -64,7 +74,8 @@ export class BookingManagement implements OnInit, OnDestroy {
   constructor(
     private adminService: AdminService,
     private router: Router,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private notificationService: NotificationService
   ) {}
 
   private static normalizeStatus(status?: string | null): AdminBooking['status'] {
@@ -380,11 +391,21 @@ export class BookingManagement implements OnInit, OnDestroy {
   viewBookingDetails(booking: AdminBooking): void {
     this.selectedBooking = booking;
     this.isDetailModalOpen = true;
+    this.paymentEvents = [];
+    this.paymentEventsError = '';
+    this.adminActions = [];
+    this.adminActionsError = '';
+    if (booking?.reservationId) {
+      this.fetchPaymentEvents(booking.reservationId);
+      this.fetchAdminActions(booking.reservationId);
+    }
   }
 
   confirmBooking(booking: AdminBooking): void {
     if (!booking.reservationId) {
-      this.errorMessage = 'ID de réservation manquant';
+      const message = 'ID de réservation manquant';
+      this.errorMessage = message;
+      this.notificationService.error(message, 5000);
       this.clearMessagesAfterDelay();
       return;
     }
@@ -392,14 +413,82 @@ export class BookingManagement implements OnInit, OnDestroy {
     this.adminService.updateBookingStatus(booking.reservationId, 'CONFIRMED').subscribe({
       next: (updatedBooking) => {
         booking.status = BookingManagement.normalizeStatus(updatedBooking.status);
-        this.successMessage = 'Réservation confirmée avec succès';
+        const message = 'Réservation confirmée avec succès';
+        this.successMessage = message;
+        this.notificationService.success(message, 4000);
         this.clearMessagesAfterDelay();
         this.loadBookingStats(); // Recharger les stats
       },
       error: (error) => {
         console.error('Erreur confirmation:', error);
-        this.errorMessage = 'Erreur lors de la confirmation';
+        const message = error?.message || 'Erreur lors de la confirmation';
+        this.errorMessage = message;
+        this.notificationService.error(message, 5000);
         this.clearMessagesAfterDelay();
+      }
+    });
+  }
+
+  confirmBookingForced(booking: AdminBooking): void {
+    if (!booking.reservationId) {
+      const message = 'ID de réservation manquant';
+      this.errorMessage = message;
+      this.notificationService.error(message, 5000);
+      this.clearMessagesAfterDelay();
+      return;
+    }
+    if (!this.confirmAdminAction('Confirmer malgré l\'absence de paiement ?')) {
+      return;
+    }
+    this.adminService.updateBookingStatus(booking.reservationId, 'CONFIRMED').subscribe({
+      next: (updatedBooking) => {
+        booking.status = BookingManagement.normalizeStatus(updatedBooking.status);
+        const message = 'Réservation confirmée sans paiement (action forcée)';
+        this.successMessage = message;
+        this.notificationService.warning(message, 5000);
+        this.clearMessagesAfterDelay();
+        this.loadBookingStats();
+      },
+      error: (error) => {
+        console.error('Erreur confirmation forcée:', error);
+        const message = error?.message || 'Erreur lors de la confirmation forcée';
+        this.errorMessage = message;
+        this.notificationService.error(message, 5000);
+        this.clearMessagesAfterDelay();
+      }
+    });
+  }
+
+  private fetchPaymentEvents(reservationId: number): void {
+    this.paymentEventsLoading = true;
+    this.adminService.getBookingPaymentEvents(reservationId).pipe(
+      takeUntil(this.destroy$)
+    ).subscribe({
+      next: (events) => {
+        this.paymentEvents = events || [];
+        this.paymentEventsLoading = false;
+      },
+      error: (error) => {
+        console.error('Erreur chargement événements de paiement:', error);
+        this.paymentEventsError = 'Impossible de charger l’historique Stripe';
+        this.paymentEventsLoading = false;
+      }
+    });
+  }
+
+  private fetchAdminActions(reservationId: number): void {
+    this.adminActionsLoading = true;
+    this.adminService.getBookingAdminActions(reservationId).pipe(
+      takeUntil(this.destroy$)
+    ).subscribe({
+      next: (actions) => {
+        this.adminActions = actions || [];
+        this.adminActionsLoading = false;
+      },
+      error: (error) => {
+        console.error('Erreur chargement actions admin:', error);
+        this.adminActionsError = 'Impossible de charger l’historique admin';
+        this.adminActionsLoading = false;
       }
     });
   }
@@ -412,7 +501,9 @@ export class BookingManagement implements OnInit, OnDestroy {
 
   collectPayment(booking: AdminBooking): void {
     if (!booking.reservationId) {
-      this.errorMessage = 'ID de réservation manquant';
+      const message = 'ID de réservation manquant';
+      this.errorMessage = message;
+      this.notificationService.error(message, 5000);
       this.clearMessagesAfterDelay();
       return;
     }
@@ -422,15 +513,93 @@ export class BookingManagement implements OnInit, OnDestroy {
         if (response?.paymentUrl) {
           window.open(response.paymentUrl, '_blank', 'noreferrer');
           booking.paymentStatus = 'REQUIRES_ACTION';
-          this.successMessage = 'Lien de paiement généré. Vérifiez l’onglet ouvert pour encaisser.';
+          const message = 'Lien de paiement généré. Vérifiez l’onglet ouvert pour encaisser.';
+          this.successMessage = message;
+          this.notificationService.success(message, 4000);
         } else {
-          this.errorMessage = 'URL de paiement introuvable';
+          const message = 'URL de paiement introuvable';
+          this.errorMessage = message;
+          this.notificationService.warning(message, 5000);
         }
         this.clearMessagesAfterDelay();
       },
       error: (error) => {
         console.error('Erreur paiement manuel:', error);
-        this.errorMessage = 'Impossible de créer la session de paiement';
+        const message = error?.message || 'Impossible de créer la session de paiement';
+        this.errorMessage = message;
+        this.notificationService.error(message, 5000);
+        this.clearMessagesAfterDelay();
+      }
+    });
+  }
+
+  forcePaymentExpiration(booking: AdminBooking): void {
+    if (!booking.reservationId) {
+      const message = 'ID de réservation manquant';
+      this.errorMessage = message;
+      this.notificationService.error(message, 5000);
+      this.clearMessagesAfterDelay();
+      return;
+    }
+    if (!this.confirmAdminAction('Confirmer la mise en EXPIRÉ de ce paiement ?')) {
+      return;
+    }
+    const reason = this.collectOptionalReason('Motif (optionnel) pour l\'expiration forcée :');
+    const reservationId = booking.reservationId;
+    this.paymentActionLoading[reservationId] = true;
+    this.adminService.forcePaymentExpiration(reservationId, reason).pipe(
+      finalize(() => {
+        this.paymentActionLoading[reservationId] = false;
+      })
+    ).subscribe({
+      next: (updatedBooking) => {
+        this.applyBookingPaymentUpdate(booking, updatedBooking);
+        const message = 'Paiement marqué comme expiré.';
+        this.successMessage = message;
+        this.notificationService.success(message, 4000);
+        this.clearMessagesAfterDelay();
+      },
+      error: (error) => {
+        console.error('Erreur expiration paiement:', error);
+        const message = error?.message || 'Impossible de marquer le paiement comme expiré';
+        this.errorMessage = message;
+        this.notificationService.error(message, 5000);
+        this.clearMessagesAfterDelay();
+      }
+    });
+  }
+
+  forcePaymentRefund(booking: AdminBooking): void {
+    if (!booking.reservationId) {
+      const message = 'ID de réservation manquant';
+      this.errorMessage = message;
+      this.notificationService.error(message, 5000);
+      this.clearMessagesAfterDelay();
+      return;
+    }
+    if (!this.confirmAdminAction('Confirmer le remboursement manuel de ce paiement ?')) {
+      return;
+    }
+    const reason = this.collectOptionalReason('Motif (optionnel) pour ce remboursement :');
+    const reservationId = booking.reservationId;
+    this.paymentActionLoading[reservationId] = true;
+    this.adminService.forcePaymentRefund(reservationId, reason).pipe(
+      finalize(() => {
+        this.paymentActionLoading[reservationId] = false;
+      })
+    ).subscribe({
+      next: (updatedBooking) => {
+        this.applyBookingPaymentUpdate(booking, updatedBooking);
+        const message = 'Paiement remboursé manuellement.';
+        this.successMessage = message;
+        this.notificationService.success(message, 4000);
+        this.clearMessagesAfterDelay();
+      },
+      error: (error) => {
+        console.error('Erreur remboursement paiement:', error);
+        const message = error?.message || 'Impossible de rembourser le paiement';
+        this.errorMessage = message;
+        this.notificationService.error(message, 5000);
         this.clearMessagesAfterDelay();
       }
     });
@@ -438,7 +607,9 @@ export class BookingManagement implements OnInit, OnDestroy {
 
   cancelBooking(booking: AdminBooking): void {
     if (!booking.reservationId) {
-      this.errorMessage = 'ID de réservation manquant';
+      const message = 'ID de réservation manquant';
+      this.errorMessage = message;
+      this.notificationService.error(message, 5000);
       this.clearMessagesAfterDelay();
       return;
     }
@@ -446,13 +617,17 @@ export class BookingManagement implements OnInit, OnDestroy {
     this.adminService.cancelBooking(booking.reservationId).subscribe({
       next: (updatedBooking) => {
         booking.status = BookingManagement.normalizeStatus(updatedBooking.status);
-        this.successMessage = 'Réservation annulée avec succès';
+        const message = 'Réservation annulée avec succès';
+        this.successMessage = message;
+        this.notificationService.success(message, 4000);
         this.clearMessagesAfterDelay();
         this.loadBookingStats(); // Recharger les stats
       },
       error: (error) => {
         console.error('Erreur annulation:', error);
-        this.errorMessage = 'Erreur lors de l\'annulation';
+        const message = error?.message || 'Erreur lors de l\'annulation';
+        this.errorMessage = message;
+        this.notificationService.error(message, 5000);
         this.clearMessagesAfterDelay();
       }
     });
@@ -460,7 +635,9 @@ export class BookingManagement implements OnInit, OnDestroy {
 
   completeBooking(booking: AdminBooking): void {
     if (!booking.reservationId) {
-      this.errorMessage = 'ID de réservation manquant';
+      const message = 'ID de réservation manquant';
+      this.errorMessage = message;
+      this.notificationService.error(message, 5000);
       this.clearMessagesAfterDelay();
       return;
     }
@@ -468,13 +645,17 @@ export class BookingManagement implements OnInit, OnDestroy {
     this.adminService.updateBookingStatus(booking.reservationId, 'COMPLETED').subscribe({
       next: (updatedBooking) => {
         booking.status = BookingManagement.normalizeStatus(updatedBooking.status);
-        this.successMessage = 'Réservation marquée comme terminée';
+        const message = 'Réservation marquée comme terminée';
+        this.successMessage = message;
+        this.notificationService.success(message, 4000);
         this.clearMessagesAfterDelay();
         this.loadBookingStats(); // Recharger les stats
       },
       error: (error) => {
         console.error('Erreur completion:', error);
-        this.errorMessage = 'Erreur lors du marquage comme terminée';
+        const message = error?.message || 'Erreur lors du marquage comme terminée';
+        this.errorMessage = message;
+        this.notificationService.error(message, 5000);
         this.clearMessagesAfterDelay();
       }
     });
@@ -487,7 +668,9 @@ export class BookingManagement implements OnInit, OnDestroy {
 
   deleteBooking(): void {
     if (!this.selectedBooking?.reservationId) {
-      this.errorMessage = 'ID de réservation manquant';
+      const message = 'ID de réservation manquant';
+      this.errorMessage = message;
+      this.notificationService.error(message, 5000);
       this.clearMessagesAfterDelay();
       return;
     }
@@ -497,14 +680,18 @@ export class BookingManagement implements OnInit, OnDestroy {
         this.bookings = this.bookings.filter(b => b.reservationId !== this.selectedBooking!.reservationId);
         this.totalElements = Math.max(0, this.totalElements - 1);
         this.applyFilters();
-        this.successMessage = 'Réservation supprimée avec succès';
+        const message = 'Réservation supprimée avec succès';
+        this.successMessage = message;
+        this.notificationService.success(message, 4000);
         this.isDeleteModalOpen = false;
         this.clearMessagesAfterDelay();
         this.loadBookingStats(); // Recharger les stats
       },
       error: (error) => {
         console.error('Erreur suppression:', error);
-        this.errorMessage = 'Erreur lors de la suppression';
+        const message = error?.message || 'Erreur lors de la suppression';
+        this.errorMessage = message;
+        this.notificationService.error(message, 5000);
         this.clearMessagesAfterDelay();
       }
     });
@@ -531,6 +718,45 @@ export class BookingManagement implements OnInit, OnDestroy {
     };
     const key = BookingManagement.normalizeStatus(status);
     return classMap[key] || 'status-pending';
+  }
+
+  getPaymentStatusText(status?: string): string {
+    if (!status) {
+      return 'Paiement en attente';
+    }
+    const map: Record<string, string> = {
+      PENDING: 'Paiement en attente',
+      REQUIRES_ACTION: 'Action requise',
+      PAID: 'Payé',
+      FAILED: 'Échec du paiement',
+      REFUNDED: 'Remboursé',
+      EXPIRED: 'Paiement expiré'
+    };
+    return map[status.toUpperCase()] || status;
+  }
+
+  getPaymentBadgeClass(status?: string): string {
+    switch (status?.toUpperCase()) {
+      case 'PAID':
+        return 'payment-paid';
+      case 'FAILED':
+        return 'payment-failed';
+      case 'REFUNDED':
+        return 'payment-refunded';
+      case 'REQUIRES_ACTION':
+        return 'payment-action';
+      case 'EXPIRED':
+        return 'payment-expired';
+      default:
+        return 'payment-pending';
+    }
+  }
+
+  isPaymentActionLoading(reservationId?: number): boolean {
+    if (!reservationId) {
+      return false;
+    }
+    return !!this.paymentActionLoading[reservationId];
   }
 
   formatCurrency(amount?: number): string {
@@ -573,7 +799,25 @@ export class BookingManagement implements OnInit, OnDestroy {
   }
 
   canConfirm(booking: AdminBooking): boolean {
-    return BookingManagement.normalizeStatus(booking.status) === 'PENDING';
+    return BookingManagement.normalizeStatus(booking.status) === 'PENDING'
+      && this.isPaymentPaid(booking);
+  }
+
+  private isPaymentPaid(booking: AdminBooking | null | undefined): boolean {
+    if (!booking) {
+      return false;
+    }
+    const paymentStatus = booking.paymentStatus?.toUpperCase();
+    return !paymentStatus || paymentStatus === 'PAID';
+  }
+
+  // vérifier le statut de paiement avant d’afficher le nouveau bouton.
+  canConfirmPaid(booking: AdminBooking | null | undefined): boolean {
+    if (!booking) {
+      return false;
+    }
+    return BookingManagement.normalizeStatus(booking.status) === 'PENDING'
+      && booking.paymentStatus?.toUpperCase() === 'PAID';
   }
 
   canCancel(booking: AdminBooking): boolean {
@@ -583,6 +827,27 @@ export class BookingManagement implements OnInit, OnDestroy {
 
   canComplete(booking: AdminBooking): boolean {
     return BookingManagement.normalizeStatus(booking.status) === 'CONFIRMED';
+  }
+
+  canForceExpire(booking: AdminBooking): boolean {
+    if (!booking.reservationId) {
+      return false;
+    }
+    const paymentStatus = booking.paymentStatus?.toUpperCase();
+    return paymentStatus === undefined || paymentStatus === 'PENDING' || paymentStatus === 'REQUIRES_ACTION';
+  }
+
+  canForceRefund(booking: AdminBooking): boolean {
+    if (!booking.reservationId) {
+      return false;
+    }
+    return booking.paymentStatus?.toUpperCase() === 'PAID';
+  }
+
+  canForceConfirm(booking: AdminBooking): boolean {
+    return BookingManagement.normalizeStatus(booking.status) === 'PENDING'
+      && !!booking.paymentStatus
+      && booking.paymentStatus.toUpperCase() !== 'PAID';
   }
 
   clearMessagesAfterDelay(): void {
@@ -612,6 +877,29 @@ export class BookingManagement implements OnInit, OnDestroy {
     this.router.navigate(['/admin/users'], {
       queryParams: { view: 'bookings', userId }
     });
+  }
+
+  private applyBookingPaymentUpdate(target: AdminBooking, updated: AdminBooking): void {
+    target.paymentStatus = updated.paymentStatus ?? target.paymentStatus;
+    target.paymentReference = updated.paymentReference ?? target.paymentReference;
+    target.paymentDate = updated.paymentDate ?? target.paymentDate;
+    target.status = BookingManagement.normalizeStatus(updated.status);
+    target.totalPrice = updated.totalPrice ?? target.totalPrice;
+  }
+
+  private confirmAdminAction(message: string): boolean {
+    if (typeof window === 'undefined' || typeof window.confirm !== 'function') {
+      return true;
+    }
+    return window.confirm(message);
+  }
+
+  private collectOptionalReason(promptMessage: string): string | undefined {
+    if (typeof window === 'undefined' || typeof window.prompt !== 'function') {
+      return undefined;
+    }
+    const result = window.prompt(promptMessage);
+    return result && result.trim().length > 0 ? result.trim() : undefined;
   }
 
   // 🆕 MÉTHODES POUR LES FILTRES ACTIFS

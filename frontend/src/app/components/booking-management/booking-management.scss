@@ -399,6 +399,53 @@
   }
 }
 
+.payment-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.35rem 0.85rem;
+  border-radius: 16px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+
+  &.payment-pending {
+    background: #fef3c7;
+    color: #92400e;
+  }
+
+  &.payment-action {
+    background: #fef2f2;
+    color: #b91c1c;
+  }
+
+  &.payment-paid {
+    background: #dcfce7;
+    color: #15803d;
+  }
+
+  &.payment-failed {
+    background: #fee2e2;
+    color: #b91c1c;
+  }
+
+  &.payment-refunded {
+    background: #dbeafe;
+    color: #1d4ed8;
+  }
+
+  &.payment-expired {
+    background: #ede9fe;
+    color: #5b21b6;
+  }
+}
+
+.code-value {
+  font-family: 'Roboto Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: 0.85rem;
+  word-break: break-all;
+}
+
 /* Colonne actions */
 .actions {
   display: flex;
@@ -415,6 +462,12 @@
     
     &:hover {
       transform: scale(1.1);
+    }
+    
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
     }
     
     &.btn-view {
@@ -443,6 +496,24 @@
         background: #fbcfe8;
       }
     }
+
+    &.btn-expire {
+      background: #ede9fe;
+      color: #5b21b6;
+
+      &:hover {
+        background: #ddd6fe;
+      }
+    }
+
+    &.btn-refund {
+      background: #e0f2fe;
+      color: #0369a1;
+
+      &:hover {
+        background: #bae6fd;
+      }
+    }
     
     &.btn-cancel {
       background: #fef3c7;
@@ -450,6 +521,15 @@
       
       &:hover {
         background: #fde68a;
+      }
+    }
+
+    &.btn-force-confirm {
+      background: #fee2e2;
+      color: #b91c1c;
+
+      &:hover {
+        background: #fecaca;
       }
     }
     
@@ -627,6 +707,27 @@
           background: #059669;
         }
       }
+      
+      &.btn-confirm-primary {
+        background: #059669;
+        color: #fff;
+        font-size: 1rem;
+        box-shadow: 0 4px 10px rgba(5, 150, 105, 0.3);
+        
+        &:hover {
+          background: #047857;
+        }
+      }
+      
+      &.btn-force-confirm-text {
+        background: #f97316;
+        color: white;
+        box-shadow: 0 4px 10px rgba(249, 115, 22, 0.35);
+        
+        &:hover {
+          background: #ea580c;
+        }
+      }
 
       &.btn-payment {
         background: #ec4899;
@@ -634,6 +735,24 @@
         
         &:hover {
           background: #db2777;
+        }
+      }
+
+      &.btn-expire {
+        background: #7c3aed;
+        color: white;
+
+        &:hover {
+          background: #6d28d9;
+        }
+      }
+
+      &.btn-refund {
+        background: #0ea5e9;
+        color: white;
+
+        &:hover {
+          background: #0284c7;
         }
       }
       
@@ -691,6 +810,57 @@
     font-size: 1.1rem;
     border-bottom: 2px solid #e1e5e9;
     padding-bottom: 0.5rem;
+  }
+}
+
+.info-text {
+  color: #6b7280;
+  font-style: italic;
+}
+
+.events-timeline {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+
+  li {
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #e5e7eb;
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    .event-header {
+      display: flex;
+      justify-content: space-between;
+      font-weight: 600;
+      color: #111827;
+    }
+
+    .event-type {
+      text-transform: uppercase;
+      font-size: 0.85rem;
+      letter-spacing: 0.05em;
+    }
+
+    .event-date {
+      font-size: 0.85rem;
+      color: #6b7280;
+    }
+
+    .event-status,
+    .event-id,
+    .event-error {
+      font-size: 0.9rem;
+      color: #374151;
+      margin-top: 0.25rem;
+    }
+
+    .event-error {
+      color: #b91c1c;
+      font-weight: 500;
+    }
   }
 }
 

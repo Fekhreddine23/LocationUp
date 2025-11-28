@@ -203,11 +203,34 @@
               ✅
             </button>
             <button 
+              *ngIf="canForceConfirm(booking)"
+              (click)="confirmBookingForced(booking)" 
+              class="btn-force-confirm" 
+              title="Forcer la confirmation sans paiement">
+              ⚠️
+            </button>
+            <button 
               *ngIf="canCollectPayment(booking)"
               (click)="collectPayment(booking)" 
               class="btn-payment" 
               title="Encaisser via Stripe">
               💳
+            </button>
+            <button
+              *ngIf="canForceExpire(booking)"
+              (click)="forcePaymentExpiration(booking)"
+              class="btn-expire"
+              [disabled]="isPaymentActionLoading(booking.reservationId)"
+              title="Forcer l'expiration du paiement">
+              ⏳
+            </button>
+            <button
+              *ngIf="canForceRefund(booking)"
+              (click)="forcePaymentRefund(booking)"
+              class="btn-refund"
+              [disabled]="isPaymentActionLoading(booking.reservationId)"
+              title="Rembourser manuellement">
+              💸
             </button>
             <button 
               *ngIf="canCancel(booking)"
@@ -318,15 +341,92 @@
               </span>
             </div>
           </div>
+
+          <div class="detail-section">
+            <h4>Statut de Paiement</h4>
+            <div class="detail-item">
+              <span class="detail-label">Paiement:</span>
+              <span class="payment-badge" [ngClass]="getPaymentBadgeClass(selectedBooking.paymentStatus)">
+                {{ getPaymentStatusText(selectedBooking.paymentStatus) }}
+              </span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Référence Stripe:</span>
+              <span class="detail-value code-value">{{ selectedBooking.paymentReference || '—' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Dernière mise à jour:</span>
+              <span class="detail-value">
+                {{ formatDate(selectedBooking.paymentDate || selectedBooking.createdAt) }}
+              </span>
+            </div>
+          </div>
+          <div class="detail-section">
+            <h4>Historique Stripe</h4>
+            <div *ngIf="paymentEventsLoading" class="info-text">Chargement des événements...</div>
+            <div *ngIf="paymentEventsError" class="warning-text">{{ paymentEventsError }}</div>
+            <div *ngIf="!paymentEventsLoading && !paymentEventsError && paymentEvents.length === 0" class="info-text">
+              Aucun événement Stripe enregistré pour cette réservation.
+            </div>
+            <ul *ngIf="!paymentEventsLoading && paymentEvents.length > 0" class="events-timeline">
+              <li *ngFor="let event of paymentEvents">
+                <div class="event-header">
+                  <span class="event-type">{{ event.type }}</span>
+                  <span class="event-date">{{ formatDate(event.receivedAt) }}</span>
+                </div>
+                <div class="event-status">
+                  Statut: <strong>{{ event.status }}</strong>
+                </div>
+                <div class="event-id">Event ID: {{ event.eventId }}</div>
+                <div class="event-error" *ngIf="event.errorMessage">
+                  ⚠️ {{ event.errorMessage }}
+                </div>
+              </li>
+            </ul>
+          </div>
+          <div class="detail-section">
+            <h4>Actions administrateur</h4>
+            <div *ngIf="adminActionsLoading" class="info-text">Chargement des actions...</div>
+            <div *ngIf="adminActionsError" class="warning-text">{{ adminActionsError }}</div>
+            <div *ngIf="!adminActionsLoading && !adminActionsError && adminActions.length === 0" class="info-text">
+              Aucune action administrateur enregistrée.
+            </div>
+            <ul *ngIf="!adminActionsLoading && adminActions.length > 0" class="events-timeline">
+              <li *ngFor="let action of adminActions">
+                <div class="event-header">
+                  <span class="event-type">{{ action.actionType }}</span>
+                  <span class="event-date">{{ formatDate(action.createdAt) }}</span>
+                </div>
+                <div class="event-status">
+                  Admin: <strong>{{ action.adminUsername }}</strong>
+                </div>
+                <div class="event-error" *ngIf="action.details">
+                  {{ action.details }}
+                </div>
+              </li>
+            </ul>
+          </div>
         </div>
       </div>
       <div class="modal-actions">
+        <button 
+          *ngIf="selectedBooking && canConfirmPaid(selectedBooking)"
+          (click)="confirmBooking(selectedBooking)"
+          class="btn-confirm-primary">
+          ✅ Confirmer la réservation
+        </button>
+        <button
+          *ngIf="selectedBooking && canForceConfirm(selectedBooking)"
+          (click)="confirmBookingForced(selectedBooking)"
+          class="btn-force-confirm-text">
+          ⚠️ Forcer la confirmation
+        </button>
         <button (click)="isDetailModalOpen = false" class="btn-cancel">
           Fermer
         </button>
         <div class="action-buttons" *ngIf="selectedBooking">
           <button 
-            *ngIf="canConfirm(selectedBooking)"
+            *ngIf="canConfirm(selectedBooking) && !canConfirmPaid(selectedBooking)"
             (click)="confirmBooking(selectedBooking)" 
             class="btn-confirm">
             ✅ Confirmer
@@ -336,6 +436,20 @@
             (click)="collectPayment(selectedBooking)" 
             class="btn-payment">
             💳 Encaisser
+          </button>
+          <button
+            *ngIf="canForceExpire(selectedBooking)"
+            (click)="forcePaymentExpiration(selectedBooking)"
+            class="btn-expire"
+            [disabled]="isPaymentActionLoading(selectedBooking.reservationId)">
+            ⏳ Expirer
+          </button>
+          <button
+            *ngIf="canForceRefund(selectedBooking)"
+            (click)="forcePaymentRefund(selectedBooking)"
+            class="btn-refund"
+            [disabled]="isPaymentActionLoading(selectedBooking.reservationId)">
+            💸 Rembourser
           </button>
           <button 
             *ngIf="canCancel(selectedBooking)"

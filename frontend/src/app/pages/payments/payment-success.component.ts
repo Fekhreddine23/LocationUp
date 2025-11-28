@@ -164,7 +164,8 @@ export class PaymentSuccessComponent implements OnInit {
       REQUIRES_ACTION: 'Action requise',
       PAID: 'Payé',
       FAILED: 'Échec du paiement',
-      REFUNDED: 'Remboursé'
+      REFUNDED: 'Remboursé',
+      EXPIRED: 'Paiement expiré'
     };
     return map[status.toUpperCase()] || status;
   }

@@ -185,7 +185,8 @@ export class BookingsComponent implements OnInit {
       REQUIRES_ACTION: 'Action requise',
       PAID: 'Payé',
       FAILED: 'Échec du paiement',
-      REFUNDED: 'Remboursé'
+      REFUNDED: 'Remboursé',
+      EXPIRED: 'Paiement expiré'
     };
     return map[status.toUpperCase()] || status;
   }
@@ -200,6 +201,8 @@ export class BookingsComponent implements OnInit {
         return 'payment-refunded';
       case 'REQUIRES_ACTION':
         return 'payment-action';
+      case 'EXPIRED':
+        return 'payment-expired';
       default:
         return 'payment-pending';
     }

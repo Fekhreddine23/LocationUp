@@ -11,6 +11,8 @@ import { CreateOfferRequest, Offer, OfferStatus } from '../models/offer.model';
 import { AdminBooking, BookingResponse, PaymentStatus } from '../models/AdminBooking.model';
 import { DashboardTrends } from '../models/DashboardTrends.model';
 import { FinanceOverview, PaymentAlert, PaymentEventLogEntry } from '../models/admin-finance.model';
+import { PaymentEvent } from '../models/payment-event.model';
+import { ReservationAdminAction } from '../models/reservation-admin-action.model';
 import { BusinessEventsService } from './business-events/business-events';
 import { AuthService } from './auth.service';
 
@@ -386,7 +388,7 @@ export class AdminService {
       return undefined;
     }
     const upper = status.toUpperCase();
-    const allowed: PaymentStatus[] = ['PENDING', 'REQUIRES_ACTION', 'PAID', 'FAILED', 'REFUNDED'];
+    const allowed: PaymentStatus[] = ['PENDING', 'REQUIRES_ACTION', 'PAID', 'FAILED', 'REFUNDED', 'EXPIRED'];
     return allowed.includes(upper as PaymentStatus) ? (upper as PaymentStatus) : undefined;
   }
 
@@ -532,6 +534,42 @@ export class AdminService {
       payload
     ).pipe(
       catchError(error => this.handleApiError('création de la session de paiement', error))
+    );
+  }
+
+  /**
+   * Force l'expiration d'un paiement côté admin
+   * POST /api/admin/bookings/{id}/payment/expire
+   */
+  forcePaymentExpiration(bookingId: number, reason?: string | null): Observable<AdminBooking> {
+    const payload = reason ? { reason } : {};
+    return this.http.post<any>(`${this.apiUrl}/bookings/${bookingId}/payment/expire`, payload).pipe(
+      map(booking => this.transformBooking(booking)),
+      catchError(error => this.handleApiError('expiration manuelle du paiement', error))
+    );
+  }
+
+  /**
+   * Force un remboursement (statut REFUNDED) côté admin
+   * POST /api/admin/bookings/{id}/payment/refund
+   */
+  forcePaymentRefund(bookingId: number, reason?: string | null): Observable<AdminBooking> {
+    const payload = reason ? { reason } : {};
+    return this.http.post<any>(`${this.apiUrl}/bookings/${bookingId}/payment/refund`, payload).pipe(
+      map(booking => this.transformBooking(booking)),
+      catchError(error => this.handleApiError('remboursement manuel', error))
+    );
+  }
+
+  getBookingPaymentEvents(bookingId: number): Observable<PaymentEvent[]> {
+    return this.http.get<PaymentEvent[]>(`${this.apiUrl}/bookings/${bookingId}/payment/events`).pipe(
+      catchError(error => this.handleApiError('historique des événements de paiement', error))
+    );
+  }
+
+  getBookingAdminActions(bookingId: number): Observable<ReservationAdminAction[]> {
+    return this.http.get<ReservationAdminAction[]>(`${this.apiUrl}/bookings/${bookingId}/admin-actions`).pipe(
+      catchError(error => this.handleApiError('historique des actions admin', error))
     );
   }
 
@@ -1146,24 +1184,31 @@ changeUserRole(userId: number, newRole: string): Observable<AdminUser> {
 
 
   private handleApiError(operation: string, error: any): Observable<never> {
-  console.error(`❌ Erreur ${operation}:`, error);
-  
-  let errorMessage = 'Erreur de connexion au serveur';
-  
-  if (error.status === 0) {
-    errorMessage = 'Serveur inaccessible - vérifiez que le backend est démarré';
-  } else if (error.status === 401) {
-    errorMessage = 'Non authentifié - veuillez vous reconnecter';
-  } else if (error.status === 403) {
-    errorMessage = 'Accès non autorisé - droits administrateur requis';
-  } else if (error.status === 404) {
-    errorMessage = 'Endpoint non trouvé - vérifiez l\'URL';
-  } else if (error.error?.message) {
-    errorMessage = error.error.message;
+    console.error(`❌ Erreur ${operation}:`, error);
+
+    let errorMessage = 'Erreur de connexion au serveur';
+
+    if (error.status === 0) {
+      errorMessage = 'Serveur inaccessible - vérifiez que le backend est démarré';
+    } else if (error.status === 401) {
+      errorMessage = 'Non authentifié - veuillez vous reconnecter';
+    } else if (error.status === 403) {
+      errorMessage = 'Accès non autorisé - droits administrateur requis';
+    } else if (error.status === 404) {
+      errorMessage = 'Endpoint non trouvé - vérifiez l\'URL';
+    } else {
+      const backendMessage =
+        (typeof error.error === 'string' && error.error.trim()) ||
+        error.error?.message ||
+        error.message;
+
+      if (backendMessage) {
+        errorMessage = backendMessage;
+      }
+    }
+
+    throw new Error(`${operation} - ${errorMessage}`);
   }
-  
-  throw new Error(`${operation} - ${errorMessage}`);
-}
 
 
 

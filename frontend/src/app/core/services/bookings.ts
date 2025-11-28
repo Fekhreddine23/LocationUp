@@ -14,7 +14,7 @@ export interface Booking {
   status: 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED';
   createdAt?: string;
   updatedAt?: string;
-  paymentStatus?: 'PENDING' | 'REQUIRES_ACTION' | 'PAID' | 'FAILED' | 'REFUNDED';
+  paymentStatus?: 'PENDING' | 'REQUIRES_ACTION' | 'PAID' | 'FAILED' | 'REFUNDED' | 'EXPIRED';
   paymentReference?: string;
   paymentDate?: string;
 }
