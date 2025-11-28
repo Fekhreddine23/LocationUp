@@ -79,8 +79,14 @@ public class StripeWebhookService {
 	}
 
 	private void handleCheckoutCompleted(Event event, PaymentEventLog log) {
-		Session session = deserializeSession(event)
-			.orElseThrow(() -> new IllegalStateException("Session introuvable dans l'événement"));
+		Optional<Session> sessionOpt = deserializeSession(event);
+		if (sessionOpt.isEmpty()) {
+			log.setStatus("FAILED");
+			log.setErrorMessage("Session introuvable dans l'événement");
+			return;
+		}
+
+		Session session = sessionOpt.get();
 		String referenceId = session.getClientReferenceId();
 		log.setReservationReference(referenceId);
 
@@ -128,6 +134,7 @@ public class StripeWebhookService {
 				: "Erreur inconnue";
 		notificationService.notifyPaymentFailure(reservation, reason);
 		log.setStatus("PROCESSED");
+		log.setErrorMessage(reason);
 	}
 
 	private Optional<Reservation> parseReservation(String reference) {

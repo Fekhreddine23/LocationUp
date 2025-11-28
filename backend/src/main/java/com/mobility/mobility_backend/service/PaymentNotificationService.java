@@ -73,6 +73,29 @@ public class PaymentNotificationService {
 		dispatch(reservation, subject, body);
 	}
 
+	public void notifyPaymentExpired(Reservation reservation) {
+		String subject = "Paiement expiré - Réservation #" + reservation.getReservationId();
+		String body = "Bonjour "
+				+ (reservation.getUser() != null ? reservation.getUser().getUsername() : "client")
+				+ ",\n\nVotre session de paiement a expiré. Merci de relancer le paiement pour confirmer la réservation #"
+				+ reservation.getReservationId() + ".\n";
+		dispatch(reservation, subject, body);
+	}
+
+	public void notifyPaymentRefunded(Reservation reservation, String reason) {
+		String subject = "Paiement remboursé - Réservation #" + reservation.getReservationId();
+		StringBuilder body = new StringBuilder("Bonjour ")
+				.append(reservation.getUser() != null ? reservation.getUser().getUsername() : "client")
+				.append(",\n\nNous confirmons le remboursement de votre réservation #")
+				.append(reservation.getReservationId())
+				.append(".");
+		if (reason != null && !reason.isBlank()) {
+			body.append("\nMotif: ").append(reason).append('.');
+		}
+		body.append("\nLes fonds seront disponibles selon les délais habituels de votre banque.");
+		dispatch(reservation, subject, body.toString());
+	}
+
 	private void dispatch(Reservation reservation, String subject, String body) {
 		if (mailEnabled && reservation.getUser() != null && reservation.getUser().getEmail() != null) {
 			try {

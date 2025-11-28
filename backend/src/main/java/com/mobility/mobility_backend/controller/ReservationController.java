@@ -23,10 +23,13 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.mobility.mobility_backend.dto.ReservationCreationDTO;
 import com.mobility.mobility_backend.dto.ReservationDTO;
 import com.mobility.mobility_backend.dto.timeline.ReservationTimelineDTO;
 import com.mobility.mobility_backend.service.ReservationDocumentService;
 import com.mobility.mobility_backend.service.ReservationService;
+
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/reservations")
@@ -119,7 +122,8 @@ public class ReservationController {
 	// Créer une nouvelle réservation
 	@PostMapping
 	@PreAuthorize("hasAnyAuthority('ROLE_USER','ROLE_ADMIN')")
-	public ResponseEntity<ReservationDTO> createReservation(@RequestBody ReservationDTO reservationDTO) {
+	public ResponseEntity<ReservationDTO> createReservation(
+			@Valid @RequestBody ReservationCreationDTO reservationDTO) {
 		try {
 			ReservationDTO createdReservation = reservationService.createReservation(reservationDTO);
 			return new ResponseEntity<>(createdReservation, HttpStatus.CREATED);

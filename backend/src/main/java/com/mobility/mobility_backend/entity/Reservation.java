@@ -13,7 +13,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.NotNull;
 
 @Entity
@@ -34,7 +33,6 @@ public class Reservation {
 	private Offer offer;
 
 	@NotNull(message = "La date de reservation ne peut pas être nulle")
-	//@Future(message = "La date de reservation doit être dans le futur")
 	@Column(name = "reservation_date", nullable = false)
 	private LocalDateTime reservationDate;
 
@@ -87,12 +85,11 @@ public class Reservation {
 		this.offer = offer;
 	}
 
-	public @NotNull(message = "La date de reservation ne peut pas être nulle") @Future(message = "La date de reservation doit être dans le futur") LocalDateTime getReservationDate() {
+	public @NotNull(message = "La date de reservation ne peut pas être nulle") LocalDateTime getReservationDate() {
 		return reservationDate;
 	}
 
-	public void setReservationDate(
-			@NotNull(message = "La date de reservation ne peut pas être nulle") @Future(message = "La date de reservation doit être dans le futur") LocalDateTime reservationDate) {
+	public void setReservationDate(@NotNull(message = "La date de reservation ne peut pas être nulle") LocalDateTime reservationDate) {
 		this.reservationDate = reservationDate;
 	}
 
@@ -157,7 +154,7 @@ public class Reservation {
 	}
 
 	public enum PaymentStatus {
-		PENDING, REQUIRES_ACTION, PAID, FAILED, REFUNDED
+		PENDING, REQUIRES_ACTION, PAID, FAILED, REFUNDED, EXPIRED
 	}
 
 }

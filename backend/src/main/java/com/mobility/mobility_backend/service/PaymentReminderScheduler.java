@@ -20,13 +20,16 @@ public class PaymentReminderScheduler {
 	private final ReservationRepository reservationRepository;
 	private final PaymentNotificationService notificationService;
 	private final long paymentActionTimeoutMinutes;
+	private final long paymentExpiryHours;
 
 	public PaymentReminderScheduler(ReservationRepository reservationRepository,
 			PaymentNotificationService notificationService,
-			@Value("${app.payment.action-timeout-minutes:120}") long paymentActionTimeoutMinutes) {
+			@Value("${app.payment.action-timeout-minutes:120}") long paymentActionTimeoutMinutes,
+			@Value("${app.payment.expire-hours:48}") long paymentExpiryHours) {
 		this.reservationRepository = reservationRepository;
 		this.notificationService = notificationService;
 		this.paymentActionTimeoutMinutes = paymentActionTimeoutMinutes;
+		this.paymentExpiryHours = paymentExpiryHours;
 	}
 
 	@Scheduled(cron = "0 0 * * * *")
@@ -55,11 +58,40 @@ public class PaymentReminderScheduler {
 				threshold);
 		LocalDateTime now = LocalDateTime.now();
 		staleReservations.forEach(reservation -> {
+			if (reservation.getOffer() != null && reservation.getOffer().getVersion() == null) {
+				reservation.getOffer().setVersion(0L);
+			}
 			reservation.setPaymentStatus(Reservation.PaymentStatus.FAILED);
 			reservation.setUpdatedAt(now);
 			reservationRepository.save(reservation);
 			notificationService.notifyPaymentFailure(reservation,
 					"Paiement expiré : la session Stripe n'a pas été finalisée à temps.");
+		});
+	}
+
+	@Scheduled(cron = "0 10 * * * *")
+	public void markExpiredPayments() {
+		if (paymentExpiryHours <= 0) {
+			return;
+		}
+		LocalDateTime threshold = LocalDateTime.now().minusHours(paymentExpiryHours);
+		List<Reservation> toExpire = reservationRepository
+				.findByPaymentStatusAndUpdatedAtBefore(Reservation.PaymentStatus.PENDING, threshold);
+
+		if (toExpire.isEmpty()) {
+			return;
+		}
+
+		LOGGER.info("Marking {} reservations as EXPIRED (pending since before {})", toExpire.size(), threshold);
+		LocalDateTime now = LocalDateTime.now();
+		toExpire.forEach(reservation -> {
+			if (reservation.getOffer() != null && reservation.getOffer().getVersion() == null) {
+				reservation.getOffer().setVersion(0L);
+			}
+			reservation.setPaymentStatus(Reservation.PaymentStatus.EXPIRED);
+			reservation.setUpdatedAt(now);
+			reservationRepository.save(reservation);
+			notificationService.notifyPaymentExpired(reservation);
 		});
 	}
 }

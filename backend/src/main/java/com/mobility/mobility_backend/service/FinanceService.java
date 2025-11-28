@@ -23,6 +23,7 @@ import com.mobility.mobility_backend.entity.Reservation;
 import com.mobility.mobility_backend.entity.PaymentEventLog;
 import com.mobility.mobility_backend.repository.ReservationRepository;
 import com.mobility.mobility_backend.repository.PaymentEventLogRepository;
+import java.time.LocalDateTime;
 
 @Service
 public class FinanceService {
@@ -76,6 +77,18 @@ public class FinanceService {
 			log.getType(), log.getStatus(), log.getErrorMessage(), log.getReceivedAt()))
 		.collect(Collectors.toList());
     }
+
+	public List<PaymentEventDTO> getReservationPaymentEvents(Integer reservationId) {
+		if (reservationId == null) {
+			return List.of();
+		}
+		List<PaymentEventLog> logs = paymentEventLogRepository
+				.findTop20ByReservationReferenceOrderByReceivedAtDesc(String.valueOf(reservationId));
+		return logs.stream()
+				.map(log -> new PaymentEventDTO(log.getId(), log.getEventId(), log.getReservationReference(),
+						log.getType(), log.getStatus(), log.getErrorMessage(), log.getReceivedAt()))
+				.collect(Collectors.toList());
+	}
 
 	public String buildFinanceCsv(int months) {
 		FinanceOverviewDTO overview = getFinanceOverview(months);

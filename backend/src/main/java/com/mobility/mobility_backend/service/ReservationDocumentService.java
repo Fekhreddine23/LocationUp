@@ -153,6 +153,7 @@ public class ReservationDocumentService {
 		case PAID -> "Payé";
 		case FAILED -> "Echoué";
 		case REFUNDED -> "Remboursé";
+		case EXPIRED -> "Expiré";
 		};
 	}
 }

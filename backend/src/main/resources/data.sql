@@ -1,6 +1,8 @@
 -- import.sql - Données réalistes pour Mobility Location
 -- Exécuté APRÈS la création des tables par Hibernate
 
+ALTER TABLE reservations ALTER COLUMN payment_status VARCHAR(20);
+
 -- 1. Insertion des villes avec coordonnées
 INSERT INTO cities (name, postal_code, latitude, longitude) VALUES 
 ('Paris', '75000', 48.8566, 2.3522),

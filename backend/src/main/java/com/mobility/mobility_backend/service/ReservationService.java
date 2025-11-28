@@ -1,6 +1,7 @@
 package com.mobility.mobility_backend.service;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -9,9 +10,11 @@ import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import com.mobility.mobility_backend.dto.ReservationCreationDTO;
 import com.mobility.mobility_backend.dto.ReservationDTO;
 import com.mobility.mobility_backend.dto.ReservationMapper;
 import com.mobility.mobility_backend.dto.timeline.ReservationTimelineDTO;
@@ -85,25 +88,26 @@ public class ReservationService {
 	}
 
 	// Créer une nouvelle réservation
-	public ReservationDTO createReservation(ReservationDTO reservationDTO) {
-		System.out.println("🔵 [ReservationService] Creating new reservation: " + reservationDTO);
+	public ReservationDTO createReservation(ReservationCreationDTO creationDTO) {
+		System.out.println("🔵 [ReservationService] Creating new reservation: " + creationDTO);
 
 		// Validation des relations
-		User user = userRepository.findById(reservationDTO.getUserId()).orElseThrow(() -> {
-			System.out.println("🔴 [ReservationService] User not found with ID: " + reservationDTO.getUserId());
+		User user = userRepository.findById(creationDTO.getUserId()).orElseThrow(() -> {
+			System.out.println("🔴 [ReservationService] User not found with ID: " + creationDTO.getUserId());
 			return new RuntimeException("Utilisateur non trouvé");
 		});
 		System.out.println("🟡 [ReservationService] User found: " + user.getUsername());
 
-		Offer offer = offerRepository.findById(reservationDTO.getOfferId()).orElseThrow(() -> {
-			System.out.println("🔴 [ReservationService] Offer not found with ID: " + reservationDTO.getOfferId());
+		Offer offer = offerRepository.findById(creationDTO.getOfferId()).orElseThrow(() -> {
+			System.out.println("🔴 [ReservationService] Offer not found with ID: " + creationDTO.getOfferId());
 			return new RuntimeException("Offre non trouvé");
 		});
 		System.out.println("🟡 [ReservationService] Offer found: " + offer.getOfferId());
 
-		Reservation reservation = reservationMapper.toEntity(reservationDTO);
+		Reservation reservation = new Reservation();
 		reservation.setUser(user);
 		reservation.setOffer(offer);
+		reservation.setReservationDate(creationDTO.getReservationDate());
 		reservation.setStatus(Reservation.ReservationStatus.PENDING);
 		if (offer.getPrice() != null) {
 			reservation.setPaymentAmount(offer.getPrice());
@@ -192,6 +196,24 @@ public class ReservationService {
 		return reservationsPage.map(reservationMapper::toDTO);
 	}
 
+	public Page<ReservationDTO> searchReservations(String query, Pageable pageable) {
+		if (query == null || query.isBlank()) {
+			return getAllReservations(pageable);
+		}
+		String sanitized = query.trim();
+		if (sanitized.matches("\\d+")) {
+			Integer id = Integer.valueOf(sanitized);
+			Optional<Reservation> reservation = reservationRepository.findById(id);
+			if (reservation.isPresent()) {
+				return new PageImpl<>(
+						Collections.singletonList(reservationMapper.toDTO(reservation.get())), pageable, 1);
+			}
+			return Page.empty(pageable);
+		}
+		Page<Reservation> searchResults = reservationRepository.searchByKeyword(sanitized, pageable);
+		return searchResults.map(reservationMapper::toDTO);
+	}
+
 	public ReservationTimelineDTO getReservationTimeline(Integer reservationId) {
 		Reservation reservation = reservationRepository.findById(reservationId)
 				.orElseThrow(() -> new IllegalArgumentException("Réservation introuvable"));
@@ -238,6 +260,10 @@ public class ReservationService {
 		} else if (reservation.getPaymentStatus() == Reservation.PaymentStatus.FAILED) {
 			events.add(new TimelineEventDTO("Paiement échoué",
 					"Echec du paiement. Veuillez réessayer ou contacter le support.", "PAYMENT_FAILED", lastUpdate));
+		} else if (reservation.getPaymentStatus() == Reservation.PaymentStatus.EXPIRED) {
+			events.add(new TimelineEventDTO("Paiement expiré",
+					"La session de paiement a expiré. Relancez un paiement pour confirmer la réservation.",
+					"PAYMENT_EXPIRED", lastUpdate));
 		} else if (reservation.getPaymentStatus() == Reservation.PaymentStatus.REFUNDED) {
 			events.add(new TimelineEventDTO("Paiement remboursé",
 					"Le paiement a été remboursé sur votre moyen de paiement initial.", "PAYMENT_REFUNDED",
@@ -334,6 +360,34 @@ public class ReservationService {
 		} else {
 			throw new RuntimeException("Réservation non trouvée avec l'ID: " + reservationId);
 		}
+	}
+
+	public ReservationDTO forceExpirePayment(Integer reservationId, String reason) {
+		System.out.println("⚠️ [ReservationService] Force expire payment for reservation " + reservationId
+				+ (reason != null ? " - reason: " + reason : ""));
+		Reservation reservation = reservationRepository.findById(reservationId)
+				.orElseThrow(() -> new RuntimeException("Réservation non trouvée avec l'ID: " + reservationId));
+		reservation.setPaymentStatus(Reservation.PaymentStatus.EXPIRED);
+		reservation.setUpdatedAt(LocalDateTime.now());
+		Reservation savedReservation = reservationRepository.save(reservation);
+		paymentNotificationService.notifyPaymentExpired(savedReservation);
+		return reservationMapper.toDTO(savedReservation);
+	}
+
+	public ReservationDTO forceRefundPayment(Integer reservationId, String reason) {
+		System.out.println("⚠️ [ReservationService] Force refund payment for reservation " + reservationId
+				+ (reason != null ? " - reason: " + reason : ""));
+		Reservation reservation = reservationRepository.findById(reservationId)
+				.orElseThrow(() -> new RuntimeException("Réservation non trouvée avec l'ID: " + reservationId));
+		LocalDateTime now = LocalDateTime.now();
+		reservation.setPaymentStatus(Reservation.PaymentStatus.REFUNDED);
+		if (reservation.getPaymentDate() == null) {
+			reservation.setPaymentDate(now);
+		}
+		reservation.setUpdatedAt(now);
+		Reservation savedReservation = reservationRepository.save(reservation);
+		paymentNotificationService.notifyPaymentRefunded(savedReservation, reason);
+		return reservationMapper.toDTO(savedReservation);
 	}
 
 }
