@@ -1,13 +1,20 @@
 package com.mobility.mobility_backend.controller;
 
-import java.util.HashMap;
+import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -21,6 +28,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.mobility.mobility_backend.dto.BookingStatsDTO;
 import com.mobility.mobility_backend.dto.ReservationDTO;
 import com.mobility.mobility_backend.dto.finance.PaymentEventDTO;
 import com.mobility.mobility_backend.dto.payment.AdminPaymentSessionRequest;
@@ -28,7 +36,6 @@ import com.mobility.mobility_backend.dto.payment.PaymentAdminActionRequest;
 import com.mobility.mobility_backend.dto.payment.PaymentSessionRequest;
 import com.mobility.mobility_backend.dto.payment.PaymentSessionResponse;
 import com.mobility.mobility_backend.entity.Reservation;
-import com.mobility.mobility_backend.service.FinanceService;
 import com.mobility.mobility_backend.entity.ReservationAdminAction;
 import com.mobility.mobility_backend.service.FinanceService;
 import com.mobility.mobility_backend.service.PaymentService;
@@ -70,24 +77,9 @@ public class AdminBookingController {
 				.orElseGet(() -> ResponseEntity.notFound().build());
 	}
 
-	/*
-	 * @GetMapping("/bookings/stats") public ResponseEntity<?> getBookingStats() {
-	 * // Implémentez cette méthode selon vos besoins // Par exemple : nombre de
-	 * réservations par statut, revenus, etc. return ResponseEntity.ok().build(); }
-	 */
-
-	// temporaire pour mocks des donneees
 	@GetMapping("/bookings/stats")
-	public ResponseEntity<?> getBookingStats() {
-		// TEMPORAIRE - données mock
-		Map<String, Object> stats = new HashMap<>();
-		stats.put("total", 2);
-		stats.put("pending", 1);
-		stats.put("confirmed", 1);
-		stats.put("cancelled", 0);
-		stats.put("confirmationRate", 50.0);
-
-		return ResponseEntity.ok(stats);
+	public ResponseEntity<BookingStatsDTO> getBookingStats() {
+		return ResponseEntity.ok(financeService.getBookingStatsSummary());
 	}
 
 	@GetMapping("/bookings/search")
@@ -232,6 +224,25 @@ public class AdminBookingController {
 		}
 	}
 
+	@GetMapping("/bookings/export")
+	public ResponseEntity<byte[]> exportBookings(@RequestParam(required = false) String query,
+			@RequestParam(required = false) String status, @RequestParam(required = false) String startDate,
+			@RequestParam(required = false) String endDate,
+			@RequestParam(required = false) Integer userId,
+			@RequestParam(defaultValue = "false") boolean anomaliesOnly) {
+		LocalDate start = parseDate(startDate);
+		LocalDate end = parseDate(endDate);
+
+		List<Reservation> reservations = reservationService.findReservationsForExport(query, status, start, end,
+				anomaliesOnly, userId);
+		String csvContent = buildBookingsCsv(reservations);
+		byte[] bytes = csvContent.getBytes(StandardCharsets.UTF_8);
+
+		return ResponseEntity.ok()
+				.header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"reservations-export.csv\"")
+				.contentType(MediaType.parseMediaType("text/csv")).contentLength(bytes.length).body(bytes);
+	}
+
 	@GetMapping("/bookings/{id}/admin-actions")
 	public ResponseEntity<?> getAdminActions(@PathVariable Integer id) {
 		try {
@@ -245,6 +256,60 @@ public class AdminBookingController {
 	private String currentAdmin() {
 		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 		return auth != null ? auth.getName() : "unknown";
+	}
+
+	private LocalDate parseDate(String value) {
+		if (value == null || value.isBlank()) {
+			return null;
+		}
+		try {
+			return LocalDate.parse(value.trim());
+		} catch (DateTimeParseException e) {
+			return null;
+		}
+	}
+
+	private String buildBookingsCsv(List<Reservation> reservations) {
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+		StringBuilder builder = new StringBuilder();
+		builder.append("reservation_id;client;email;service;statut_reservation;statut_paiement;montant;date_reservation;derniere_mise_a_jour\n");
+
+		for (Reservation reservation : reservations) {
+			String username = reservation.getUser() != null ? reservation.getUser().getUsername() : "";
+			String email = reservation.getUser() != null ? reservation.getUser().getEmail() : "";
+			String service = reservation.getOffer() != null ? reservation.getOffer().getDescription() : "";
+			String status = reservation.getStatus() != null ? reservation.getStatus().name() : "";
+			String paymentStatus = reservation.getPaymentStatus() != null ? reservation.getPaymentStatus().name() : "";
+			BigDecimal paymentAmount = null;
+			if (reservation.getPaymentAmount() != null) {
+				paymentAmount = reservation.getPaymentAmount();
+			} else if (reservation.getOffer() != null && reservation.getOffer().getPrice() != null) {
+				paymentAmount = reservation.getOffer().getPrice();
+			}
+			String formattedAmount = paymentAmount != null
+					? String.format(Locale.FRANCE, "%.2f", paymentAmount.doubleValue())
+					: "";
+			String reservationDate = reservation.getReservationDate() != null
+					? reservation.getReservationDate().format(formatter)
+					: "";
+			String updatedAt = reservation.getUpdatedAt() != null ? reservation.getUpdatedAt().format(formatter)
+					: "";
+
+			builder.append(reservation.getReservationId()).append(';').append(escapeCsv(username)).append(';')
+					.append(escapeCsv(email)).append(';').append(escapeCsv(service)).append(';')
+					.append(escapeCsv(status)).append(';').append(escapeCsv(paymentStatus)).append(';')
+					.append(formattedAmount).append(';').append(reservationDate).append(';').append(updatedAt)
+					.append('\n');
+		}
+		return builder.toString();
+	}
+
+	private String escapeCsv(String value) {
+		if (value == null || value.isBlank()) {
+			return "";
+		}
+		String sanitized = value.replace("\"", "\"\"");
+		return "\"" + sanitized + "\"";
 	}
 
 }

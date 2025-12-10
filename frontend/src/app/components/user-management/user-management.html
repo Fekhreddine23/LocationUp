@@ -1,228 +1,277 @@
 <!-- user-management.html -->
-<div class="user-management-container">
-  <app-breadcrumbs [items]="breadcrumbItems"></app-breadcrumbs>
+<ng-container *ngIf="hasLoadedInitialData; else initialSkeleton">
+  <div class="user-management-container">
+    <app-breadcrumbs [items]="breadcrumbItems"></app-breadcrumbs>
 
-  <div class="page-header">
-    <div class="header-content">
-      <h1>Gestion des Utilisateurs</h1>
-      <p>Gérez les comptes utilisateurs et leurs permissions</p>
-    </div>
-    <button (click)="goBackToDashboard()" class="back-btn">
-      ← Retour au Dashboard
-    </button>
-  </div>
-
-  <!-- Messages -->
-  <div *ngIf="successMessage" class="alert alert-success">
-    ✅ {{ successMessage }}
-  </div>
-  <div *ngIf="errorMessage" class="alert alert-error">
-    ❌ {{ errorMessage }}
-  </div>
-
-  <!-- Barre de recherche et filtres -->
-  <div class="filters-section">
-    <div class="search-bar">
-      <input 
-        type="text" 
-        [(ngModel)]="searchQuery" 
-        (input)="searchUsers()"
-        placeholder="Rechercher un utilisateur..."
-        class="search-input">
-      <button (click)="searchUsers()" class="search-btn">
-        🔍 Rechercher
+    <div class="page-header">
+      <div class="header-content">
+        <h1>Gestion des Utilisateurs</h1>
+        <p>Gérez les comptes utilisateurs et leurs permissions</p>
+      </div>
+      <button (click)="goBackToDashboard()" class="back-btn">
+        ← Retour au Dashboard
       </button>
     </div>
 
-    <div class="filter-controls">
-      <select [(ngModel)]="statusFilter" (change)="applyFilters()" class="filter-select">
-        <option value="ALL">Tous les statuts</option>
-        <option value="active">Actifs</option>
-        <option value="inactive">Inactifs</option>
-      </select>
-
-      <select [(ngModel)]="roleFilter" (change)="applyFilters()" class="filter-select">
-        <option value="ALL">Tous les rôles</option>
-        <option value="ROLE_USER">Utilisateurs</option>
-        <option value="ROLE_ADMIN">Administrateurs</option>
-      </select>
-
-      <button (click)="loadUsers()" class="refresh-btn">
-        🔄 Actualiser
-      </button>
+    <!-- Messages -->
+    <div *ngIf="successMessage" class="alert alert-success">
+      ✅ {{ successMessage }}
     </div>
-  </div>
+    <div *ngIf="errorMessage" class="alert alert-error">
+      ❌ {{ errorMessage }}
+    </div>
 
-  <!-- Tableau des utilisateurs -->
-  <div class="users-table-container">
-    <div class="table-header">
-      <div class="table-stats">
-        {{ displayedUsersCount }} utilisateur(s) trouvé(s)
+    <!-- Barre de recherche et filtres -->
+    <div class="filters-section" [class.is-loading]="isLoading">
+      <div class="search-bar">
+        <input 
+          type="text" 
+          [(ngModel)]="searchQuery" 
+          (input)="searchUsers()"
+          placeholder="Rechercher un utilisateur..."
+          class="search-input">
+        <button (click)="searchUsers()" class="search-btn">
+          🔍 Rechercher
+        </button>
+      </div>
+
+      <div class="filter-controls">
+        <select [(ngModel)]="statusFilter" (change)="applyFilters()" class="filter-select">
+          <option value="ALL">Tous les statuts</option>
+          <option value="active">Actifs</option>
+          <option value="inactive">Inactifs</option>
+        </select>
+
+        <select [(ngModel)]="roleFilter" (change)="applyFilters()" class="filter-select">
+          <option value="ALL">Tous les rôles</option>
+          <option value="ROLE_USER">Utilisateurs</option>
+          <option value="ROLE_ADMIN">Administrateurs</option>
+        </select>
+
+        <button (click)="loadUsers()" class="refresh-btn">
+          🔄 Actualiser
+        </button>
       </div>
     </div>
 
-    <div *ngIf="isLoading" class="loading-state">
-      Chargement des utilisateurs...
+    <!-- Tableau des utilisateurs -->
+    <div class="users-table-container" [class.is-loading]="isLoading">
+      <div class="table-header">
+        <div class="table-stats">
+          {{ displayedUsersCount }} utilisateur(s) trouvé(s)
+        </div>
+      </div>
+
+      <div 
+        *ngIf="isLoading" 
+        class="table-loading-skeleton loading-state" 
+        aria-live="polite" 
+        aria-label="Chargement des utilisateurs">
+        <div class="skeleton-row" *ngFor="let _ of skeletonRows">
+          <span class="app-skeleton-line" *ngFor="let __ of skeletonColumns"></span>
+        </div>
+      </div>
+
+      <div *ngIf="!isLoading && filteredUsers.length === 0" class="empty-state">
+        Aucun utilisateur trouvé
+      </div>
+
+      <div class="responsive-table" *ngIf="!isLoading && filteredUsers.length > 0">
+        <table class="users-table">
+          <thead>
+            <tr>
+              <th>Utilisateur</th>
+              <th>Email</th>
+              <th>Rôle</th>
+              <th>Statut</th>
+              <th>Date d'inscription</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let user of filteredUsers" class="user-row">
+              <td class="user-info" data-label="Utilisateur">
+                <div class="user-avatar">
+                  {{ getUserInitials(user) }}
+                </div>
+                <div class="user-details">
+                  <strong>{{ user.username }}</strong>
+                  <span *ngIf="user.firstName && user.lastName" class="user-fullname">
+                    {{ user.firstName }} {{ user.lastName }}
+                  </span>
+                </div>
+              </td>
+              <td class="user-email" data-label="Email">{{ user.email }}</td>
+              <td data-label="Rôle">
+                <select 
+                  [value]="user.role" 
+                  (change)="changeUserRole(user, $any($event.target).value)"
+                  class="role-select"
+                  [class.role-admin]="user.role === 'ROLE_ADMIN'"
+                  [class.role-user]="user.role === 'ROLE_USER'">
+                  <option value="ROLE_USER">Utilisateur</option>
+                  <option value="ROLE_ADMIN">Administrateur</option>
+                </select>
+              </td>
+              <td data-label="Statut">
+                <span [class]="'status-badge ' + getStatusClass(user.status || 'active')">
+                  {{ getStatusText(user.status || 'active') }}
+                </span>
+              </td>
+              <td class="registration-date" data-label="Inscription">
+                {{ user.createdAt | date:'dd/MM/yyyy' }}
+              </td>
+              <td class="actions" data-label="Actions">
+                <button (click)="editUser(user)" class="btn-edit" title="Modifier">
+                  ✏️
+                </button>
+                <button 
+                  (click)="toggleUserStatus(user)" 
+                  [class]="user.status === 'active' ? 'btn-deactivate' : 'btn-activate'"
+                  [title]="user.status === 'active' ? 'Désactiver' : 'Activer'">
+                  {{ user.status === 'active' ? '⏸️' : '▶️' }}
+                </button>
+                <button (click)="viewUserReservations(user)" class="btn-view" title="Voir réservations">
+                  📋
+                </button>
+                <button (click)="confirmDelete(user)" class="btn-delete" title="Supprimer">
+                  🗑️
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <div *ngIf="totalPages > 1" class="pagination">
+        <button 
+          (click)="goToPage(currentPage - 1)" 
+          [disabled]="currentPage === 0"
+          class="pagination-btn">
+          ← Précédent
+        </button>
+        
+        <span class="pagination-info">
+          Page {{ currentPage + 1 }} sur {{ totalPages }}
+        </span>
+        
+        <button 
+          (click)="goToPage(currentPage + 1)" 
+          [disabled]="currentPage >= totalPages - 1"
+          class="pagination-btn">
+          Suivant →
+        </button>
+      </div>
     </div>
 
-    <div *ngIf="!isLoading && filteredUsers.length === 0" class="empty-state">
-      Aucun utilisateur trouvé
-    </div>
-
-    <table *ngIf="!isLoading && filteredUsers.length > 0" class="users-table">
-      <thead>
-        <tr>
-          <th>Utilisateur</th>
-          <th>Email</th>
-          <th>Rôle</th>
-          <th>Statut</th>
-          <th>Date d'inscription</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let user of filteredUsers" class="user-row">
-          <td class="user-info">
-            <div class="user-avatar">
-              {{ getUserInitials(user) }}
+    <!-- Modal d'édition -->
+    <div *ngIf="isEditModalOpen" class="modal-overlay">
+      <div class="modal card-surface" [class.loading-state]="isModalProcessing">
+        <div class="modal-loader" *ngIf="isModalProcessing">
+          <span class="loader-dot"></span>
+          <span>Traitement en cours...</span>
+        </div>
+        <div class="modal-header">
+          <h3>Modifier l'utilisateur</h3>
+          <button (click)="isEditModalOpen = false" class="close-btn">×</button>
+        </div>
+        <div class="modal-content" *ngIf="selectedUser as user; else editModalSkeleton">
+          <div class="detail-grid">
+            <div class="form-group">
+              <label>Nom d'utilisateur</label>
+              <input 
+                type="text" 
+                [(ngModel)]="user.username" 
+                class="form-input">
             </div>
-            <div class="user-details">
-              <strong>{{ user.username }}</strong>
-              <span *ngIf="user.firstName && user.lastName" class="user-fullname">
-                {{ user.firstName }} {{ user.lastName }}
-              </span>
+            <div class="form-group">
+              <label>Email</label>
+              <input 
+                type="email" 
+                [(ngModel)]="user.email" 
+                class="form-input">
             </div>
-          </td>
-          <td class="user-email">{{ user.email }}</td>
-          <td>
-            <select 
-              [value]="user.role" 
-              (change)="changeUserRole(user, $any($event.target).value)"
-              class="role-select"
-              [class.role-admin]="user.role === 'ROLE_ADMIN'"
-              [class.role-user]="user.role === 'ROLE_USER'">
-              <option value="ROLE_USER">Utilisateur</option>
-              <option value="ROLE_ADMIN">Administrateur</option>
-            </select>
-          </td>
-          <td>
-            <span [class]="'status-badge ' + getStatusClass(user.status || 'active')">
-              {{ getStatusText(user.status || 'active') }}
-            </span>
-          </td>
-          <td class="registration-date">
-            {{ user.createdAt | date:'dd/MM/yyyy' }}
-          </td>
-          <td class="actions">
-            <button (click)="editUser(user)" class="btn-edit" title="Modifier">
-              ✏️
-            </button>
-            <button 
-              (click)="toggleUserStatus(user)" 
-              [class]="user.status === 'active' ? 'btn-deactivate' : 'btn-activate'"
-              [title]="user.status === 'active' ? 'Désactiver' : 'Activer'">
-              {{ user.status === 'active' ? '⏸️' : '▶️' }}
-            </button>
-            <button (click)="viewUserReservations(user)" class="btn-view" title="Voir réservations">
-              📋
-            </button>
-            <button (click)="confirmDelete(user)" class="btn-delete" title="Supprimer">
-              🗑️
-            </button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-
-    <!-- Pagination -->
-    <div *ngIf="totalPages > 1" class="pagination">
-      <button 
-        (click)="goToPage(currentPage - 1)" 
-        [disabled]="currentPage === 0"
-        class="pagination-btn">
-        ← Précédent
-      </button>
-      
-      <span class="pagination-info">
-        Page {{ currentPage + 1 }} sur {{ totalPages }}
-      </span>
-      
-      <button 
-        (click)="goToPage(currentPage + 1)" 
-        [disabled]="currentPage >= totalPages - 1"
-        class="pagination-btn">
-        Suivant →
-      </button>
+            <div class="form-group">
+              <label>Prénom</label>
+              <input 
+                type="text" 
+                [(ngModel)]="user.firstName" 
+                class="form-input">
+            </div>
+            <div class="form-group">
+              <label>Nom</label>
+              <input 
+                type="text" 
+                [(ngModel)]="user.lastName" 
+                class="form-input">
+            </div>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button (click)="isEditModalOpen = false" class="btn-cancel">
+            Annuler
+          </button>
+          <button (click)="updateUser()" class="btn-confirm">
+            Enregistrer
+          </button>
+        </div>
+      </div>
     </div>
-  </div>
 
-  <!-- Modal d'édition -->
-  <div *ngIf="isEditModalOpen" class="modal-overlay">
-    <div class="modal">
-      <div class="modal-header">
-        <h3>Modifier l'utilisateur</h3>
-        <button (click)="isEditModalOpen = false" class="close-btn">×</button>
-      </div>
-      <div class="modal-content" *ngIf="selectedUser as user">
-        <div class="form-group">
-          <label>Nom d'utilisateur</label>
-          <input 
-            type="text" 
-            [(ngModel)]="user.username" 
-            class="form-input">
+    <!-- Modal de confirmation de suppression -->
+    <div *ngIf="isDeleteModalOpen" class="modal-overlay">
+      <div class="modal card-surface" [class.loading-state]="isModalProcessing">
+        <div class="modal-header">
+          <h3>Confirmer la suppression</h3>
+          <button (click)="isDeleteModalOpen = false" class="close-btn">×</button>
         </div>
-        <div class="form-group">
-          <label>Email</label>
-          <input 
-            type="email" 
-            [(ngModel)]="user.email" 
-            class="form-input">
+        <div class="modal-content" *ngIf="selectedUser as user; else deleteModalSkeleton">
+          <p>Êtes-vous sûr de vouloir supprimer l'utilisateur <strong>{{ user.username }}</strong> ?</p>
+          <p class="warning-text">Cette action est irréversible.</p>
         </div>
-        <div class="form-group">
-          <label>Prénom</label>
-          <input 
-            type="text" 
-            [(ngModel)]="user.firstName" 
-            class="form-input">
+        <div class="modal-actions">
+          <button (click)="isDeleteModalOpen = false" class="btn-cancel">
+            Annuler
+          </button>
+          <button (click)="deleteUser()" class="btn-danger">
+            Supprimer
+          </button>
         </div>
-        <div class="form-group">
-          <label>Nom</label>
-          <input 
-            type="text" 
-            [(ngModel)]="user.lastName" 
-            class="form-input">
-        </div>
-      </div>
-      <div class="modal-actions">
-        <button (click)="isEditModalOpen = false" class="btn-cancel">
-          Annuler
-        </button>
-        <button (click)="updateUser()" class="btn-confirm">
-          Enregistrer
-        </button>
       </div>
     </div>
   </div>
+</ng-container>
 
-  <!-- Modal de confirmation de suppression -->
-  <div *ngIf="isDeleteModalOpen" class="modal-overlay">
-    <div class="modal">
-      <div class="modal-header">
-        <h3>Confirmer la suppression</h3>
-        <button (click)="isDeleteModalOpen = false" class="close-btn">×</button>
+<ng-template #editModalSkeleton>
+  <div class="modal-content loading-state">
+    <div class="modal-skeleton-grid">
+      <span class="app-skeleton-line" *ngFor="let _ of modalSkeletonLines"></span>
+    </div>
+  </div>
+</ng-template>
+
+<ng-template #deleteModalSkeleton>
+  <div class="modal-content loading-state">
+    <div class="modal-skeleton-grid">
+      <span class="app-skeleton-line" *ngFor="let _ of modalSkeletonLines"></span>
+    </div>
+  </div>
+</ng-template>
+
+<ng-template #initialSkeleton>
+  <div class="user-management-container skeleton-container" aria-live="polite">
+    <app-breadcrumbs [items]="breadcrumbItems"></app-breadcrumbs>
+    <div class="skeleton-card loading-state">
+      <div class="app-skeleton-block skeleton-banner"></div>
+      <div class="skeleton-filter-grid">
+        <div class="app-skeleton-pill" *ngFor="let _ of filterSkeletons"></div>
       </div>
-      <div class="modal-content" *ngIf="selectedUser as user">
-        <p>Êtes-vous sûr de vouloir supprimer l'utilisateur <strong>{{ user.username }}</strong> ?</p>
-        <p class="warning-text">Cette action est irréversible.</p>
-      </div>
-      <div class="modal-actions">
-        <button (click)="isDeleteModalOpen = false" class="btn-cancel">
-          Annuler
-        </button>
-        <button (click)="deleteUser()" class="btn-danger">
-          Supprimer
-        </button>
+      <div class="skeleton-table">
+        <div class="skeleton-row" *ngFor="let _ of skeletonRows">
+          <span class="app-skeleton-line" *ngFor="let __ of skeletonColumns"></span>
+        </div>
       </div>
     </div>
   </div>
-</div>
+</ng-template>

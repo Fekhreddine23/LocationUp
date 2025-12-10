@@ -30,11 +30,30 @@ export interface PaymentEventLogEntry {
   receivedAt: string;
 }
 
+export interface OutstandingPoint {
+  period: string;
+  count: number;
+  amount: number;
+}
+
 export interface FinanceOverview {
   totalRevenue: number;
   monthToDateRevenue: number;
   outstandingRevenue: number;
+  confirmationRate: number;
   paymentsByStatus: PaymentStatusBreakdown[];
   revenueHistory: MonthlyRevenuePoint[];
   alerts: PaymentAlert[];
+  outstandingByWeek: OutstandingPoint[];
+  outstandingByMonth: OutstandingPoint[];
+}
+
+export interface FinanceAlertFilters {
+  severity?: 'ALERTE' | 'CRITIQUE';
+  statuses?: string[];
+  search?: string;
+  startDate?: string;
+  endDate?: string;
+  actionRequiredOnly?: boolean;
+  limit?: number;
 }

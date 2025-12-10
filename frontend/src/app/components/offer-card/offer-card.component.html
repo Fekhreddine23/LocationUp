@@ -1,4 +1,4 @@
-<div class="offer-card">
+<div class="app-offer-card">
   <div class="offer-visual">
     <img
       [src]="getOfferImage(offer)"
@@ -8,10 +8,17 @@
     <span class="visual-chip">
       {{ getOfferCategoryLabel(offer) }}
     </span>
+    <button 
+      class="favorite-btn" 
+      type="button"
+      [attr.aria-pressed]="isFavorite"
+      (click)="onToggleFavorite($event)">
+      <span class="material-icon" [class.is-favorite]="isFavorite">❤</span>
+    </button>
   </div>
 
   <div class="offer-header">
-    <h3>{{ offer.description || 'Offre #' + offer.offerId }}</h3>
+    <h3 (click)="onQuickDetails($event)">{{ offer.description || 'Offre #' + offer.offerId }}</h3>
     <span class="price">{{ formatPrice(offer.price) }}</span>
   </div>
 
@@ -20,16 +27,16 @@
     
     <div class="offer-details">
       <div class="detail">
-        <strong>📍 Départ:</strong> {{ offer.pickupLocation || ('Lieu #' + offer.pickupLocation) }}
+        <strong>📍 Départ:</strong> {{ getPickupLabel(offer) }}
       </div>
       <div class="detail">
-        <strong>🎯 Retour:</strong> {{ offer.returnLocation || ('Lieu #' + offer.returnLocation) }}
+        <strong>🎯 Retour:</strong> {{ getReturnLabel(offer) }}
       </div>
       <div class="detail">
         <strong>📅 Date:</strong> {{ formatDate(offer.pickupDatetime) }}
       </div>
       <div class="detail">
-        <strong>🚗 Service:</strong> {{ offer.mobilityService || ('Service #' + offer.mobilityServiceId) }}
+        <strong>🚗 Service:</strong> {{ offer.mobilityServiceName || offer.mobilityService || ('Service #' + offer.mobilityServiceId) }}
       </div>
       <div class="detail" *ngIf="offer.adminName">
         <strong>👤 Créée par:</strong> {{ offer.adminName }}
@@ -54,10 +61,20 @@
       🚗 Réserver
     </button>
     
-    <button 
-      class="btn btn-secondary" 
-      (click)="viewOfferDetails(offer.offerId)">
-      📋 Détails
-    </button>
+    <div class="action-pair">
+      <button 
+        class="btn btn-secondary" 
+        type="button"
+        (click)="viewOfferDetails(offer.offerId)">
+        📋 Détails
+      </button>
+      <button
+        class="btn btn-ghost"
+        type="button"
+        [attr.aria-pressed]="quickViewActive"
+        (click)="onQuickDetails($event)">
+        {{ quickViewActive ? 'Fermer l\'aperçu' : '🔎 Aperçu' }}
+      </button>
+    </div>
   </div>
 </div>

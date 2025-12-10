@@ -135,7 +135,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 	private boolean shouldSkipJwtFilter(String path) {
 		return path.startsWith("/api/notifications/") || path.startsWith("/api/debug/") || path.startsWith("/api/auth/")
 				|| path.startsWith("/swagger-ui/") || path.startsWith("/v3/api-docs/")
-				|| path.startsWith("/h2-console/") || path.startsWith("/actuator/") || path.startsWith("/api/offers/")
+				|| path.startsWith("/h2-console/") || path.startsWith("/actuator/")
+				|| (path.startsWith("/api/offers/") && !path.contains("/favorite"))
 				|| path.startsWith("/api/payments/webhook")
 				|| path.startsWith("/api/reservations/test-public") || path.startsWith("/api/reservations/test-simple")
 				|| path.startsWith("/api/test/");

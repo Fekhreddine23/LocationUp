@@ -82,6 +82,20 @@ export class AuthService {
     return this.currentUserSubject.value;
   }
 
+  hasRole(role: string): boolean {
+    const current = this.currentUserValue;
+    if (!current || !role) {
+      return false;
+    }
+    return current.role === role;
+  }
+
+  hasAnyRole(roles: string[]): boolean {
+    if (!roles || roles.length === 0) {
+      return false;
+    }
+    return roles.some(role => this.hasRole(role));
+  }
 
 
   updateCurrentUser(updatedUser: User): void {

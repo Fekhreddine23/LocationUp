@@ -1,5 +1,53 @@
 @use 'sass:color';
 
+ .admin-banner {
+  background: linear-gradient(135deg, #111827, #1f2937);
+  color: #fff;
+  padding: 0.75rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  font-size: 0.95rem;
+
+  .badge {
+    background: #f59e0b;
+    color: #111;
+    border-radius: 999px;
+    padding: 0.1rem 0.7rem;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-right: 0.5rem;
+  }
+
+  .banner-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+
+  .banner-actions {
+    display: flex;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+
+    a {
+      color: #fff;
+      text-decoration: none;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 999px;
+      padding: 0.3rem 0.9rem;
+      font-weight: 500;
+      transition: background 0.2s ease;
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.15);
+      }
+    }
+  }
+}
+
 .app-footer {
   margin-top: 3rem;
   padding: 3rem 1.5rem 1.25rem;
@@ -120,6 +168,12 @@
 }
 
 @media (max-width: 768px) {
+  .admin-banner {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 1rem;
+  }
+
   .app-footer {
     border-radius: 24px 24px 0 0;
     padding: 2.5rem 1rem 1rem;

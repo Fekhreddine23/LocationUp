@@ -1,6 +1,7 @@
 package com.mobility.mobility_backend.controller;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.mobility.mobility_backend.dto.CreateOfferDTO;
 import com.mobility.mobility_backend.dto.OfferDTO;
+import com.mobility.mobility_backend.service.FavoriteService;
 import com.mobility.mobility_backend.service.OfferService;
 
 import jakarta.validation.Valid;
@@ -27,10 +29,12 @@ import jakarta.validation.Valid;
 public class OfferController {
 
 	private final OfferService offerService;
+	private final FavoriteService favoriteService;
 
 	@Autowired
-	public OfferController(OfferService offerService) {
+	public OfferController(OfferService offerService, FavoriteService favoriteService) {
 		this.offerService = offerService;
+		this.favoriteService = favoriteService;
 	}
 
 	// Récupérer toutes les offres
@@ -77,5 +81,27 @@ public class OfferController {
 	public ResponseEntity<Void> deleteOffer(@PathVariable Integer id) {
 		boolean deleted = offerService.deleteOffer(id);
 		return deleted ? new ResponseEntity<>(HttpStatus.NO_CONTENT) : new ResponseEntity<>(HttpStatus.NOT_FOUND);
+	}
+
+	@PostMapping("/{offerId}/favorite")
+	public ResponseEntity<Map<String, Object>> markAsFavorite(@PathVariable Integer offerId) {
+		favoriteService.addFavorite(offerId);
+		return ResponseEntity.ok(Map.of("offerId", offerId, "favorite", true));
+	}
+
+	@DeleteMapping("/{offerId}/favorite")
+	public ResponseEntity<Map<String, Object>> removeFavorite(@PathVariable Integer offerId) {
+		favoriteService.removeFavorite(offerId);
+		return ResponseEntity.ok(Map.of("offerId", offerId, "favorite", false));
+	}
+
+	@GetMapping("/favorites")
+	public ResponseEntity<List<OfferDTO>> getFavoriteOffers() {
+		return ResponseEntity.ok(favoriteService.getFavoriteOffersForCurrentUser());
+	}
+
+	@GetMapping("/favorites/ids")
+	public ResponseEntity<List<Integer>> getFavoriteIds() {
+		return ResponseEntity.ok(favoriteService.getFavoriteOfferIdsForCurrentUser());
 	}
 }

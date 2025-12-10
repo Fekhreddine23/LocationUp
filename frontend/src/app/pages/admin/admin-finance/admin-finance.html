@@ -1,4 +1,5 @@
-<div class="finance-container" *ngIf="overview as data">
+<ng-container *ngIf="(isAdmin$ | async); else adminRestricted">
+<div class="finance-container" *ngIf="overview as data; else financeLoading">
   <app-breadcrumbs [items]="breadcrumbItems"></app-breadcrumbs>
 
   <div class="header">
@@ -29,6 +30,10 @@
       <span>En attente</span>
       <strong>{{ data.outstandingRevenue | number:'1.2-2' }} €</strong>
     </div>
+    <div class="metric-card success">
+      <span>Taux de confirmation</span>
+      <strong>{{ data.confirmationRate | percent:'1.0-1' }}</strong>
+    </div>
   </div>
 
   <div class="chart-card">
@@ -40,6 +45,75 @@
     </canvas>
   </div>
 
+  <div class="outstanding-card">
+    <h3>En cours de paiement</h3>
+    <div class="outstanding-columns">
+      <div>
+        <h4>8 dernières semaines</h4>
+        <ul *ngIf="data.outstandingByWeek.length; else noWeekData">
+          <li *ngFor="let point of data.outstandingByWeek">
+            <div>
+              <strong>{{ formatWeekLabel(point) }}</strong>
+              <small>{{ point.count }} dossiers</small>
+            </div>
+            <span>{{ point.amount | number:'1.2-2' }} €</span>
+          </li>
+        </ul>
+        <ng-template #noWeekData>
+          <p class="muted">Rien à signaler sur les dernières semaines.</p>
+        </ng-template>
+      </div>
+      <div>
+        <h4>6 derniers mois</h4>
+        <ul *ngIf="data.outstandingByMonth.length; else noMonthData">
+          <li *ngFor="let point of data.outstandingByMonth">
+            <div>
+              <strong>{{ formatMonthLabel(point) }}</strong>
+              <small>{{ point.count }} dossiers</small>
+            </div>
+            <span>{{ point.amount | number:'1.2-2' }} €</span>
+          </li>
+        </ul>
+        <ng-template #noMonthData>
+          <p class="muted">Aucun encours sur les derniers mois.</p>
+        </ng-template>
+      </div>
+    </div>
+  </div>
+
+  <div class="critical-alerts card-surface" *ngIf="highlightedAlerts.length">
+    <div class="card-header">
+      <div>
+        <h3>Alertes critiques prioritaires</h3>
+        <p>Suivi rapproché des dossiers à risque identifiés dans les 24h</p>
+      </div>
+      <button type="button" class="ghost" (click)="setAlertSeverity('CRITIQUE')">
+        Voir toutes les critiques
+      </button>
+    </div>
+    <div class="critical-alerts-grid">
+      <article class="critical-alert-card" *ngFor="let alert of highlightedAlerts | slice:0:3; trackBy: trackByReservation">
+        <header>
+          <span class="alert-chip" [ngClass]="alert.severity.toLowerCase()">
+            {{ alert.severity }}
+          </span>
+          <span class="alert-id">#{{ alert.reservationId }}</span>
+        </header>
+        <p class="alert-message">{{ alert.message }}</p>
+        <ul class="alert-meta">
+          <li><strong>Client :</strong> {{ alert.customer }}</li>
+          <li><strong>Montant :</strong> {{ alert.amount | number:'1.2-2' }} €</li>
+          <li><strong>Statut :</strong> {{ alert.paymentStatus }}</li>
+          <li><strong>Créée :</strong> {{ alert.reservationDate | date:'dd/MM HH:mm' }}</li>
+        </ul>
+        <div class="alert-actions">
+          <button type="button" class="primary" (click)="viewAlertDetails(alert)">Analyser</button>
+          <button type="button" class="ghost" (click)="navigateToBooking(alert)">Ouvrir la réservation</button>
+        </div>
+      </article>
+    </div>
+  </div>
+
   <div class="status-grid">
     <div class="status-card" *ngFor="let status of data.paymentsByStatus">
       <div class="status-icon" [class]="getStatusClass(status.status)"></div>
@@ -47,6 +121,7 @@
         <p>{{ status.status }}</p>
         <strong>{{ status.amount | number:'1.2-2' }} €</strong>
         <small>{{ status.count }} paiements</small>
+        <span *ngIf="isActionRequiredStatus(status.status)" class="badge badge-warning">Action requise</span>
       </div>
     </div>
   </div>
@@ -54,70 +129,193 @@
   <div class="alerts-card">
     <div class="card-header">
       <h3>Alertes paiements</h3>
-      <button (click)="loadAlerts()">↻ Actualiser</button>
+      <div class="alert-actions">
+        <button type="button" class="ghost" (click)="loadAlerts()">↻</button>
+        <button class="primary" (click)="downloadAlertsCsv()">⬇️ Export anomalies</button>
+      </div>
     </div>
-    <table>
-      <thead>
-        <tr>
-          <th>Réservation</th>
-          <th>Client</th>
-          <th>Montant</th>
-          <th>Statut</th>
-          <th>Message</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let alert of alerts">
-          <td>#{{ alert.reservationId }}</td>
-          <td>{{ alert.customer }}</td>
-          <td>{{ alert.amount | number:'1.2-2' }} €</td>
-          <td><span [class]="'badge ' + getStatusClass(alert.paymentStatus)">{{ alert.paymentStatus }}</span></td>
-          <td>{{ alert.message }}</td>
-        </tr>
-        <tr *ngIf="alerts.length === 0">
-          <td colspan="5">Aucune alerte en attente 🎉</td>
-        </tr>
-      </tbody>
-    </table>
+    <div class="alert-filters">
+      <div class="severity-toggle">
+        <button type="button" (click)="setAlertSeverity('ALL')" [class.active]="alertSeverityFilter === 'ALL'">Toutes</button>
+        <button type="button" (click)="setAlertSeverity('ALERTE')" [class.active]="alertSeverityFilter === 'ALERTE'">Alerte</button>
+        <button type="button" (click)="setAlertSeverity('CRITIQUE')" [class.active]="alertSeverityFilter === 'CRITIQUE'">Critique</button>
+        <button type="button" class="chip" [class.active]="alertActionOnly" (click)="toggleActionRequired()">Action requise</button>
+      </div>
+      <div class="status-chips">
+        <label *ngFor="let status of alertStatusOptions">
+          <input type="checkbox" [(ngModel)]="alertStatusSelection[status]" (change)="onStatusToggle()" />
+          <span>{{ status }}</span>
+        </label>
+      </div>
+      <div class="date-filter">
+        <label>
+          Du
+          <input type="date" [(ngModel)]="alertDateStart">
+        </label>
+        <label>
+          Au
+          <input type="date" [(ngModel)]="alertDateEnd">
+        </label>
+      </div>
+      <div class="alert-search">
+        <input [(ngModel)]="alertSearch" type="search" placeholder="Rechercher une alerte..." (keyup.enter)="applyAlertFilters()">
+        <button type="button" class="ghost" (click)="applyAlertFilters()">Filtrer</button>
+        <button type="button" class="ghost" (click)="resetAlertFilters()">Réinitialiser</button>
+      </div>
+    </div>
+    <div class="responsive-table">
+      <table>
+        <thead>
+          <tr>
+            <th>Gravité</th>
+            <th>Réservation</th>
+            <th>Client</th>
+            <th>Montant</th>
+            <th>Statut</th>
+            <th>Message</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngIf="alertsLoading">
+            <td colspan="6">Chargement des alertes...</td>
+          </tr>
+          <tr *ngFor="let alert of filteredAlerts">
+            <td><span class="badge" [class]="'severity-' + alert.severity.toLowerCase()">{{ alert.severity }}</span></td>
+            <td>#{{ alert.reservationId }}</td>
+            <td>{{ alert.customer }}</td>
+            <td>{{ alert.amount | number:'1.2-2' }} €</td>
+            <td><span [class]="'badge ' + getStatusClass(alert.paymentStatus)">{{ alert.paymentStatus }}</span></td>
+            <td>{{ alert.message }}</td>
+            <td class="alert-actions-cell">
+              <button type="button" class="ghost" (click)="viewAlertDetails(alert)" title="Analyser">
+                👁️
+              </button>
+              <button type="button" class="ghost" (click)="navigateToBooking(alert)" title="Ouvrir dans les réservations">
+                🔗
+              </button>
+            </td>
+          </tr>
+          <tr *ngIf="!alertsLoading && !filteredAlerts.length">
+            <td colspan="7">Aucune alerte pour ce filtre 🎉</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
+
+  <section class="alert-detail-panel card-surface" *ngIf="selectedAlert as alertDetail">
+    <header class="panel-header">
+      <div>
+        <h3>Analyse réservation #{{ alertDetail.reservationId }}</h3>
+        <p>Client : <strong>{{ alertDetail.customer }}</strong> · {{ alertDetail.amount | number:'1.2-2' }} € · {{ alertDetail.paymentStatus }}</p>
+      </div>
+      <div class="panel-actions">
+        <button type="button" class="ghost" (click)="navigateToBooking(alertDetail)">
+          ↗︎ Ouvrir dans Booking Management
+        </button>
+        <button type="button" class="ghost" (click)="closeAlertDetails()">✕</button>
+      </div>
+    </header>
+    <div class="alert-detail-grid">
+      <div>
+        <small>Gravité</small>
+        <p><span class="badge" [class]="'severity-' + alertDetail.severity.toLowerCase()">{{ alertDetail.severity }}</span></p>
+      </div>
+      <div>
+        <small>Date de réservation</small>
+        <p>{{ alertDetail.reservationDate | date:'fullDate' }} à {{ alertDetail.reservationDate | date:'HH:mm' }}</p>
+      </div>
+      <div>
+        <small>Message</small>
+        <p>{{ alertDetail.message }}</p>
+      </div>
+    </div>
+    <div class="alert-timeline">
+      <h4>Historique des événements de paiement</h4>
+      <div class="timeline-loading" *ngIf="alertEventsLoading">
+        <span class="spinner"></span>
+        <span>Chargement...</span>
+      </div>
+      <div class="timeline-error" *ngIf="!alertEventsLoading && alertEventsError">
+        {{ alertEventsError }}
+      </div>
+      <ul class="timeline" *ngIf="!alertEventsLoading && !alertEventsError && alertEvents.length">
+        <li *ngFor="let event of alertEvents">
+          <div class="timeline-node" [ngClass]="event.status?.toLowerCase()">
+            <span class="event-type">{{ event.type }}</span>
+            <span class="event-status badge">{{ event.status }}</span>
+            <span class="event-date">{{ event.receivedAt | date:'dd/MM HH:mm' }}</span>
+            <span class="event-ref" *ngIf="event.reservationReference">Ref: {{ event.reservationReference }}</span>
+            <span class="event-error" *ngIf="event.errorMessage">{{ event.errorMessage }}</span>
+          </div>
+        </li>
+      </ul>
+      <p class="muted" *ngIf="!alertEventsLoading && !alertEventsError && !alertEvents.length">
+        Aucun événement Stripe récent pour cette réservation.
+      </p>
+    </div>
+  </section>
 
   <div class="events-card">
     <div class="card-header">
       <h3>Événements Stripe récents</h3>
       <button (click)="loadEvents()">↻ Rafraîchir</button>
     </div>
-    <table>
-      <thead>
-        <tr>
-          <th>Date</th>
-          <th>Type</th>
-          <th>Statut</th>
-          <th>Référence</th>
-          <th>Erreur</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let event of events">
-          <td>{{ event.receivedAt | date:'dd/MM HH:mm' }}</td>
-          <td>{{ event.type }}</td>
-          <td><span [class]="'badge ' + getStatusClass(event.status)">{{ event.status }}</span></td>
-          <td>{{ event.reservationReference || 'N/A' }}</td>
-          <td>
-            <span *ngIf="event.errorMessage; else okMsg">{{ event.errorMessage }}</span>
-            <ng-template #okMsg>—</ng-template>
-          </td>
-        </tr>
-        <tr *ngIf="eventsLoading">
-          <td colspan="5">Chargement des événements...</td>
-        </tr>
-        <tr *ngIf="!eventsLoading && events.length === 0">
-          <td colspan="5">Aucun événement récent</td>
-        </tr>
-      </tbody>
-    </table>
+    <div class="responsive-table">
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Type</th>
+            <th>Statut</th>
+            <th>Référence</th>
+            <th>Erreur</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let event of events">
+            <td>{{ event.receivedAt | date:'dd/MM HH:mm' }}</td>
+            <td>{{ event.type }}</td>
+            <td><span [class]="'badge ' + getStatusClass(event.status)">{{ event.status }}</span></td>
+            <td>{{ event.reservationReference || 'N/A' }}</td>
+            <td>
+              <span *ngIf="event.errorMessage; else okMsg">{{ event.errorMessage }}</span>
+              <ng-template #okMsg>—</ng-template>
+            </td>
+          </tr>
+          <tr *ngIf="eventsLoading">
+            <td colspan="5">Chargement des événements...</td>
+          </tr>
+          <tr *ngIf="!eventsLoading && events.length === 0">
+            <td colspan="5">Aucun événement récent</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 </div>
+</ng-container>
 
-<div class="finance-container" *ngIf="!overview && isLoading">
-  <p>Chargement des données financières...</p>
-</div>
+<ng-template #adminRestricted>
+  <div class="finance-container locked">
+    <app-breadcrumbs [items]="breadcrumbItems"></app-breadcrumbs>
+    <div class="locked-card">
+      <span class="emoji">🔒</span>
+      <h2>Espace réservé</h2>
+      <p>Cette section est disponible uniquement pour les administrateurs habilités.</p>
+      <a routerLink="/dashboard" class="back-btn">Retourner à mon espace</a>
+    </div>
+  </div>
+</ng-template>
+
+<ng-template #financeLoading>
+  <div class="finance-container loading-state">
+    <app-breadcrumbs [items]="breadcrumbItems"></app-breadcrumbs>
+    <div class="skeleton-grid">
+      <div class="skeleton-card" *ngFor="let item of [1,2,3,4]"></div>
+    </div>
+    <div class="skeleton-chart"></div>
+    <div class="skeleton-table"></div>
+  </div>
+</ng-template>

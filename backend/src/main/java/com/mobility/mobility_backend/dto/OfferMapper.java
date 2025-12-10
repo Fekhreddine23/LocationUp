@@ -23,6 +23,7 @@ public class OfferMapper {
 		offerDTO.setActive(offer.getActive(true));
 		offerDTO.setCreatedAt(offer.getCreatedAt());
 		offerDTO.setUpdatedAt(offer.getUpdatedAt());
+		offerDTO.setFavorite(false);
 
 		// IDs des relations
 		if (offer.getPickupLocation() != null) {

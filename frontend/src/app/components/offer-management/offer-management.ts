@@ -24,6 +24,7 @@ export class OfferManagement implements OnInit {
   offers: AdminOffer[] = [];
   filteredOffers: AdminOffer[] = [];
   selectedOffer: AdminOffer | null = null;
+  hasLoadedInitialData = false;
 
   // Données pour les formulaires
   mobilityServices: MobilityServiceModel[] = [];
@@ -56,6 +57,10 @@ export class OfferManagement implements OnInit {
 
   // Statistiques
   stats: any = {};
+  readonly skeletonFilters = Array.from({ length: 3 });
+  readonly skeletonCards = Array.from({ length: 4 });
+  readonly skeletonCardLines = Array.from({ length: 5 });
+  readonly skeletonActionButtons = Array.from({ length: 3 });
 
   breadcrumbItems = [
     { label: 'Administration', url: '/admin' },
@@ -83,11 +88,13 @@ export class OfferManagement implements OnInit {
         this.totalElements = response.totalElements;
         this.totalPages = response.totalPages;
         this.isLoading = false;
+        this.hasLoadedInitialData = true;
       },
       error: (error) => {
         console.error('Erreur chargement offres:', error);
         this.errorMessage = 'Erreur lors du chargement des offres';
         this.isLoading = false;
+        this.hasLoadedInitialData = true;
       }
     });
   }

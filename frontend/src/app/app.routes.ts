@@ -22,6 +22,11 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/payments/payment-cancel.component').then(m => m.PaymentCancelComponent)
   },
   {
+    path: 'payments/retry',
+    loadComponent: () => import('./pages/payments/payment-retry.component').then(m => m.PaymentRetryComponent),
+    canActivate: [AuthGuard]
+  },
+  {
     path: 'home',
     loadComponent: () => import('./pages/home/home.component').then(m => m.HomeComponent),
     data: { breadcrumb: 'Accueil' }
@@ -45,6 +50,18 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/offers/offers.component').then(m => m.OffersComponent),
     canActivate: [AuthGuard],
     data: { breadcrumb: 'Offres' }
+  },
+  {
+    path: 'favorites',
+    loadComponent: () => import('./pages/favorites/favorites.component').then(m => m.FavoritesComponent),
+    canActivate: [AuthGuard],
+    data: { breadcrumb: 'Mes favoris' }
+  },
+  {
+    path: 'support',
+    loadComponent: () => import('./pages/support/support.component').then(m => m.SupportComponent),
+    canActivate: [AuthGuard],
+    data: { breadcrumb: 'Support' }
   },
   {
     path: 'bookings',

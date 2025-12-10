@@ -92,6 +92,57 @@
       </div>
     </div>
 
+    <!-- Section Favoris récents -->
+    <div class="dashboard-section favorites-section">
+      <div class="section-header">
+        <h2>Vos favoris récents</h2>
+        <button class="btn btn-outline btn-sm" (click)="goToFavorites()">
+          Voir mes favoris →
+        </button>
+      </div>
+
+      <div *ngIf="favoriteError" class="alert alert-warning">
+        ⚠️ {{ favoriteError }}
+      </div>
+
+      <ng-container *ngIf="favoritesLoading; else favoritesContent">
+        <div class="favorites-skeleton">
+          <div class="skeleton-card" *ngFor="let _ of [1,2,3]">
+            <div class="skeleton-line shimmer"></div>
+            <div class="skeleton-line shimmer short"></div>
+          </div>
+        </div>
+      </ng-container>
+
+      <ng-template #favoritesContent>
+        <div *ngIf="favoriteOffers.length > 0; else noFavorites" class="favorite-grid">
+          <div class="favorite-card" *ngFor="let offer of favoritePreview">
+            <div class="favorite-header">
+              <span class="favorite-location">{{ offer.pickupLocationName }}</span>
+              <span class="favorite-service">{{ offer.mobilityService || offer.mobilityServiceName }}</span>
+            </div>
+            <p class="favorite-title">{{ offer.description }}</p>
+            <div class="favorite-footer">
+              <div class="favorite-price">
+                {{ offer.price | number:'1.0-0' }} €
+              </div>
+              <button class="btn btn-primary btn-xs" (click)="exploreOffers()">
+                Voir l'offre
+              </button>
+            </div>
+          </div>
+        </div>
+      </ng-template>
+
+      <ng-template #noFavorites>
+        <div class="favorite-empty">
+          <div class="empty-icon">⭐</div>
+          <p>Ajoutez vos offres préférées pour les retrouver ici rapidement.</p>
+          <button class="btn btn-outline" (click)="exploreOffers()">Explorer les offres</button>
+        </div>
+      </ng-template>
+    </div>
+
     <!-- Section Réservations Récentes -->
     <div class="dashboard-section" *ngIf="recentBookings.length > 0">
       <div class="section-header">

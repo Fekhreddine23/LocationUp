@@ -1,34 +1,241 @@
 
 <app-breadcrumbs [items]="breadcrumbItems"></app-breadcrumbs>
 
-<div class="offers-page">
-  <div class="page-header">
-    <h1>Nos Offres de Mobilité</h1>
-    <p>Découvrez toutes nos solutions de transport disponibles</p>
-  </div>
+<div class="offers-shell">
+  <section class="page-header surface-panel">
+    <div class="header-copy">
+      <p class="eyebrow">Catalogue LocationUp</p>
+      <h1>Choisissez votre solution de mobilité</h1>
+      <p class="subtitle">Filtres multi-critères, favoris et aperçu détaillé en un clin d'œil.</p>
+    </div>
+    <div class="page-metadata">
+      <div class="stat-chip">
+        <span>Résultats actifs</span>
+        <strong>{{ filteredOffers.length }}</strong>
+      </div>
+      <label class="toggle-favorites">
+        <input type="checkbox" [formControl]="favoritesOnlyControl">
+        <span>Afficher mes favoris</span>
+      </label>
+    </div>
+  </section>
+
+  <form class="filters-panel surface-panel" [formGroup]="filterForm" novalidate>
+    <div class="filters-grid">
+      <label class="filter-field">
+        <span>Recherche</span>
+        <input formControlName="search" type="text" placeholder="Mot-clé, service, ville..." />
+      </label>
+
+      <label class="filter-field">
+        <span>Service</span>
+        <select formControlName="service">
+          <option value="">Tous</option>
+          <option *ngFor="let service of servicesOptions" [value]="service">{{ service }}</option>
+        </select>
+      </label>
+
+      <label class="filter-field">
+        <span>Lieu de départ</span>
+        <select formControlName="location">
+          <option value="">Tous</option>
+          <option *ngFor="let location of locationsOptions" [value]="location">{{ location }}</option>
+        </select>
+      </label>
+
+      <label class="filter-field">
+        <span>À partir du</span>
+        <input type="date" formControlName="startDate" />
+      </label>
+
+      <label class="filter-field">
+        <span>Prix min</span>
+        <input type="number" formControlName="minPrice" placeholder="0" />
+      </label>
+
+      <label class="filter-field">
+        <span>Prix max</span>
+        <input type="number" formControlName="maxPrice" placeholder="120" />
+      </label>
+
+      <label class="filter-field">
+        <span>Tri</span>
+        <select formControlName="sort">
+          <option value="recent">Date la plus proche</option>
+          <option value="priceAsc">Prix croissant</option>
+          <option value="priceDesc">Prix décroissant</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="filters-actions">
+      <label class="checkbox">
+        <input type="checkbox" formControlName="onlyAvailable" />
+        <span>Uniquement les offres encore disponibles</span>
+      </label>
+
+      <div class="inline-actions">
+        <button type="button" class="btn btn-ghost" (click)="resetFilters()">Réinitialiser</button>
+      </div>
+    </div>
+  </form>
 
   <!-- Loading State -->
-  <div *ngIf="isLoading" class="loading-state">
+  <div *ngIf="isLoading" class="loading-state surface-panel">
     <div class="spinner"></div>
     <p>Chargement des offres...</p>
   </div>
 
   <!-- Error State -->
-  <div *ngIf="errorMessage" class="error-state">
-    <p>❌ {{ errorMessage }}</p>
-    <button (click)="loadOffers()" class="btn-retry">Réessayer</button>
+  <div *ngIf="errorMessage" class="error-state surface-panel">
+    <p>{{ errorMessage }}</p>
+    <button (click)="loadOffers()" class="btn btn-primary">Réessayer</button>
   </div>
 
-  <!-- Offers Grid -->
-  <div *ngIf="!isLoading && !errorMessage" class="offers-grid">
-    <app-offer-card 
-      *ngFor="let offer of offers"
-      [offer]="offer">
-    </app-offer-card>
+  <div *ngIf="!isLoading && !errorMessage" class="results-panel surface-panel">
+    <ng-container *ngIf="filteredOffers.length; else noResults">
+      <div class="offers-grid">
+        <app-offer-card 
+          *ngFor="let offer of filteredOffers; trackBy: trackByOffer"
+          [offer]="offer"
+          [isFavorite]="isFavorite(offer.offerId)"
+          [quickViewActive]="isQuickViewOpenFor(offer)"
+          (favoriteToggled)="toggleFavorite($event)"
+          (detailsRequested)="toggleQuickView($event)">
+        </app-offer-card>
+      </div>
+    </ng-container>
   </div>
 
-  <!-- Empty State -->
-  <div *ngIf="!isLoading && !errorMessage && offers.length === 0" class="empty-state">
-    <p>📭 Aucune offre disponible pour le moment</p>
+  <ng-template #noResults>
+    <div class="empty-state surface-panel">
+      <p>Aucune offre ne correspond à vos filtres.</p>
+      <button class="btn btn-ghost" (click)="resetFilters()">Réinitialiser les filtres</button>
+    </div>
+  </ng-template>
+</div>
+
+<div class="quick-view-overlay" *ngIf="quickViewOffer" (click)="closeQuickView()">
+  <div class="quick-view-panel" (click)="$event.stopPropagation()">
+    <button class="close-button" type="button" (click)="closeQuickView()">&times;</button>
+    <div class="quick-view-cover">
+      <img [src]="quickViewSelectedImage || resolveImage(quickViewOffer!)" [alt]="quickViewOffer!.description">
+      <span class="badge availability" [class.available]="offersService.isOfferAvailable(quickViewOffer!)">
+        {{ getAvailabilityLabel(quickViewOffer!) }}
+      </span>
+    </div>
+    <div class="gallery-thumbs" *ngIf="quickViewGallery.length > 1">
+      <button 
+        *ngFor="let img of quickViewGallery"
+        type="button"
+        class="thumb"
+        [class.active]="img === quickViewSelectedImage"
+        (click)="selectGalleryImage(img)">
+        <img [src]="img" alt="aperçu de l'offre" />
+      </button>
+    </div>
+    <div class="quick-view-body">
+      <p class="eyebrow">{{ quickViewOffer!.mobilityService || 'Mobilité' }}</p>
+      <h2>{{ quickViewOffer!.description || ('Offre #' + quickViewOffer!.offerId) }}</h2>
+      <p class="detail-price">{{ formatPrice(quickViewOffer!.price || 0) }}</p>
+
+      <div class="detail-grid">
+        <div>
+          <label>Départ</label>
+          <p>{{ quickViewOffer ? getLocationLabel(quickViewOffer) : '' }}</p>
+        </div>
+        <div>
+          <label>Date</label>
+          <p>{{ quickViewOffer ? formatDate(quickViewOffer.pickupDatetime) : '' }}</p>
+        </div>
+        <div>
+          <label>Créée par</label>
+          <p>{{ quickViewOffer!.adminName || 'Équipe LocationUp' }}</p>
+        </div>
+        <div>
+          <label>Statut</label>
+          <p>{{ quickViewOffer ? getAvailabilityLabel(quickViewOffer) : '' }}</p>
+        </div>
+      </div>
+
+      <div class="insights-grid" *ngIf="quickViewInsights">
+        <div class="insight-card">
+          <p class="insight-label">Durée & planning</p>
+          <p class="insight-value">{{ quickViewInsights!.durationLabel }}</p>
+        </div>
+        <div class="insight-card">
+          <p class="insight-label">Couverture & assistance</p>
+          <p class="insight-value">{{ quickViewInsights!.coverageLabel }}</p>
+        </div>
+        <div class="insight-card">
+          <p class="insight-label">Conditions</p>
+          <p class="insight-value">{{ quickViewInsights!.cancellationLabel }}</p>
+        </div>
+      </div>
+
+      <div class="highlight-badges" *ngIf="quickViewInsights?.highlightBadges?.length">
+        <span *ngFor="let badge of quickViewInsights!.highlightBadges">
+          {{ badge.icon }} {{ badge.label }}
+        </span>
+      </div>
+
+      <div class="equipment-list" *ngIf="quickViewEquipment.length">
+        <span *ngFor="let equip of quickViewEquipment">{{ equip }}</span>
+      </div>
+
+      <div class="addons-list" *ngIf="quickViewInsights?.addons?.length">
+        <p class="list-label">Options & suppléments inclus</p>
+        <ul>
+          <li *ngFor="let addon of quickViewInsights!.addons">{{ addon }}</li>
+        </ul>
+      </div>
+
+      <div class="deep-dive-list" *ngIf="quickViewInsights?.deepDive?.length">
+        <p class="list-label">Checklist LocationUp</p>
+        <ul>
+          <li *ngFor="let item of quickViewInsights!.deepDive">{{ item }}</li>
+        </ul>
+      </div>
+
+      <div class="booking-context" *ngIf="quickViewInsights?.userBooking as userBooking">
+        <div class="booking-context__copy">
+          <p class="context-label">Votre réservation</p>
+          <p class="context-title">#{{ userBooking.reservationId }} — {{ userBooking.status }}</p>
+          <p class="context-sub" *ngIf="userBooking.paymentStatus">
+            Paiement : {{ userBooking.paymentStatus }}
+          </p>
+        </div>
+        <div class="context-actions">
+          <button class="btn btn-primary"
+                  type="button"
+                  *ngIf="quickViewOffer && shouldShowRetryPayment(quickViewOffer)"
+                  (click)="retryPayment(quickViewOffer)">
+            🔁 Relancer le paiement
+          </button>
+          <button class="btn btn-secondary" type="button" (click)="navigateToBooking(userBooking)">
+            Voir la réservation
+          </button>
+        </div>
+      </div>
+
+      <div class="detail-actions">
+        <button class="btn btn-primary" (click)="reserveOffer(quickViewOffer)">
+          Réserver cette offre
+        </button>
+        <button class="btn btn-secondary" (click)="toggleFavorite(quickViewOffer!)">
+          {{ quickViewOffer && isFavorite(quickViewOffer.offerId) ? 'Retirer des favoris' : 'Ajouter aux favoris' }}
+        </button>
+      </div>
+
+      <div class="support-panel" *ngIf="quickViewOffer">
+        <div class="support-copy">
+          <p class="support-label">Besoin d'aide ?</p>
+          <p>Contactez directement notre équipe pour finaliser votre réservation ou obtenir un accompagnement.</p>
+        </div>
+        <button class="btn btn-ghost" type="button" (click)="contactSupport(quickViewOffer, quickViewInsights?.supportPreset)">
+          📞 Contacter le support
+        </button>
+      </div>
+    </div>
   </div>
 </div>

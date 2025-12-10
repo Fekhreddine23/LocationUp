@@ -17,20 +17,33 @@
     </div>
   </div>
 
-  <!-- Loading State -->
-  <app-spinner *ngIf="isLoading"></app-spinner>
-
-  <!-- Error Message -->
-  <div *ngIf="errorMessage && !isLoading" class="error-message">
-    <div class="error-content">
-      <span>⚠️</span>
-      <span>{{ errorMessage }}</span>
-      <button (click)="loadAdminData()" class="retry-btn">Réessayer</button>
+  <ng-container *ngIf="isLoading; else dashboardLoaded">
+    <div class="dashboard-loading loading-state" aria-live="polite">
+      <div class="app-skeleton-block skeleton-banner"></div>
+      <div class="skeleton-stat-grid">
+        <div class="app-skeleton-block skeleton-card" *ngFor="let _ of dashboardSkeletonStats"></div>
+      </div>
+      <div class="skeleton-analytics">
+        <div class="app-skeleton-block skeleton-chart" *ngFor="let _ of dashboardSkeletonCharts"></div>
+      </div>
+      <div class="skeleton-list">
+        <div class="app-skeleton-block skeleton-list-item" *ngFor="let _ of dashboardSkeletonList"></div>
+      </div>
     </div>
-  </div>
+  </ng-container>
 
-  <!-- Main Content -->
-  <div *ngIf="!isLoading && !errorMessage" class="dashboard-content">
+  <ng-template #dashboardLoaded>
+    <!-- Error Message -->
+    <div *ngIf="errorMessage" class="error-message">
+      <div class="error-content">
+        <span>⚠️</span>
+        <span>{{ errorMessage }}</span>
+        <button (click)="loadAdminData()" class="retry-btn">Réessayer</button>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div *ngIf="!errorMessage" class="dashboard-content">
     
     <!-- ✅ NOUVELLE SECTION : Analytics avec Charts -->
     <div class="dashboard-section">
@@ -124,7 +137,7 @@
         </div>
       </div>
       <ng-template #trendsSpinner>
-        <div class="chart-placeholder">Chargement des tendances...</div>
+        <div class="chart-placeholder app-skeleton-block" aria-label="Chargement des tendances"></div>
       </ng-template>
     </div>
 
@@ -259,5 +272,6 @@
       </div>
       </div>
     </div>
-  </div>
+    </div>
+  </ng-template>
 </div>

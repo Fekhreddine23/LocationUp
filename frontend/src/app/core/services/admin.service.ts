@@ -8,9 +8,9 @@ import { RecentActivity } from '../models/RecentActivity.model';
 import { UserResponse } from '../models/UserResponse.model';
 import { OfferResponse } from '../models/OfferReponse.model';
 import { CreateOfferRequest, Offer, OfferStatus } from '../models/offer.model';
-import { AdminBooking, BookingResponse, PaymentStatus } from '../models/AdminBooking.model';
+import { AdminBooking, BookingResponse, BookingExportFilters, PaymentStatus } from '../models/AdminBooking.model';
 import { DashboardTrends } from '../models/DashboardTrends.model';
-import { FinanceOverview, PaymentAlert, PaymentEventLogEntry } from '../models/admin-finance.model';
+import { FinanceAlertFilters, FinanceOverview, PaymentAlert, PaymentEventLogEntry } from '../models/admin-finance.model';
 import { PaymentEvent } from '../models/payment-event.model';
 import { ReservationAdminAction } from '../models/reservation-admin-action.model';
 import { BusinessEventsService } from './business-events/business-events';
@@ -66,8 +66,32 @@ export class AdminService {
     return this.http.get<FinanceOverview>(`${this.apiUrl}/finance/overview`, { params });
   }
 
-  getFinanceAlerts(): Observable<PaymentAlert[]> {
-    return this.http.get<PaymentAlert[]>(`${this.apiUrl}/finance/alerts`);
+  getFinanceAlerts(filters?: FinanceAlertFilters): Observable<PaymentAlert[]> {
+    let params = new HttpParams();
+    if (filters?.severity) {
+      params = params.set('severity', filters.severity);
+    }
+    if (filters?.statuses?.length) {
+      filters.statuses.forEach(status => {
+        params = params.append('statuses', status);
+      });
+    }
+    if (filters?.search) {
+      params = params.set('search', filters.search);
+    }
+    if (filters?.startDate) {
+      params = params.set('startDate', filters.startDate);
+    }
+    if (filters?.endDate) {
+      params = params.set('endDate', filters.endDate);
+    }
+    if (filters?.actionRequiredOnly) {
+      params = params.set('actionRequiredOnly', 'true');
+    }
+    if (filters?.limit) {
+      params = params.set('limit', filters.limit.toString());
+    }
+    return this.http.get<PaymentAlert[]>(`${this.apiUrl}/finance/alerts`, { params });
   }
 
   getFinanceEvents(limit: number = 20): Observable<PaymentEventLogEntry[]> {
@@ -75,9 +99,58 @@ export class AdminService {
     return this.http.get<PaymentEventLogEntry[]>(`${this.apiUrl}/finance/events`, { params });
   }
 
-  exportFinanceCsv(months: number = 6): Observable<Blob> {
-    const params = new HttpParams().set('months', months.toString());
+  exportFinanceCsv(months: number = 6, scope: 'overview' | 'alerts' = 'overview', filters?: FinanceAlertFilters): Observable<Blob> {
+    let params = new HttpParams().set('months', months.toString()).set('type', scope);
+    if (scope === 'alerts' && filters) {
+      if (filters.severity) {
+        params = params.set('severity', filters.severity);
+      }
+      if (filters.statuses?.length) {
+        filters.statuses.forEach(status => params = params.append('statuses', status));
+      }
+      if (filters.search) {
+        params = params.set('search', filters.search);
+      }
+      if (filters.startDate) {
+        params = params.set('startDate', filters.startDate);
+      }
+      if (filters.endDate) {
+        params = params.set('endDate', filters.endDate);
+      }
+      if (filters.actionRequiredOnly) {
+        params = params.set('actionRequiredOnly', 'true');
+      }
+      if (filters.limit) {
+        params = params.set('limit', filters.limit.toString());
+      }
+    }
     return this.http.get(`${this.apiUrl}/finance/export`, { params, responseType: 'blob' });
+  }
+
+  exportBookingsCsv(filters: BookingExportFilters): Observable<Blob> {
+    let params = new HttpParams();
+    if (filters.query) {
+      params = params.set('query', filters.query);
+    }
+    if (filters.status) {
+      params = params.set('status', filters.status);
+    }
+    if (filters.startDate) {
+      params = params.set('startDate', filters.startDate);
+    }
+    if (filters.endDate) {
+      params = params.set('endDate', filters.endDate);
+    }
+    if (filters.anomaliesOnly) {
+      params = params.set('anomaliesOnly', 'true');
+    }
+    if (filters.userId) {
+      params = params.set('userId', filters.userId.toString());
+    }
+    return this.http.get(`${this.apiUrl}/bookings/export`, {
+      params,
+      responseType: 'blob'
+    });
   }
 
   /**
@@ -720,7 +793,9 @@ export class AdminService {
       cancelledBookings: 23,
       completedBookings: 32,
       totalRevenue: 12540.50,
-      averageBookingValue: 80.39
+      outstandingRevenue: 3200.10,
+      monthToDateRevenue: 1850.40,
+      confirmationRate: 0.62
     };
   }
 

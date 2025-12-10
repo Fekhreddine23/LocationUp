@@ -8,9 +8,12 @@ public class FinanceOverviewDTO {
 	private double totalRevenue;
 	private double monthToDateRevenue;
 	private double outstandingRevenue;
+	private double confirmationRate;
 	private List<PaymentStatusBreakdownDTO> paymentsByStatus = new ArrayList<>();
 	private List<MonthlyRevenuePointDTO> revenueHistory = new ArrayList<>();
 	private List<PaymentAlertDTO> alerts = new ArrayList<>();
+    private List<OutstandingPointDTO> outstandingByWeek = new ArrayList<>();
+    private List<OutstandingPointDTO> outstandingByMonth = new ArrayList<>();
 
 	public double getTotalRevenue() {
 		return totalRevenue;
@@ -59,4 +62,28 @@ public class FinanceOverviewDTO {
 	public void setAlerts(List<PaymentAlertDTO> alerts) {
 		this.alerts = alerts;
 	}
+
+    public double getConfirmationRate() {
+        return confirmationRate;
+    }
+
+    public void setConfirmationRate(double confirmationRate) {
+        this.confirmationRate = confirmationRate;
+    }
+
+    public List<OutstandingPointDTO> getOutstandingByWeek() {
+        return outstandingByWeek;
+    }
+
+    public void setOutstandingByWeek(List<OutstandingPointDTO> outstandingByWeek) {
+        this.outstandingByWeek = outstandingByWeek;
+    }
+
+    public List<OutstandingPointDTO> getOutstandingByMonth() {
+        return outstandingByMonth;
+    }
+
+    public void setOutstandingByMonth(List<OutstandingPointDTO> outstandingByMonth) {
+        this.outstandingByMonth = outstandingByMonth;
+    }
 }

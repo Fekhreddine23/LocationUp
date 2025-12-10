@@ -1,5 +1,6 @@
 package com.mobility.mobility_backend.repository;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
@@ -13,6 +14,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.mobility.mobility_backend.entity.Reservation;
+import com.mobility.mobility_backend.dto.finance.PeriodAmountProjection;
 
 @Repository
 public interface ReservationRepository extends JpaRepository<Reservation, Integer> {
@@ -38,7 +40,37 @@ public interface ReservationRepository extends JpaRepository<Reservation, Intege
 			LocalDateTime start, LocalDateTime end);
 
 	List<Reservation> findByPaymentStatusAndUpdatedAtBefore(Reservation.PaymentStatus status,
-			LocalDateTime threshold);
+		LocalDateTime threshold);
+
+	@Query("SELECT COALESCE(SUM(COALESCE(r.paymentAmount, r.offer.price, 0)), 0) FROM Reservation r "
+		+ "WHERE r.paymentStatus = com.mobility.mobility_backend.entity.Reservation$PaymentStatus.PAID")
+	BigDecimal sumPaidAmount();
+
+	@Query("SELECT COALESCE(SUM(COALESCE(r.paymentAmount, r.offer.price, 0)), 0) FROM Reservation r "
+		+ "WHERE r.paymentStatus IN (com.mobility.mobility_backend.entity.Reservation$PaymentStatus.PENDING, "
+		+ "com.mobility.mobility_backend.entity.Reservation$PaymentStatus.REQUIRES_ACTION)")
+	BigDecimal sumOutstandingAmount();
+
+	@Query("SELECT COALESCE(SUM(COALESCE(r.paymentAmount, r.offer.price, 0)), 0) FROM Reservation r "
+		+ "WHERE r.paymentStatus = com.mobility.mobility_backend.entity.Reservation$PaymentStatus.PAID "
+		+ "AND r.paymentDate >= :start")
+	BigDecimal sumPaidAmountSince(@Param("start") LocalDateTime start);
+
+	@Query(value = "SELECT FORMATDATETIME(r.reservation_date, 'YYYY-ww') AS period, COUNT(*) AS count, "
+		+ "COALESCE(SUM(COALESCE(r.payment_amount, o.price, 0)), 0) AS amount "
+		+ "FROM reservations r LEFT JOIN offers o ON o.offer_id = r.offer_id "
+		+ "WHERE r.payment_status IN ('PENDING','REQUIRES_ACTION') AND r.reservation_date >= :from "
+		+ "GROUP BY FORMATDATETIME(r.reservation_date, 'YYYY-ww') ORDER BY period",
+		nativeQuery = true)
+	List<PeriodAmountProjection> findOutstandingByWeek(@Param("from") LocalDateTime from);
+
+	@Query(value = "SELECT FORMATDATETIME(r.reservation_date, 'YYYY-MM') AS period, COUNT(*) AS count, "
+		+ "COALESCE(SUM(COALESCE(r.payment_amount, o.price, 0)), 0) AS amount "
+		+ "FROM reservations r LEFT JOIN offers o ON o.offer_id = r.offer_id "
+		+ "WHERE r.payment_status IN ('PENDING','REQUIRES_ACTION') AND r.reservation_date >= :from "
+		+ "GROUP BY FORMATDATETIME(r.reservation_date, 'YYYY-MM') ORDER BY period",
+		nativeQuery = true)
+	List<PeriodAmountProjection> findOutstandingByMonth(@Param("from") LocalDateTime from);
 
 	@Query("SELECT r FROM Reservation r LEFT JOIN r.user u LEFT JOIN r.offer o "
 			+ "WHERE LOWER(u.username) LIKE LOWER(CONCAT('%', :keyword, '%')) "

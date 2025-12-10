@@ -3,18 +3,31 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { Breadcrumbs } from '../breadcrumbs/breadcrumbs';
-import { AdminBooking, BookingResponse } from '../../core/models/AdminBooking.model';
+import { AdminBooking, BookingExportFilters, BookingResponse } from '../../core/models/AdminBooking.model';
 import { AdminService } from '../../core/services/admin.service';
 import { AdminUser } from '../../core/models/AdminUser.model';
 import { Offer } from '../../core/models/offer.model';
 import { PaymentEvent } from '../../core/models/payment-event.model';
 import { ReservationAdminAction } from '../../core/models/reservation-admin-action.model';
+import { FinanceAlertFilters, PaymentAlert } from '../../core/models/admin-finance.model';
 import { Subject, forkJoin, Observable, of } from 'rxjs';
 import { catchError, finalize, map, takeUntil, tap } from 'rxjs/operators';
 import { NotificationService } from '../../core/services/notification.service';
 
 type BookingStatus = AdminBooking['status'] | 'ALL';
 type NormalizedBookingOffer = NonNullable<AdminBooking['offer']>;
+
+interface BookingStatsOverview {
+  totalBookings: number;
+  pendingBookings: number;
+  confirmedBookings: number;
+  cancelledBookings: number;
+  completedBookings: number;
+  totalRevenue: number;
+  outstandingRevenue: number;
+  monthToDateRevenue: number;
+  confirmationRate: number;
+}
 
 @Component({
   selector: 'app-booking-management',
@@ -46,19 +59,44 @@ export class BookingManagement implements OnInit, OnDestroy {
   searchQuery = '';
   statusFilter: BookingStatus = 'ALL';
   dateFilter = '';
+  showAnomaliesOnly = false;
+  focusedReservationId: number | null = null;
+  private pendingReservationFocus: number | null = null;
   
   // États
   isLoading = false;
   isDetailModalOpen = false;
   isDeleteModalOpen = false;
   paymentActionLoading: Record<number, boolean> = {};
+  actionAlerts: PaymentAlert[] = [];
+  actionAlertsLoading = false;
+  actionAlertError = '';
+  actionAlertSeverity: 'ALL' | 'ALERTE' | 'CRITIQUE' = 'ALL';
+  actionAlertSearch = '';
+  actionAlertStatuses: Record<string, boolean> = {
+    PENDING: true,
+    REQUIRES_ACTION: true,
+    FAILED: true,
+    EXPIRED: false
+  };
+  private readonly alertExportRange = 6;
   
   // Messages
   successMessage = '';
   errorMessage = '';
 
   // Statistiques
-  bookingStats: any = {};
+  bookingStats: BookingStatsOverview = this.createEmptyStats();
+  statsLoading = true;
+  readonly skeletonRows = Array.from({ length: 6 });
+  readonly skeletonColumns = Array.from({ length: 7 });
+  readonly statSkeletonCards = Array.from({ length: 8 });
+  readonly detailSkeletonLines = Array.from({ length: 3 });
+  readonly modalSkeletonLines = Array.from({ length: 5 });
+  readonly actionAlertSkeletons = Array.from({ length: 4 });
+  detailAuxLoading = false;
+  private detailLoadingCountdown = 0;
+  isDeleteProcessing = false;
   
   // Filtre utilisateur actif
   private activeUserFilter: { id: number, name: string } | null = null;
@@ -91,6 +129,7 @@ export class BookingManagement implements OnInit, OnDestroy {
     this.loadBookings();
     this.loadBookingStats();
     this.checkUrlFilter();
+    this.loadActionAlerts();
   }
 
   ngOnDestroy(): void {
@@ -118,12 +157,19 @@ export class BookingManagement implements OnInit, OnDestroy {
   }
 
   loadBookingStats(): void {
-    this.adminService.getBookingStats().subscribe({
+    this.statsLoading = true;
+    this.adminService.getBookingStats().pipe(takeUntil(this.destroy$)).subscribe({
       next: (stats) => {
-        this.bookingStats = stats;
+        this.bookingStats = {
+          ...this.createEmptyStats(),
+          ...stats
+        };
+        this.statsLoading = false;
       },
       error: (error) => {
         console.error('Erreur chargement stats:', error);
+        this.bookingStats = this.createEmptyStats();
+        this.statsLoading = false;
       }
     });
   }
@@ -177,6 +223,10 @@ export class BookingManagement implements OnInit, OnDestroy {
       );
     }
 
+    if (this.showAnomaliesOnly) {
+      filtered = filtered.filter(booking => this.isBookingAnomaly(booking));
+    }
+
     this.commitFilteredBookings(filtered);
   }
 
@@ -187,10 +237,12 @@ export class BookingManagement implements OnInit, OnDestroy {
       next: () => {
         this.applyFilters();
         this.isLoading = false;
+        this.tryFocusReservation();
       },
       error: () => {
         this.applyFilters();
         this.isLoading = false;
+        this.tryFocusReservation();
       }
     });
   }
@@ -370,6 +422,31 @@ export class BookingManagement implements OnInit, OnDestroy {
     this.displayedBookingsCount = bookings.length;
   }
 
+  private tryFocusReservation(): void {
+    if (!this.pendingReservationFocus) {
+      return;
+    }
+    const targetId = this.pendingReservationFocus;
+    const booking = this.bookings.find(item => item.reservationId === targetId);
+    if (!booking) {
+      return;
+    }
+    this.focusedReservationId = targetId;
+    this.viewBookingDetails(booking);
+    this.pendingReservationFocus = null;
+    setTimeout(() => this.scrollToBookingRow(targetId), 150);
+  }
+
+  private scrollToBookingRow(reservationId: number): void {
+    if (typeof document === 'undefined') {
+      return;
+    }
+    const row = document.getElementById(`booking-row-${reservationId}`);
+    if (row) {
+      row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }
+
   // 🆕 MÉTHODE : Vérifie les filtres dans l'URL
   checkUrlFilter(): void {
     this.route.queryParams
@@ -384,11 +461,21 @@ export class BookingManagement implements OnInit, OnDestroy {
         } else {
           this.activeUserFilter = null;
         }
+        if (params['reservationId']) {
+          const reservationId = Number(params['reservationId']);
+          this.pendingReservationFocus = Number.isFinite(reservationId) ? reservationId : null;
+          if (!this.isLoading) {
+            setTimeout(() => this.tryFocusReservation(), 200);
+          }
+        } else {
+          this.pendingReservationFocus = null;
+        }
       });
   }
 
   // Actions sur les réservations
   viewBookingDetails(booking: AdminBooking): void {
+    this.focusedReservationId = booking?.reservationId ?? null;
     this.selectedBooking = booking;
     this.isDetailModalOpen = true;
     this.paymentEvents = [];
@@ -396,8 +483,13 @@ export class BookingManagement implements OnInit, OnDestroy {
     this.adminActions = [];
     this.adminActionsError = '';
     if (booking?.reservationId) {
+      this.detailLoadingCountdown = 2;
+      this.detailAuxLoading = true;
       this.fetchPaymentEvents(booking.reservationId);
       this.fetchAdminActions(booking.reservationId);
+    } else {
+      this.detailLoadingCountdown = 0;
+      this.detailAuxLoading = false;
     }
   }
 
@@ -467,11 +559,13 @@ export class BookingManagement implements OnInit, OnDestroy {
       next: (events) => {
         this.paymentEvents = events || [];
         this.paymentEventsLoading = false;
+        this.resolveDetailLoadingSection();
       },
       error: (error) => {
         console.error('Erreur chargement événements de paiement:', error);
         this.paymentEventsError = 'Impossible de charger l’historique Stripe';
         this.paymentEventsLoading = false;
+        this.resolveDetailLoadingSection();
       }
     });
   }
@@ -484,13 +578,34 @@ export class BookingManagement implements OnInit, OnDestroy {
       next: (actions) => {
         this.adminActions = actions || [];
         this.adminActionsLoading = false;
+        this.resolveDetailLoadingSection();
       },
       error: (error) => {
         console.error('Erreur chargement actions admin:', error);
         this.adminActionsError = 'Impossible de charger l’historique admin';
         this.adminActionsLoading = false;
+        this.resolveDetailLoadingSection();
       }
     });
+  }
+
+  private resolveDetailLoadingSection(): void {
+    if (this.detailLoadingCountdown > 0) {
+      this.detailLoadingCountdown--;
+      if (this.detailLoadingCountdown === 0) {
+        this.detailAuxLoading = false;
+      }
+    }
+  }
+
+  closeDetailModal(): void {
+    this.isDetailModalOpen = false;
+    this.selectedBooking = null;
+    this.detailAuxLoading = false;
+    this.detailLoadingCountdown = 0;
+    if (!this.pendingReservationFocus) {
+      this.focusedReservationId = null;
+    }
   }
 
   canCollectPayment(booking: AdminBooking): boolean {
@@ -664,6 +779,7 @@ export class BookingManagement implements OnInit, OnDestroy {
   confirmDelete(booking: AdminBooking): void {
     this.selectedBooking = booking;
     this.isDeleteModalOpen = true;
+    this.isDeleteProcessing = false;
   }
 
   deleteBooking(): void {
@@ -675,6 +791,7 @@ export class BookingManagement implements OnInit, OnDestroy {
       return;
     }
 
+    this.isDeleteProcessing = true;
     this.adminService.deleteBooking(this.selectedBooking.reservationId).subscribe({
       next: () => {
         this.bookings = this.bookings.filter(b => b.reservationId !== this.selectedBooking!.reservationId);
@@ -684,6 +801,7 @@ export class BookingManagement implements OnInit, OnDestroy {
         this.successMessage = message;
         this.notificationService.success(message, 4000);
         this.isDeleteModalOpen = false;
+        this.isDeleteProcessing = false;
         this.clearMessagesAfterDelay();
         this.loadBookingStats(); // Recharger les stats
       },
@@ -692,6 +810,7 @@ export class BookingManagement implements OnInit, OnDestroy {
         const message = error?.message || 'Erreur lors de la suppression';
         this.errorMessage = message;
         this.notificationService.error(message, 5000);
+        this.isDeleteProcessing = false;
         this.clearMessagesAfterDelay();
       }
     });
@@ -752,6 +871,37 @@ export class BookingManagement implements OnInit, OnDestroy {
     }
   }
 
+  getEventStatusBadgeClass(status?: string): string {
+    const normalized = status?.toUpperCase() ?? '';
+    if (['PROCESSED', 'SUCCESS', 'PAID'].includes(normalized)) {
+      return 'badge badge-success';
+    }
+    if (['FAILED', 'ERROR'].includes(normalized)) {
+      return 'badge badge-danger';
+    }
+    if (['PENDING_RESERVATION', 'REQUIRES_ACTION', 'ACTION_REQUIRED'].includes(normalized)) {
+      return 'badge badge-warning';
+    }
+    if (normalized === 'IGNORED') {
+      return 'badge badge-muted';
+    }
+    return 'badge badge-info';
+  }
+
+  getAdminActionBadgeClass(actionType?: string): string {
+    const type = actionType?.toUpperCase() ?? '';
+    if (type.includes('REFUND') || type.includes('CANCEL')) {
+      return 'badge badge-danger';
+    }
+    if (type.includes('CONFIRM') || type.includes('COMPLETE')) {
+      return 'badge badge-success';
+    }
+    if (type.includes('EXPIRE') || type.includes('SUSPEND')) {
+      return 'badge badge-warning';
+    }
+    return 'badge badge-info';
+  }
+
   isPaymentActionLoading(reservationId?: number): boolean {
     if (!reservationId) {
       return false;
@@ -769,6 +919,17 @@ export class BookingManagement implements OnInit, OnDestroy {
     }).format(amount);
   }
 
+  formatPercentage(value?: number): string {
+    if (value == null) {
+      return '—';
+    }
+    return new Intl.NumberFormat('fr-FR', {
+      style: 'percent',
+      minimumFractionDigits: 1,
+      maximumFractionDigits: 1
+    }).format(value);
+  }
+
   formatDate(dateString?: string): string {
     if (!dateString) {
       return '—';
@@ -780,6 +941,20 @@ export class BookingManagement implements OnInit, OnDestroy {
       hour: '2-digit',
       minute: '2-digit'
     });
+  }
+
+  private createEmptyStats(): BookingStatsOverview {
+    return {
+      totalBookings: 0,
+      pendingBookings: 0,
+      confirmedBookings: 0,
+      cancelledBookings: 0,
+      completedBookings: 0,
+      totalRevenue: 0,
+      outstandingRevenue: 0,
+      monthToDateRevenue: 0,
+      confirmationRate: 0
+    };
   }
 
   formatShortDate(dateString?: string): string {
@@ -870,13 +1045,19 @@ export class BookingManagement implements OnInit, OnDestroy {
     this.router.navigate(['/admin']);
   }
 
-  viewUserBookings(userId?: number): void {
+  viewUserBookings(userId?: number, userName?: string): void {
     if (!userId) {
       return;
     }
-    this.router.navigate(['/admin/users'], {
-      queryParams: { view: 'bookings', userId }
+    const label = userName?.trim().length ? userName : `Utilisateur #${userId}`;
+    this.activeUserFilter = { id: userId, name: label };
+    this.applyFilters();
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { userId, userName: label },
+      queryParamsHandling: 'merge'
     });
+    this.closeDetailModal();
   }
 
   private applyBookingPaymentUpdate(target: AdminBooking, updated: AdminBooking): void {
@@ -885,6 +1066,80 @@ export class BookingManagement implements OnInit, OnDestroy {
     target.paymentDate = updated.paymentDate ?? target.paymentDate;
     target.status = BookingManagement.normalizeStatus(updated.status);
     target.totalPrice = updated.totalPrice ?? target.totalPrice;
+  }
+
+  loadActionAlerts(): void {
+    this.actionAlertsLoading = true;
+    this.adminService.getFinanceAlerts(this.buildActionAlertFilters()).pipe(takeUntil(this.destroy$)).subscribe({
+      next: (alerts) => {
+        this.actionAlerts = alerts;
+        this.actionAlertsLoading = false;
+        this.actionAlertError = '';
+      },
+      error: (error) => {
+        console.error('Erreur chargement alertes de paiement:', error);
+        this.actionAlertError = 'Impossible de charger les alertes de paiement';
+        this.actionAlertsLoading = false;
+      }
+    });
+  }
+
+  refreshActionAlerts(): void {
+    this.loadActionAlerts();
+  }
+
+  setActionAlertSeverity(filter: 'ALL' | 'ALERTE' | 'CRITIQUE'): void {
+    this.actionAlertSeverity = filter;
+    this.loadActionAlerts();
+  }
+
+  toggleActionAlertStatus(status: string): void {
+    this.actionAlertStatuses[status] = !this.actionAlertStatuses[status];
+    this.loadActionAlerts();
+  }
+
+  applyActionAlertSearch(): void {
+    this.loadActionAlerts();
+  }
+
+  resetActionAlertFilters(): void {
+    this.actionAlertSeverity = 'ALL';
+    this.actionAlertSearch = '';
+    this.actionAlertStatuses = {
+      PENDING: true,
+      REQUIRES_ACTION: true,
+      FAILED: true,
+      EXPIRED: false
+    };
+    this.loadActionAlerts();
+  }
+
+  downloadActionAlertsCsv(): void {
+    this.adminService.exportFinanceCsv(this.alertExportRange, 'alerts', this.buildActionAlertFilters())
+      .subscribe(blob => {
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'anomalies-paiement.csv';
+        link.click();
+        window.URL.revokeObjectURL(url);
+      });
+  }
+
+  private buildActionAlertFilters(): FinanceAlertFilters {
+    const statuses = Object.keys(this.actionAlertStatuses).filter(status => this.actionAlertStatuses[status]);
+    const filters: FinanceAlertFilters = {
+      actionRequiredOnly: true,
+      statuses,
+      limit: 40
+    };
+    if (this.actionAlertSeverity !== 'ALL') {
+      filters.severity = this.actionAlertSeverity;
+    }
+    if (this.actionAlertSearch.trim()) {
+      filters.search = this.actionAlertSearch.trim();
+    }
+    return filters;
   }
 
   private confirmAdminAction(message: string): boolean {
@@ -906,7 +1161,8 @@ export class BookingManagement implements OnInit, OnDestroy {
   hasActiveFilters(): boolean {
     return this.activeUserFilter !== null || 
            this.statusFilter !== 'ALL' || 
-           this.dateFilter !== '';
+           this.dateFilter !== '' ||
+           this.showAnomaliesOnly;
   }
 
   getActiveUserFilter(): { id: number, name: string } | null {
@@ -918,7 +1174,69 @@ export class BookingManagement implements OnInit, OnDestroy {
     if (this.activeUserFilter) count++;
     if (this.statusFilter !== 'ALL') count++;
     if (this.dateFilter) count++;
+    if (this.showAnomaliesOnly) count++;
     return count > 1;
+  }
+
+  toggleAnomalyFilter(): void {
+    this.showAnomaliesOnly = !this.showAnomaliesOnly;
+    this.applyFilters();
+  }
+
+  clearAnomalyFilter(): void {
+    this.showAnomaliesOnly = false;
+    this.applyFilters();
+  }
+
+  downloadBookingsCsv(): void {
+    const filters = this.buildBookingExportFilters();
+    this.adminService.exportBookingsCsv(filters).subscribe({
+      next: (blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = 'reservations-export.csv';
+        anchor.click();
+        window.URL.revokeObjectURL(url);
+      },
+      error: (error) => {
+        console.error('Erreur export CSV réservations:', error);
+        this.notificationService.error('Export impossible. Réessayez plus tard.');
+      }
+    });
+  }
+
+  private buildBookingExportFilters(): BookingExportFilters {
+    const filters: BookingExportFilters = {};
+    if (this.searchQuery.trim()) {
+      filters.query = this.searchQuery.trim();
+    }
+    if (this.activeUserFilter) {
+      filters.userId = this.activeUserFilter.id;
+    }
+    if (this.statusFilter !== 'ALL') {
+      filters.status = this.statusFilter;
+    }
+    if (this.dateFilter) {
+      filters.startDate = this.dateFilter;
+      filters.endDate = this.dateFilter;
+    }
+    if (this.showAnomaliesOnly) {
+      filters.anomaliesOnly = true;
+    }
+    return filters;
+  }
+
+  get isDetailModalProcessing(): boolean {
+    return this.detailAuxLoading || this.paymentEventsLoading || this.adminActionsLoading;
+  }
+
+  private isBookingAnomaly(booking: AdminBooking): boolean {
+    const status = booking.paymentStatus?.toUpperCase();
+    if (!status) {
+      return false;
+    }
+    return status === 'PENDING' || status === 'REQUIRES_ACTION' || status === 'FAILED' || status === 'EXPIRED';
   }
 
   // Méthodes pour effacer les filtres
@@ -943,6 +1261,7 @@ export class BookingManagement implements OnInit, OnDestroy {
     this.statusFilter = 'ALL';
     this.dateFilter = '';
     this.searchQuery = '';
+    this.showAnomaliesOnly = false;
     this.router.navigate(['/admin/bookings']);
     this.applyFilters();
   }

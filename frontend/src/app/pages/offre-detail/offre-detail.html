@@ -1,125 +1,273 @@
-<div class="offer-details-container">
-  <div class="back-button">
-    <button class="btn btn-outline" type="button" (click)="goBack()">
+<div class="offre-detail-page">
+  <div class="page-nav">
+    <button class="ghost-btn" type="button" (click)="goBack()">
       ← Retour aux offres
     </button>
+    <span class="breadcrumb-hint">
+      Catalogue / Offre #{{ offer?.offerId || '...' }}
+    </span>
   </div>
 
-  <ng-container *ngIf="isLoading; else loadedState">
-    <div class="loading-state" role="status" aria-live="polite">
-      <div class="spinner"></div>
-      <p>Chargement des détails de l'offre...</p>
+  <ng-container *ngIf="isLoading; else detailContent">
+    <div class="card-surface loading-state hero-skeleton">
+      <div class="skeleton-line wide"></div>
+      <div class="skeleton-line"></div>
+      <div class="skeleton-line short"></div>
+    </div>
+    <div class="detail-grid">
+      <div class="card-surface loading-state" *ngFor="let _ of [1,2,3]">
+        <div class="skeleton-line wide"></div>
+        <div class="skeleton-line"></div>
+        <div class="skeleton-line short"></div>
+      </div>
     </div>
   </ng-container>
 
-  <ng-template #loadedState>
+  <ng-template #detailContent>
     <div *ngIf="errorMessage" class="alert alert-error" role="alert" aria-live="assertive">
       ❌ {{ errorMessage }}
     </div>
 
-    <ng-container *ngIf="!errorMessage">
-      <ng-container *ngIf="offer as currentOffer; else noOffer">
-        <article class="offer-details-card">
-          <header class="offer-header">
-            <div class="offer-title-section">
-              <h1>{{ currentOffer.description }}</h1>
-              <div class="offer-meta">
-                <span class="offer-id">Offre #{{ currentOffer.offerId }}</span>
-                <span class="availability-badge" [class.available]="isOfferAvailable()">
-                  {{ isOfferAvailable() ? '🟢 Disponible' : '🔴 Indisponible' }}
-                </span>
-              </div>
+    <ng-container *ngIf="offer as currentOffer; else noOffer">
+      <section class="detail-hero card-surface">
+        <div class="hero-heading">
+          <div class="title-stack">
+            <p class="offer-id">Offre #{{ currentOffer.offerId }}</p>
+            <h1>{{ currentOffer.description }}</h1>
+            <div class="meta-chips">
+              <span class="chip">
+                🚗 {{ getMobilityServiceLabel() }}
+              </span>
+              <span class="chip">
+                📍 {{ getPickupLabel() }}
+              </span>
+              <span class="chip" [class.accent-success]="isOfferAvailable()" [class.accent-danger]="!isOfferAvailable()">
+                {{ isOfferAvailable() ? 'Disponible' : 'Non disponible' }}
+              </span>
             </div>
-
-            <div class="offer-price">
-              <span class="price">{{ currentOffer.price | currency:'EUR' }}</span>
-              <small>prix total</small>
-            </div>
-          </header>
-
-          <section class="offer-content">
-            <div class="info-section">
-              <h3>📅 Disponibilité</h3>
-              <div class="info-grid">
-                <div class="info-item">
-                  <strong>Date de retrait :</strong>
-                  <span>{{ formatDate(currentOffer.pickupDatetime) }}</span>
-                </div>
-                <div class="info-item">
-                  <strong>Statut :</strong>
-                  <span [class]="isOfferAvailable() ? 'text-success' : 'text-danger'">
-                    {{ isOfferAvailable() ? 'Disponible à la réservation' : 'Non disponible' }}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <div class="info-section">
-              <h3>📍 Localisation</h3>
-              <div class="info-grid">
-                <div class="info-item">
-                  <strong>Point de retrait :</strong>
-                  <span>Location #{{ currentOffer.pickupLocationId }}</span>
-                </div>
-                <div class="info-item">
-                  <strong>Point de retour :</strong>
-                  <span>Location #{{ currentOffer.returnLocationId }}</span>
-                </div>
-              </div>
-            </div>
-
-            <div class="info-section">
-              <h3>🔧 Informations techniques</h3>
-              <div class="info-grid">
-                <div class="info-item">
-                  <strong>Service de mobilité :</strong>
-                  <span>Service #{{ currentOffer.mobilityServiceId }}</span>
-                </div>
-                <div class="info-item">
-                  <strong>Gérée par :</strong>
-                  <span>Admin #{{ currentOffer.adminId }}</span>
-                </div>
-                <div class="info-item">
-                  <strong>Créée le :</strong>
-                  <span>{{ formatDate(currentOffer.createdAt) }}</span>
-                </div>
-                <div class="info-item">
-                  <strong>Mise à jour :</strong>
-                  <span>{{ formatDate(currentOffer.updatedAt) }}</span>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <div class="offer-actions">
+          </div>
+          <div class="price-tile">
+            <span class="amount">{{ currentOffer.price | currency:'EUR' }}</span>
+            <span class="caption">prix total TTC</span>
             <button
-              class="btn btn-secondary"
-              type="button"
-              (click)="goBack()">
-              ← Retour aux offres
-            </button>
-
-            <button
-              class="btn btn-primary"
+              class="primary-btn"
               type="button"
               (click)="reserveOffer()"
               [disabled]="!isOfferAvailable()">
-              {{ isOfferAvailable() ? '✅ Réserver cette offre' : '❌ Indisponible' }}
+              {{ isOfferAvailable() ? 'Réserver maintenant' : 'Indisponible' }}
+            </button>
+            <button
+              class="ghost-btn favorite-toggle"
+              type="button"
+              (click)="toggleFavorite()"
+              [disabled]="favoriteLoading"
+              [attr.aria-pressed]="isFavorite">
+              {{ isFavorite ? '★ Dans mes favoris' : '☆ Ajouter aux favoris' }}
             </button>
           </div>
-
-          <div *ngIf="!isOfferAvailable()" class="unavailable-note">
-            <div class="warning-icon">⚠️</div>
-            <p>Cette offre n'est plus disponible à la réservation. La date de retrait est passée.</p>
+        </div>
+        <div class="hero-stats">
+          <div class="hero-stat">
+            <small>Date de retrait</small>
+            <strong>{{ formatDate(currentOffer.pickupDatetime) }}</strong>
           </div>
-        </article>
-      </ng-container>
-    </ng-container>
-  </ng-template>
+          <div class="hero-stat">
+            <small>Créée le</small>
+            <strong>{{ formatDate(currentOffer.createdAt) }}</strong>
+          </div>
+          <div class="hero-stat">
+            <small>Dernière mise à jour</small>
+            <strong>{{ formatDate(currentOffer.updatedAt) }}</strong>
+          </div>
+        </div>
+      </section>
 
-  <ng-template #noOffer>
-    <div class="alert alert-error" role="alert">
-      ❌ Aucun détail d'offre à afficher pour le moment.
-    </div>
+      <div class="detail-grid">
+        <section class="gallery card-surface" aria-label="Galerie photos">
+          <div
+            class="gallery-main"
+            (touchstart)="onGalleryTouchStart($event)"
+            (touchmove)="onGalleryTouchMove($event)"
+            (touchend)="onGalleryTouchEnd()">
+            <img [src]="selectedImage || galleryImages[0]" [alt]="currentOffer.description">
+            <div class="gallery-controls" *ngIf="galleryImages.length > 1">
+              <button type="button" class="control prev" (click)="goToPreviousImage()" aria-label="Image précédente">‹</button>
+              <button type="button" class="control next" (click)="goToNextImage()" aria-label="Image suivante">›</button>
+            </div>
+          </div>
+          <div class="gallery-thumbs" *ngIf="galleryImages.length > 1">
+            <button
+              type="button"
+              class="thumb"
+              *ngFor="let image of galleryImages"
+              [class.active]="image === selectedImage"
+              (click)="selectImage(image)">
+              <img [src]="image" alt="vignette de l'offre">
+            </button>
+          </div>
+        </section>
+
+        <section class="card-surface info-column">
+          <h2>Informations clés</h2>
+          <div class="info-grid">
+            <div class="info-block">
+              <span class="label">Point de retrait</span>
+              <span class="value">{{ getPickupLabel() }}</span>
+            </div>
+            <div class="info-block">
+              <span class="label">Point de retour</span>
+              <span class="value">{{ getReturnLabel() }}</span>
+            </div>
+            <div class="info-block">
+              <span class="label">Service</span>
+              <span class="value">{{ getMobilityServiceLabel() }}</span>
+            </div>
+            <div class="info-block">
+              <span class="label">Administrateur</span>
+              <span class="value">{{ currentOffer.adminName || ('Admin #' + (currentOffer.adminId ?? 'N/A')) }}</span>
+            </div>
+          </div>
+
+          <div class="equipment-section" *ngIf="equipmentList.length">
+            <h3>Équipements & services inclus</h3>
+            <div class="equipment-tags">
+              <span *ngFor="let item of equipmentList">{{ item }}</span>
+            </div>
+          </div>
+
+          <div class="assurance-section" *ngIf="assuranceConditions.length">
+            <h3>Assurance & conditions</h3>
+            <ul>
+              <li *ngFor="let condition of assuranceConditions">{{ condition }}</li>
+            </ul>
+          </div>
+
+          <div class="addons-section" *ngIf="addonsList.length">
+            <h3>Options & suppléments</h3>
+            <ul>
+              <li *ngFor="let addon of addonsList">{{ addon }}</li>
+            </ul>
+          </div>
+        </section>
+
+        <section class="card-surface why-panel" *ngIf="highlightBadges.length">
+          <h2>Pourquoi c'est pour vous</h2>
+          <p class="muted">Synthèse des points forts calculés automatiquement.</p>
+          <div class="highlight-badges">
+            <span *ngFor="let badge of highlightBadges">
+              {{ badge.icon }} {{ badge.label }}
+            </span>
+          </div>
+        </section>
+
+        <section class="card-surface support-callout">
+          <div>
+            <h3>Support & Assistance</h3>
+            <p>Un conseiller peut vous aider à finaliser la réservation ou gérer un paiement en attente.</p>
+            <ul>
+              <li>Assistance prioritaire par mail/SMS</li>
+              <li>Suivi personnalisé des paiements</li>
+              <li>Conseils sur les assurances et options</li>
+            </ul>
+          </div>
+          <button class="ghost-btn accent" type="button" (click)="contactSupport()">
+            📞 Contacter le support
+          </button>
+        </section>
+
+        <section class="card-surface booking-context" *ngIf="isAuthenticated; else bookingAuthFallback">
+          <header>
+            <div>
+              <h3>Vos réservations associées</h3>
+              <p>Choisissez celle à relancer si le paiement est en attente.</p>
+            </div>
+            <span class="status-pill" [class.accent-success]="userBookingsForOffer.length>0">
+              {{ userBookingsForOffer.length }} réservation(s)
+            </span>
+          </header>
+
+          <ng-container *ngIf="bookingsLoading; else bookingsList">
+            <div class="booking-skeleton" *ngFor="let _ of [1,2]">
+              <div class="skeleton-line wide"></div>
+              <div class="skeleton-line"></div>
+            </div>
+          </ng-container>
+
+          <ng-template #bookingsList>
+            <div *ngIf="userBookingsForOffer.length; else noEligible">
+              <label class="booking-option" *ngFor="let booking of userBookingsForOffer">
+                <input
+                  type="radio"
+                  name="retryBooking"
+                  [value]="booking.reservationId"
+                  [checked]="booking === selectedBookingForRetry"
+                  (change)="selectRetryBooking(booking)">
+            <div class="booking-details">
+              <div class="booking-main">
+                <strong>Réservation #{{ booking.reservationId }}</strong>
+                <span>{{ formatDate((booking.reservationDate || booking.createdAt || '')) }}</span>
+              </div>
+              <div class="booking-meta">
+                <span class="status-pill" [ngClass]="(booking.paymentStatus || booking.status || 'pending').toLowerCase()">
+                  {{ getRetryStatusLabel(booking) }}
+                </span>
+                <span class="amount" *ngIf="booking.paymentReference">
+                  Ref: {{ booking.paymentReference }}
+                </span>
+              </div>
+            </div>
+          </label>
+            </div>
+            <ng-template #noEligible>
+              <p class="muted">Aucune réservation nécessitant une relance n’a été détectée pour cette offre.</p>
+            </ng-template>
+          </ng-template>
+
+          <div class="retry-actions" *ngIf="shouldShowRetryPayment()">
+            <button class="primary-btn" type="button" (click)="retryPayment()" [disabled]="!selectedBookingForRetry">
+              🔁 Relancer le paiement
+            </button>
+          </div>
+        </section>
+
+        <ng-template #bookingAuthFallback>
+          <section class="card-surface booking-context auth-fallback">
+            <h3>Connectez-vous pour gérer vos paiements</h3>
+            <p>Identifiez-vous pour retrouver vos réservations et relancer un paiement en attente.</p>
+            <button class="primary-btn" type="button" (click)="redirectToLogin()">
+              Se connecter
+            </button>
+          </section>
+        </ng-template>
+
+        <section class="card-surface action-panel">
+          <h3>Actions rapides</h3>
+          <div class="action-grid">
+            <button type="button" class="secondary-btn" (click)="goBack()">
+              ← Retour au catalogue
+            </button>
+            <button type="button" class="primary-btn" (click)="reserveOffer()" [disabled]="!isOfferAvailable()">
+              Réserver cette offre
+            </button>
+            <button
+              type="button"
+              class="primary-btn accent"
+              *ngIf="shouldShowRetryPayment()"
+              (click)="retryPayment()">
+              🔁 Relancer le paiement
+            </button>
+          </div>
+          <div *ngIf="!isOfferAvailable()" class="alert alert-warning">
+            ⚠️ Cette offre n’est plus disponible à la réservation (date dépassée).
+          </div>
+        </section>
+      </div>
+    </ng-container>
+
+    <ng-template #noOffer>
+      <div class="alert alert-error" role="alert">
+        ❌ Aucun détail d'offre à afficher pour le moment.
+      </div>
+    </ng-template>
   </ng-template>
 </div>

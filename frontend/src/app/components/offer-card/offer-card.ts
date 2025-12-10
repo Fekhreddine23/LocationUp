@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router'; // ← Ajouter Router
 import { OffersService, } from '../../core/services/offers.service';
@@ -14,6 +14,10 @@ import { Offer, OfferStatus } from '../../core/models/offer.model';
 export class OfferCardComponent {
 
   @Input() offer!: Offer;
+  @Input() isFavorite = false;
+  @Input() quickViewActive = false;
+  @Output() favoriteToggled = new EventEmitter<Offer>();
+  @Output() detailsRequested = new EventEmitter<Offer>();
   private readonly defaultImage = 'https://images.unsplash.com/photo-1477847616630-cf9cf8815fda?auto=format&fit=crop&w=900&q=80';
 
   constructor(
@@ -38,6 +42,7 @@ export class OfferCardComponent {
 
   
   viewOfferDetails(offerId: number): void {
+    this.detailsRequested.emit(this.offer);
     this.router.navigate(['/offers', offerId]);
   }
 
@@ -65,6 +70,24 @@ export class OfferCardComponent {
 
   getOfferImage(offer: Offer): string {
     return offer.imageUrl || this.defaultImage;
+  }
+
+  getPickupLabel(offer: Offer): string {
+    return (
+      offer.pickupLocationName ||
+      offer.pickupLocation ||
+      offer.pickupLocationCity ||
+      `Lieu #${offer.pickupLocationId ?? offer.offerId}`
+    );
+  }
+
+  getReturnLabel(offer: Offer): string {
+    return (
+      offer.returnLocationName ||
+      offer.returnLocation ||
+      offer.returnLocationCity ||
+      `Lieu #${offer.returnLocationId ?? offer.offerId}`
+    );
   }
 
   getOfferCategoryLabel(offer: Offer): string {
@@ -113,10 +136,13 @@ export class OfferCardComponent {
       : 'PENDING';
   }
 
- 
- 
- 
+  onToggleFavorite(event: MouseEvent): void {
+    event.stopPropagation();
+    this.favoriteToggled.emit(this.offer);
+  }
 
- 
-
+  onQuickDetails(event: MouseEvent): void {
+    event.stopPropagation();
+    this.detailsRequested.emit(this.offer);
+  }
 }

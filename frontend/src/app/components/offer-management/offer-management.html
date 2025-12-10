@@ -1,189 +1,209 @@
 <!-- offer-management.html -->
-<div class="offer-management-container">
+<div class="offer-management-shell">
   <app-breadcrumbs [items]="breadcrumbItems"></app-breadcrumbs>
 
-  <div class="page-header">
-    <div class="header-content">
-      <h1>Gestion des Offres</h1>
-      <p>Créez et gérez les offres de mobilité disponibles</p>
-    </div>
-    <button (click)="goBackToDashboard()" class="back-btn">
-      ← Retour au Dashboard
-    </button>
-  </div>
-
-  <!-- Messages -->
-  <div *ngIf="successMessage" class="alert alert-success">
-    ✅ {{ successMessage }}
-  </div>
-  <div *ngIf="errorMessage" class="alert alert-error">
-    ❌ {{ errorMessage }}
-  </div>
-
-  <!-- Barre d'actions -->
-  <div class="actions-section">
-    <button (click)="createOffer()" class="btn-primary">
-      ➕ Nouvelle Offre
-    </button>
-  </div>
-
-  <!-- Statistiques des offres -->
-  <div *ngIf="stats" class="stats-section">
-    <div class="stat-card">
-      <span class="stat-label">Offres totales</span>
-      <span class="stat-value">{{ stats.total || 0 }}</span>
-    </div>
-    <div class="stat-card">
-      <span class="stat-label">En attente</span>
-      <span class="stat-value">{{ stats.pending || 0 }}</span>
-    </div>
-    <div class="stat-card">
-      <span class="stat-label">Confirmées</span>
-      <span class="stat-value">{{ stats.confirmed || 0 }}</span>
-    </div>
-    <div class="stat-card">
-      <span class="stat-label">Annulées</span>
-      <span class="stat-value">{{ stats.cancelled || 0 }}</span>
-    </div>
-    <div class="stat-card">
-      <span class="stat-label">Terminées</span>
-      <span class="stat-value">{{ stats.completed || 0 }}</span>
-    </div>
-    <div class="stat-card">
-      <span class="stat-label">Taux de confirmation</span>
-      <span class="stat-value">{{ (stats.confirmationRate || 0) | number:'1.0-2' }}%</span>
-    </div>
-  </div>
-
-  <!-- Barre de recherche et filtres -->
-  <div class="filters-section">
-    <div class="search-bar">
-      <input 
-        type="text" 
-        [(ngModel)]="searchQuery" 
-        (input)="searchOffers()"
-        placeholder="Rechercher une offre..."
-        class="search-input">
-      <button (click)="searchOffers()" class="search-btn">
-        🔍 Rechercher
-      </button>
-    </div>
-
-    <div class="filter-controls">
-      <select [(ngModel)]="statusFilter" (change)="applyFilters()" class="filter-select">
-        <option value="ALL">Tous les statuts</option>
-        <option value="PENDING">En attente</option>
-        <option value="CONFIRMED">Confirmées</option>
-        <option value="CANCELLED">Annulées</option>
-        <option value="COMPLETED">Terminées</option>
-      </select>
-
-      <input 
-        type="text" 
-        [(ngModel)]="locationFilter" 
-        (input)="applyFilters()"
-        placeholder="Lieu..."
-        class="filter-input">
-
-      <button (click)="loadOffers()" class="refresh-btn">
-        🔄 Actualiser
-      </button>
-    </div>
-  </div>
-
-  <!-- Tableau des offres -->
-  <div class="offers-table-container">
-    <div class="table-header">
-      <div class="table-stats">
-        {{ totalElements }} offre(s) trouvée(s)
+  <ng-container *ngIf="hasLoadedInitialData; else offerManagementSkeleton">
+    <div class="offer-management-container">
+      <div class="page-header card-surface">
+        <div class="header-content">
+          <h1>Gestion des Offres</h1>
+          <p>Créez et gérez les offres de mobilité disponibles</p>
+        </div>
+        <button (click)="goBackToDashboard()" class="back-btn">
+          ← Retour au Dashboard
+        </button>
       </div>
-    </div>
 
-    <div *ngIf="isLoading" class="loading-state">
-      Chargement des offres...
-    </div>
+      <!-- Messages -->
+      <div *ngIf="successMessage" class="alert alert-success">
+        ✅ {{ successMessage }}
+      </div>
+      <div *ngIf="errorMessage" class="alert alert-error">
+        ❌ {{ errorMessage }}
+      </div>
 
-    <div *ngIf="!isLoading && filteredOffers.length === 0" class="empty-state">
-      Aucune offre trouvée
-    </div>
+      <!-- Barre d'actions -->
+      <div class="actions-section card-surface">
+        <button (click)="createOffer()" class="btn-primary">
+          ➕ Nouvelle Offre
+        </button>
+      </div>
 
-    <div *ngIf="!isLoading && filteredOffers.length > 0" class="offers-grid">
-      <div *ngFor="let offer of filteredOffers" class="offer-card">
-        <div class="offer-header">
-           {{ offer.mobilityService || offer.mobilityService || 'Service non précisé' }}
-          <span [class]="'status-badge ' + getStatusClass(offer.status)">
-            {{ getStatusText(offer.status) }}
-          </span>
-        </div>
-        
-        <div class="offer-content">
-          <div class="offer-info">
-            <div class="info-item">
-              <span class="info-label">📍 Départ:</span>
-              <span class="info-value"> {{ offer.pickupLocationName || offer.pickupLocation || 'Lieu non précisé' }}</span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">🎯 Retour:</span>
-              <span class="info-value">{{ offer.returnLocationName || offer.returnLocation || 'Lieu non précisé' }}</span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">📅 Date:</span>
-              <span class="info-value">{{ formatDate(offer.pickupDatetime) }}</span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">💰 Prix:</span>
-              <span class="info-value price">{{ formatCurrency(offer.price) }}</span>
-            </div>
-            <div class="info-item" *ngIf="offer.adminName">
-              <span class="info-label">👤 Admin:</span>
-              <span class="info-value">{{ offer.adminName }}</span>
-            </div>
-          </div>
-          
-          <div *ngIf="offer.description" class="offer-description">
-            {{ offer.description }}
-          </div>
-        </div>
-
-        <div class="offer-actions">
-          <button (click)="editOffer(offer)" class="btn-edit" title="Modifier">
-            ✏️ Modifier
+      <!-- Barre de recherche et filtres -->
+      <div class="filters-section card-surface" [class.is-loading]="isLoading">
+        <div class="search-bar">
+          <input 
+            type="text" 
+            [(ngModel)]="searchQuery" 
+            (input)="searchOffers()"
+            placeholder="Rechercher une offre..."
+            class="search-input">
+          <button (click)="searchOffers()" class="search-btn">
+            🔍 Rechercher
           </button>
+        </div>
+
+        <div class="filter-controls">
+          <select [(ngModel)]="statusFilter" (change)="applyFilters()" class="filter-select">
+            <option value="ALL">Tous les statuts</option>
+            <option value="PENDING">En attente</option>
+            <option value="CONFIRMED">Confirmées</option>
+            <option value="CANCELLED">Annulées</option>
+            <option value="COMPLETED">Terminées</option>
+          </select>
+
+          <input 
+            type="text" 
+            [(ngModel)]="locationFilter" 
+            (input)="applyFilters()"
+            placeholder="Lieu..."
+            class="filter-input">
+
+          <button (click)="loadOffers()" class="refresh-btn">
+            🔄 Actualiser
+          </button>
+        </div>
+      </div>
+
+      <!-- Tableau des offres -->
+      <div class="offers-table-container card-surface" [class.is-loading]="isLoading">
+        <div class="table-header">
+          <div class="table-stats">
+            {{ totalElements }} offre(s) trouvée(s)
+          </div>
+        </div>
+
+        <div 
+          *ngIf="isLoading" 
+          class="table-loading-skeleton loading-state" 
+          aria-live="polite" 
+          aria-label="Chargement des offres">
+          <div class="skeleton-card" *ngFor="let _ of skeletonCards">
+            <div class="app-skeleton-line" *ngFor="let __ of skeletonCardLines"></div>
+            <div class="skeleton-actions">
+              <span class="app-skeleton-pill" *ngFor="let __ of skeletonActionButtons"></span>
+            </div>
+          </div>
+        </div>
+
+        <div *ngIf="!isLoading && filteredOffers.length === 0" class="empty-state">
+          Aucune offre trouvée
+        </div>
+
+        <div *ngIf="!isLoading && filteredOffers.length > 0" class="offers-grid">
+          <div *ngFor="let offer of filteredOffers" class="offer-card">
+            <div class="offer-header">
+              {{ offer.mobilityService || offer.mobilityService || 'Service non précisé' }}
+              <span [class]="'status-badge ' + getStatusClass(offer.status)">
+                {{ getStatusText(offer.status) }}
+              </span>
+            </div>
+            
+            <div class="offer-content">
+              <div class="offer-info">
+                <div class="info-item">
+                  <span class="info-label">📍 Départ:</span>
+                  <span class="info-value">
+                    {{ offer.pickupLocationName || offer.pickupLocation || 'Lieu non précisé' }}
+                  </span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">🎯 Retour:</span>
+                  <span class="info-value">
+                    {{ offer.returnLocationName || offer.returnLocation || 'Lieu non précisé' }}
+                  </span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">📅 Date:</span>
+                  <span class="info-value">{{ formatDate(offer.pickupDatetime) }}</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">💰 Prix:</span>
+                  <span class="info-value price">{{ formatCurrency(offer.price) }}</span>
+                </div>
+                <div class="info-item" *ngIf="offer.adminName">
+                  <span class="info-label">👤 Admin:</span>
+                  <span class="info-value">{{ offer.adminName }}</span>
+                </div>
+              </div>
+              
+              <div *ngIf="offer.description" class="offer-description">
+                {{ offer.description }}
+              </div>
+            </div>
+
+            <div class="offer-actions">
+              <button (click)="editOffer(offer)" class="btn-edit" title="Modifier">
+                ✏️ Modifier
+              </button>
+              <button 
+                (click)="toggleOfferStatus(offer)" 
+                [class]="isOfferConfirmed(offer) ? 'btn-deactivate' : 'btn-activate'"
+                [title]="isOfferConfirmed(offer) ? 'Annuler l\'offre' : 'Confirmer l\'offre'"
+                [disabled]="!canToggleStatus(offer)">
+                {{ isOfferConfirmed(offer) ? '⏹️ Annuler' : '✅ Confirmer' }}
+              </button>
+              <button (click)="confirmDelete(offer)" class="btn-delete" title="Supprimer">
+                🗑️ Supprimer
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pagination -->
+        <div *ngIf="totalPages > 1" class="pagination">
           <button 
-            (click)="toggleOfferStatus(offer)" 
-            [class]="isOfferConfirmed(offer) ? 'btn-deactivate' : 'btn-activate'"
-            [title]="isOfferConfirmed(offer) ? 'Annuler l\'offre' : 'Confirmer l\'offre'"
-            [disabled]="!canToggleStatus(offer)">
-            {{ isOfferConfirmed(offer) ? '⏹️ Annuler' : '✅ Confirmer' }}
+            (click)="goToPage(currentPage - 1)" 
+            [disabled]="currentPage === 0"
+            class="pagination-btn">
+            ← Précédent
           </button>
-          <button (click)="confirmDelete(offer)" class="btn-delete" title="Supprimer">
-            🗑️ Supprimer
+          
+          <span class="pagination-info">
+            Page {{ currentPage + 1 }} sur {{ totalPages }}
+          </span>
+          
+          <button 
+            (click)="goToPage(currentPage + 1)" 
+            [disabled]="currentPage >= totalPages - 1"
+            class="pagination-btn">
+            Suivant →
           </button>
         </div>
       </div>
     </div>
+  </ng-container>
 
-    <!-- Pagination -->
-    <div *ngIf="totalPages > 1" class="pagination">
-      <button 
-        (click)="goToPage(currentPage - 1)" 
-        [disabled]="currentPage === 0"
-        class="pagination-btn">
-        ← Précédent
-      </button>
-      
-      <span class="pagination-info">
-        Page {{ currentPage + 1 }} sur {{ totalPages }}
-      </span>
-      
-      <button 
-        (click)="goToPage(currentPage + 1)" 
-        [disabled]="currentPage >= totalPages - 1"
-        class="pagination-btn">
-        Suivant →
-      </button>
+  <ng-template #offerManagementSkeleton>
+    <div class="offer-management-container skeleton-container" aria-label="Chargement des offres">
+      <div class="page-header card-surface">
+        <div class="header-content">
+          <div class="app-skeleton-line" style="width: 60%;"></div>
+          <div class="app-skeleton-line" style="width: 40%;"></div>
+        </div>
+        <div class="skeleton-button app-skeleton-pill"></div>
+      </div>
+
+      <div class="actions-section card-surface">
+        <div class="app-skeleton-pill" style="width: 220px;"></div>
+      </div>
+
+      <div class="filters-section card-surface">
+        <div class="skeleton-filter-grid">
+          <div class="app-skeleton-line" *ngFor="let _ of skeletonFilters"></div>
+        </div>
+      </div>
+
+      <div class="offers-grid">
+        <div class="offer-card skeleton-card" *ngFor="let _ of skeletonCards">
+          <div class="app-skeleton-line" *ngFor="let __ of skeletonCardLines"></div>
+          <div class="skeleton-actions">
+            <span class="app-skeleton-pill" *ngFor="let __ of skeletonActionButtons"></span>
+          </div>
+        </div>
+      </div>
     </div>
-  </div>
+  </ng-template>
 
   <!-- Modal de création -->
   <div *ngIf="isCreateModalOpen" class="modal-overlay">
@@ -193,6 +213,7 @@
         <button (click)="isCreateModalOpen = false" class="close-btn">×</button>
       </div>
       <div class="modal-content">
+        <ng-container *ngIf="!isLoadingServices; else serviceSkeleton">
         <div class="form-grid">
           <div class="form-row">
             <div class="form-group half">
@@ -303,6 +324,7 @@
               rows="3"></textarea>
           </div>
         </div>
+        </ng-container>
       </div>
       <div class="modal-actions">
         <button (click)="isCreateModalOpen = false" class="btn-cancel">
@@ -326,6 +348,7 @@
         <button (click)="isEditModalOpen = false" class="close-btn">×</button>
       </div>
       <div class="modal-content" *ngIf="selectedOffer">
+        <ng-container *ngIf="!isLoadingServices; else serviceSkeleton">
         <div class="form-grid">
           <div class="form-row">
             <div class="form-group half">
@@ -426,6 +449,7 @@
               rows="3"></textarea>
           </div>
         </div>
+        </ng-container>
       </div>
       <div class="modal-actions">
         <button (click)="isEditModalOpen = false" class="btn-cancel">
@@ -459,4 +483,10 @@
       </div>
     </div>
   </div>
+
+  <ng-template #serviceSkeleton>
+    <div class="modal-loading loading-state" aria-live="polite">
+      <div class="app-skeleton-line" *ngFor="let _ of skeletonCardLines"></div>
+    </div>
+  </ng-template>
 </div>

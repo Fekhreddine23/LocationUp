@@ -9,11 +9,12 @@ import { Offer } from './core/models/offer.model';
 import { ToastContainer } from './components/toast-container/toast-container';
 import { BreadcrumbService } from './core/services/breadcrumb';
 import { BreadcrumbItem } from './core/models/BreadcrumbItem.model';
+import { HasRoleDirective } from './core/directives/has-role.directive';
 
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, RouterLink, CommonModule, HeaderComponent, ToastContainer],
+  imports: [RouterOutlet, RouterLink, CommonModule, HeaderComponent, ToastContainer, HasRoleDirective],
   templateUrl: './app.html',
   styleUrl: './app.scss'
 })

@@ -1,7 +1,4 @@
 /* You can add global styles to this file, and also import other style files */
-/* Import de Polices Google */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-
 /* Reset et styles globaux */
 * {
   margin: 0;
@@ -234,6 +231,47 @@ body {
   
   &:active {
     transform: translateY(0);
+  }
+}
+
+/* Utilitaires globaux */
+.responsive-table {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.muted {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.app-skeleton-line,
+.app-skeleton-pill,
+.app-skeleton-block {
+  border-radius: 999px;
+  background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 37%, #f3f4f6 63%);
+  background-size: 400% 100%;
+  animation: app-shimmer 1.4s ease infinite;
+  display: inline-block;
+}
+
+.app-skeleton-line {
+  height: 16px;
+  width: 100%;
+}
+
+.app-skeleton-pill,
+.app-skeleton-block {
+  height: 36px;
+  width: 100%;
+}
+
+@keyframes app-shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
   }
 }
 

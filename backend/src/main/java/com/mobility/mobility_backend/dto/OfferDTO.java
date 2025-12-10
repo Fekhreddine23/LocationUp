@@ -30,6 +30,7 @@ public class OfferDTO {
 	private Double pickupLongitude;
 	private Double returnLatitude;
 	private Double returnLongitude;
+	private boolean favorite;
 
 	// Constructeurs (tu peux en ajouter selon besoin)
 	public OfferDTO() {
@@ -206,6 +207,14 @@ public class OfferDTO {
 
 	public void setReturnLongitude(Double returnLongitude) {
 		this.returnLongitude = returnLongitude;
+	}
+
+	public boolean isFavorite() {
+		return favorite;
+	}
+
+	public void setFavorite(boolean favorite) {
+		this.favorite = favorite;
 	}
 
 }

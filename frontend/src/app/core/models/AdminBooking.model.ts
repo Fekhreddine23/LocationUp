@@ -31,3 +31,12 @@ export interface BookingResponse {
   size: number;
   number: number;
 }
+
+export interface BookingExportFilters {
+  query?: string;
+  status?: string;
+  startDate?: string;
+  endDate?: string;
+  anomaliesOnly?: boolean;
+  userId?: number;
+}

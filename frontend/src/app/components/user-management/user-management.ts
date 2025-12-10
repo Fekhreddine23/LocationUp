@@ -39,8 +39,14 @@ export class UserManagement implements OnInit {
   
   // États
   isLoading = false;
+  hasLoadedInitialData = false;
   isEditModalOpen = false;
   isDeleteModalOpen = false;
+  isModalProcessing = false;
+  readonly skeletonRows = Array.from({ length: 6 });
+  readonly skeletonColumns = Array.from({ length: 6 });
+  readonly filterSkeletons = Array.from({ length: 3 });
+  readonly modalSkeletonLines = Array.from({ length: 5 });
   
   // Messages
   successMessage = '';
@@ -68,11 +74,13 @@ export class UserManagement implements OnInit {
         this.updateFilteredUsers([...this.users]);
         this.totalElements = this.resolveTotalElements(response.totalElements, this.users.length);
         this.totalPages = response.totalPages ?? Math.max(1, Math.ceil(this.totalElements / this.pageSize));
+        this.hasLoadedInitialData = true;
         this.isLoading = false;
       },
       error: (error) => {
         console.error('Erreur chargement users:', error);
         this.errorMessage = 'Erreur lors du chargement des utilisateurs';
+        this.hasLoadedInitialData = true;
         this.isLoading = false;
       }
     });
@@ -87,11 +95,13 @@ export class UserManagement implements OnInit {
           this.updateFilteredUsers(results);
           this.totalElements = this.resolveTotalElements(response.totalElements, results.length);
           this.totalPages = response.totalPages ?? Math.max(1, Math.ceil(this.totalElements / this.pageSize));
+          this.hasLoadedInitialData = true;
           this.isLoading = false;
         },
         error: (error) => {
           console.error('Erreur recherche:', error);
           this.errorMessage = 'Erreur lors de la recherche';
+          this.hasLoadedInitialData = true;
           this.isLoading = false;
         }
       });
@@ -122,6 +132,7 @@ export class UserManagement implements OnInit {
   // Actions sur les utilisateurs
   editUser(user: AdminUser): void {
     this.selectedUser = { ...user };
+    this.isModalProcessing = false;
     this.isEditModalOpen = true;
   }
 
@@ -130,6 +141,7 @@ export class UserManagement implements OnInit {
 
     const payload = this.buildUserUpdatePayload(this.selectedUser);
 
+    this.isModalProcessing = true;
     this.adminService.updateUser(this.selectedUser.id, payload).subscribe({
       next: (updatedUser) => {
         const index = this.users.findIndex(u => u.id === updatedUser.id);
@@ -140,11 +152,13 @@ export class UserManagement implements OnInit {
         this.successMessage = 'Utilisateur mis à jour avec succès';
         this.isEditModalOpen = false;
         this.selectedUser = null;
+        this.isModalProcessing = false;
         this.clearMessagesAfterDelay();
       },
       error: (error) => {
         console.error('Erreur mise à jour:', error);
         this.errorMessage = 'Erreur lors de la mise à jour';
+        this.isModalProcessing = false;
         this.clearMessagesAfterDelay();
       }
     });
@@ -152,12 +166,14 @@ export class UserManagement implements OnInit {
 
   confirmDelete(user: AdminUser): void {
     this.selectedUser = user;
+    this.isModalProcessing = false;
     this.isDeleteModalOpen = true;
   }
 
   deleteUser(): void {
     if (!this.selectedUser) return;
 
+    this.isModalProcessing = true;
     this.adminService.deleteUser(this.selectedUser.id).subscribe({
       next: () => {
         this.users = this.users.filter(u => u.id !== this.selectedUser!.id);
@@ -165,10 +181,12 @@ export class UserManagement implements OnInit {
         this.successMessage = 'Utilisateur supprimé avec succès';
         this.isDeleteModalOpen = false;
         this.clearMessagesAfterDelay();
+        this.isModalProcessing = false;
       },
       error: (error) => {
         console.error('Erreur suppression:', error);
         this.errorMessage = 'Erreur lors de la suppression';
+        this.isModalProcessing = false;
         this.clearMessagesAfterDelay();
       }
     });

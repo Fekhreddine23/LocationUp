@@ -18,6 +18,7 @@ export interface Offer {
   returnLocationCity?: string;
   status?: OfferStatus;
   mobilityService?: string;
+  mobilityServiceName?: string;
   pickupLocation?: string;
   returnLocation?: string;
   adminName?: string;
@@ -26,6 +27,7 @@ export interface Offer {
   pickupLongitude?: number;
   returnLatitude?: number;
   returnLongitude?: number;
+  favorite?: boolean;
 }
 
 export interface CreateOfferRequest {

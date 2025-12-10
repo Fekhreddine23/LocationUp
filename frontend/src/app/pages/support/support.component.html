@@ -1,0 +1,93 @@
+<app-breadcrumbs [items]="breadcrumbItems"></app-breadcrumbs>
+
+<section class="support-page">
+  <header class="page-header surface-panel">
+    <div>
+      <p class="eyebrow">Aide & assistance</p>
+      <h1>Contacter le support LocationUp</h1>
+      <p class="subtitle">Expliquez votre besoin et nous reviendrons vers vous rapidement.</p>
+    </div>
+  </header>
+
+  <div class="surface-panel">
+    <form [formGroup]="supportForm" (ngSubmit)="submit()" novalidate class="support-form">
+      <div class="form-grid">
+        <label [class.invalid]="supportForm.get('subject')?.touched && supportForm.get('subject')?.invalid">
+          <span>Sujet</span>
+          <input type="text" formControlName="subject" placeholder="Ex: Problème de paiement" />
+          <small class="field-error"
+                 *ngIf="supportForm.get('subject')?.touched && supportForm.get('subject')?.invalid">
+            Le sujet doit contenir au moins 5 caractères.
+          </small>
+        </label>
+
+        <label>
+          <span>Catégorie</span>
+          <select formControlName="category">
+            <option value="GENERAL">Question générale</option>
+            <option value="OFFER">Offre / disponibilité</option>
+            <option value="BOOKING">Réservation</option>
+            <option value="PAYMENT">Paiement / remboursement</option>
+            <option value="TECH">Support technique</option>
+          </select>
+        </label>
+
+        <label>
+          <span>Référence (offre ou réservation)</span>
+          <input type="text" formControlName="relatedId" placeholder="Ex: Offre #42" />
+        </label>
+
+        <label>
+          <span>Niveau d'urgence</span>
+          <select formControlName="urgency">
+            <option value="normal">Normal</option>
+            <option value="urgent">Urgent</option>
+          </select>
+        </label>
+
+        <label [class.invalid]="supportForm.get('contactEmail')?.touched && supportForm.get('contactEmail')?.invalid">
+          <span>Email de contact (optionnel)</span>
+          <input type="email" formControlName="contactEmail" placeholder="vous@email.com" />
+          <small class="field-error"
+                 *ngIf="supportForm.get('contactEmail')?.touched && supportForm.get('contactEmail')?.invalid">
+            Merci de renseigner un email valide.
+          </small>
+        </label>
+      </div>
+
+      <label class="message-field"
+             [class.invalid]="supportForm.get('message')?.touched && supportForm.get('message')?.invalid">
+        <span>Détaillez votre demande</span>
+        <textarea rows="6" formControlName="message" placeholder="Expliquez votre besoin..."></textarea>
+        <small class="field-error"
+               *ngIf="supportForm.get('message')?.touched && supportForm.get('message')?.invalid">
+          Votre message doit décrire le problème (minimum 20 caractères).
+        </small>
+      </label>
+
+      <div class="form-actions">
+        <button class="btn btn-primary" type="submit" [disabled]="isSubmitting || supportForm.invalid">
+          {{ isSubmitting ? 'Envoi en cours...' : 'Envoyer la demande' }}
+        </button>
+        <p class="muted">Un ticket interne sera créé pour notre équipe support.</p>
+      </div>
+    </form>
+
+    <div *ngIf="submitSuccess" class="alert alert-success" role="status">
+      ✅ Votre demande a bien été transmise. Nous reviendrons vers vous rapidement.
+    </div>
+
+    <div *ngIf="submitError" class="alert alert-error" role="alert">
+      {{ submitError }}
+    </div>
+  </div>
+
+  <aside class="surface-panel faq-panel">
+    <h2>FAQ rapide</h2>
+    <ul>
+      <li>🔁 Relancer un paiement : via le bouton dédié sur votre réservation.</li>
+      <li>💳 Remboursement : comptez 3 à 5 jours ouvrés via Stripe.</li>
+      <li>📅 Modifier une sortie : contactez-nous en précisant le numéro de réservation.</li>
+    </ul>
+  </aside>
+</section>

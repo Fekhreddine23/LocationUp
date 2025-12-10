@@ -61,8 +61,8 @@ public class SecurityConfig {
 						.requestMatchers("/api/reservations/test-simple").permitAll().requestMatchers("/api/test/**")
 						.permitAll().requestMatchers("/api/debug/**").permitAll()
 
-						// ✅ AJOUTEZ CETTE LIGNE - OFFRES ACCESSIBLES SANS AUTH
-						.requestMatchers("/api/offers/**").permitAll()
+						// ✅ les offres consultables publiquement, mais actions (favoris…) nécessitent un JWT
+						.requestMatchers(HttpMethod.GET, "/api/offers/**").permitAll()
 
 						.requestMatchers(HttpMethod.POST, "/api/reservations").authenticated()
 

@@ -6,12 +6,13 @@ import { User } from '../../core/models/auth.models';
 import { NotificationComponent } from '../notification/notification';
 import { Theme, ThemeService } from '../../core/services/theme/theme-service';
 import { Observable } from 'rxjs';
+import { HasRoleDirective } from '../../core/directives/has-role.directive';
 
 
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [CommonModule, RouterLink, NotificationComponent],
+  imports: [CommonModule, RouterLink, NotificationComponent, HasRoleDirective],
   templateUrl: './header.component.html',
   styleUrls: ['./header.component.scss']
 })
@@ -21,6 +22,16 @@ export class HeaderComponent {
   currentUser: User | null = null;
   isMenuOpen = false;
   isMobileMenuOpen = false;
+  adminLinksOpen = false;
+  authResolved = false;
+  readonly skeletonPills = Array.from({ length: 4 });
+  adminNavLinks = [
+    { label: 'Tableau de bord', route: '/admin', icon: '📊' },
+    { label: 'Finances', route: '/admin/finance', icon: '💶' },
+    { label: 'Utilisateurs', route: '/admin/users', icon: '👥' },
+    { label: 'Réservations', route: '/admin/bookings', icon: '📅' },
+    { label: 'Offres', route: '/admin/offers', icon: '📦' }
+  ];
 
   // gestion du theme 
   currentTheme$: Observable<Theme>; 
@@ -39,6 +50,7 @@ export class HeaderComponent {
     this.authService.currentUser.subscribe(user => {
       this.isLoggedIn = !!user;
       this.currentUser = user;
+      this.authResolved = true;
     });
      //souscrire aux changements de thème
      this.currentTheme$.subscribe(theme => {
@@ -56,6 +68,7 @@ export class HeaderComponent {
 
   closeMobileMenu(): void {
     this.isMobileMenuOpen = false;
+    this.adminLinksOpen = false;
   }
 
   logout(): void {
@@ -70,8 +83,12 @@ export class HeaderComponent {
     this.themeService.toggleTheme();
   }
 
+  toggleAdminLinks(): void {
+    this.adminLinksOpen = !this.adminLinksOpen;
+  }
+
   get isAdmin(): boolean {
-    return this.currentUser?.role === 'ROLE_ADMIN';
+    return this.authService.hasRole('ROLE_ADMIN');
   }
 
   get dashboardRoute(): string {
@@ -84,5 +101,14 @@ export class HeaderComponent {
 
   get bookingsRoute(): string {
     return this.isAdmin ? '/admin/bookings' : '/bookings';
+  }
+
+  get favoritesRoute(): string {
+    return '/favorites';
+  }
+
+  navigateTo(route: string): void {
+    this.router.navigate([route]);
+    this.closeMobileMenu();
   }
 }

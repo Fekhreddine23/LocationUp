@@ -1,21 +1,36 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, of, tap } from 'rxjs';
+import { BehaviorSubject, Observable, of, tap, catchError, map } from 'rxjs';
 import { environment } from '../../../environments/environment'; 
 import { Offer, CreateOfferRequest } from '../../core/models/offer.model'; // ← Import séparé depuis le modèle
 import { BusinessEventsService } from './business-events/business-events';
 import { AuthService } from './auth.service';
+import { NotificationService } from './notification.service';
 @Injectable({
   providedIn: 'root'
 })
 export class OffersService {
   private apiUrl = '/api/offers';
   private useMocks = environment.useMockOffers ?? false;
+  private readonly favoritesStorageKey = 'locationup_favorite_offers';
+  private favoriteIds = new Set<number>();
+  private favoriteIds$ = new BehaviorSubject<number[]>([]);
+  private favoriteOffers$ = new BehaviorSubject<Offer[]>([]);
 
   constructor(private http: HttpClient, 
-    private businessEvents: BusinessEventsService,
-    private authService: AuthService // ✅ AJOUT 
-  ) {}
+              private businessEvents: BusinessEventsService,
+              private authService: AuthService,
+              private notificationService: NotificationService
+  ) {
+    this.authService.currentUser.subscribe(user => {
+      if (user) {
+        this.syncFavoritesFromApi();
+      } else {
+        this.restoreFavoritesFromStorage();
+        this.favoriteOffers$.next([]);
+      }
+    });
+  }
 
   // GET /api/offers - Récupérer toutes les offres
   getAllOffers(): Observable<Offer[]> {
@@ -227,5 +242,173 @@ export class OffersService {
       ).subscribe();
     }
   }
-}
 
+  /**
+   * ========= FAVORIS UTILISATEUR =========
+   */
+  private restoreFavoritesFromStorage(): void {
+    try {
+      const stored = typeof localStorage !== 'undefined' ? localStorage.getItem(this.favoritesStorageKey) : null;
+      if (stored) {
+        const parsed: number[] = JSON.parse(stored);
+        this.updateFavoriteCache(parsed, false);
+        return;
+      }
+    } catch (error) {
+      console.warn('Impossible de restaurer les favoris locaux', error);
+    }
+    this.updateFavoriteCache([], false);
+  }
+
+  private syncFavoritesFromApi(): void {
+    this.fetchFavoriteIdsFromApi();
+    this.fetchFavoriteOffersFromApi();
+  }
+
+  private fetchFavoriteIdsFromApi(): void {
+    this.http.get<number[]>(`${this.apiUrl}/favorites/ids`).pipe(
+      catchError(error => {
+        console.warn('Impossible de récupérer les favoris distants', error);
+        this.restoreFavoritesFromStorage();
+        return of(Array.from(this.favoriteIds));
+      })
+    ).subscribe(ids => {
+      this.updateFavoriteCache(ids);
+    });
+  }
+
+  private fetchFavoriteOffersFromApi(): void {
+    this.getFavoriteOffers().subscribe();
+  }
+
+  private updateFavoriteCache(ids: number[], persistLocal: boolean = true): void {
+    this.favoriteIds = new Set(ids);
+    this.favoriteIds$.next(ids);
+    if (persistLocal) {
+      this.persistFavoritesLocal();
+    }
+  }
+
+  getFavoriteOffers(): Observable<Offer[]> {
+    if (!this.authService.isLoggedIn()) {
+      return of([]);
+    }
+    return this.http.get<Offer[]>(`${this.apiUrl}/favorites`).pipe(
+      tap(list => this.favoriteOffers$.next(list)),
+      catchError(error => {
+        console.warn('Impossible de récupérer la liste détaillée des favoris', error);
+        this.favoriteOffers$.next([]);
+        return of([]);
+      })
+    );
+  }
+
+  private persistFavoritesLocal(): void {
+    if (typeof localStorage === 'undefined') {
+      return;
+    }
+    const ids = Array.from(this.favoriteIds);
+    localStorage.setItem(this.favoritesStorageKey, JSON.stringify(ids));
+  }
+
+  private applyFavoriteLocally(offerId: number, favorite: boolean): void {
+    if (favorite) {
+      this.favoriteIds.add(offerId);
+    } else {
+      this.favoriteIds.delete(offerId);
+    }
+    this.favoriteIds$.next(Array.from(this.favoriteIds));
+  }
+
+  private updateFavoriteOffersList(offer: Offer, favorite: boolean): void {
+    const current = [...this.favoriteOffers$.value];
+    const exists = current.find(o => o.offerId === offer.offerId);
+    if (favorite) {
+      if (!exists) {
+        this.favoriteOffers$.next([...current, offer]);
+      }
+    } else if (exists) {
+      this.favoriteOffers$.next(current.filter(o => o.offerId !== offer.offerId));
+    }
+  }
+
+  private emitFavoriteBusinessEvent(offer: Offer): void {
+    const currentUser = this.authService.currentUserValue;
+    if (!currentUser) {
+      return;
+    }
+    this.businessEvents.notifySystemEvent(
+      'OFFER_FAVORITE',
+      `L'utilisateur ${currentUser.username ?? currentUser.email ?? currentUser.id} suit "${offer.description?.substring(0, 40) ?? 'offre'}"`,
+      'INFO',
+      currentUser.id
+    ).subscribe({
+      error: (err) => console.warn('Impossible de notifier le favori', err)
+    });
+  }
+
+  getFavoriteIdsStream(): Observable<number[]> {
+    return this.favoriteIds$.asObservable();
+  }
+
+  getFavoriteOffersStream(): Observable<Offer[]> {
+    return this.favoriteOffers$.asObservable();
+  }
+
+  refreshServerFavorites(): void {
+    if (!this.authService.isLoggedIn()) {
+      return;
+    }
+    this.syncFavoritesFromApi();
+  }
+
+  isFavorite(offerId: number): boolean {
+    return this.favoriteIds.has(offerId);
+  }
+
+  toggleFavorite(offer: Offer): Observable<boolean> {
+    const id = offer.offerId;
+    const shouldFavorite = !this.favoriteIds.has(id);
+
+    if (!this.authService.isLoggedIn()) {
+      this.applyFavoriteLocally(id, shouldFavorite);
+      this.updateFavoriteOffersList(offer, shouldFavorite);
+      this.persistFavoritesLocal();
+      if (shouldFavorite) {
+        this.emitFavoriteBusinessEvent(offer);
+      }
+      this.displayFavoriteToast(offer, shouldFavorite);
+      return of(shouldFavorite);
+    }
+
+    const request$ = shouldFavorite
+      ? this.http.post<void>(`${this.apiUrl}/${id}/favorite`, {})
+      : this.http.delete<void>(`${this.apiUrl}/${id}/favorite`);
+
+    return request$.pipe(
+      tap(() => {
+        this.applyFavoriteLocally(id, shouldFavorite);
+        this.updateFavoriteOffersList(offer, shouldFavorite);
+        this.persistFavoritesLocal();
+        if (shouldFavorite) {
+          this.emitFavoriteBusinessEvent(offer);
+        }
+        this.displayFavoriteToast(offer, shouldFavorite);
+      }),
+      map(() => shouldFavorite),
+      catchError(error => {
+        console.error('Impossible de synchroniser le favori', error);
+        return of(this.favoriteIds.has(id));
+      })
+    );
+  }
+
+  private displayFavoriteToast(offer: Offer, added: boolean): void {
+    const label = offer.description?.split('\n')[0] ?? `Offre #${offer.offerId}`;
+    if (added) {
+      this.notificationService.success(`"${label}" a été ajoutée à vos favoris`);
+    } else {
+      this.notificationService.info(`"${label}" a été retirée de vos favoris`);
+    }
+  }
+}

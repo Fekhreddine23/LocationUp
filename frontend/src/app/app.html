@@ -1,4 +1,18 @@
 <app-header></app-header>
+
+<div class="admin-banner" *appHasRole="'ROLE_ADMIN'">
+  <div class="banner-info">
+    <span class="badge">Admin</span>
+    <strong>Espace opérateur LocationUp</strong>
+    <small>Vous êtes connecté avec les droits administrateur</small>
+  </div>
+  <div class="banner-actions">
+    <a routerLink="/admin">Tableau de bord</a>
+    <a routerLink="/admin/finance">Finances</a>
+    <a routerLink="/admin/bookings">Réservations</a>
+  </div>
+</div>
+
 <main class="main-content">
   <router-outlet></router-outlet>
 </main>

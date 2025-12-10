@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { Router, RouterModule } from '@angular/router';
 import { Breadcrumbs } from "../../components/breadcrumbs/breadcrumbs";
 import { Booking, BookingsService } from '../../core/services/bookings';
@@ -8,6 +8,9 @@ import { AuthService } from '../../core/services/auth.service';
 import { UserStats } from '../../core/models/UserStats.model';
 import { User } from '../../core/models/auth.models';
 import { Spinner } from "../../components/spinner/spinner";
+import { OffersService } from '../../core/services/offers.service';
+import { Offer } from '../../core/models/offer.model';
+import { Subject, takeUntil } from 'rxjs';
 
 @Component({
   selector: 'app-dashboard',
@@ -17,12 +20,16 @@ import { Spinner } from "../../components/spinner/spinner";
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss'
 })
-export class DashboardComponent implements OnInit  {
+export class DashboardComponent implements OnInit, OnDestroy  {
    
 
   user: User | null = null;
   isLoading = false;
   errorMessage = '';
+  favoritesLoading = true;
+  favoriteError = '';
+  favoriteOffers: Offer[] = [];
+  private destroy$ = new Subject<void>();
   
   // Données du dashboard
   userStats: UserStats = {
@@ -43,11 +50,18 @@ export class DashboardComponent implements OnInit  {
     private authService: AuthService,
     private bookingsService: BookingsService,
     private userStatsService: UserStatsService,
+    private offersService: OffersService,
     private router: Router
   ) {}
 
   ngOnInit(): void {
     this.loadDashboardData();
+    this.initFavoriteStream();
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   loadDashboardData(): void {
@@ -93,6 +107,36 @@ export class DashboardComponent implements OnInit  {
     });
   }
 
+  private initFavoriteStream(): void {
+    if (!this.authService.isLoggedIn()) {
+      this.favoritesLoading = false;
+      this.favoriteOffers = [];
+      return;
+    }
+
+    this.favoritesLoading = true;
+    this.favoriteError = '';
+    this.offersService.refreshServerFavorites();
+
+    this.offersService.getFavoriteOffersStream()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (offers) => {
+          this.favoriteOffers = offers ?? [];
+          this.favoritesLoading = false;
+        },
+        error: (err) => {
+          console.error('Erreur chargement favoris:', err);
+          this.favoriteError = 'Impossible de charger vos favoris.';
+          this.favoritesLoading = false;
+        }
+      });
+  }
+
+  get favoritePreview(): Offer[] {
+    return this.favoriteOffers.slice(0, 3);
+  }
+
   getStatusText(status: string): string {
     const statusMap: { [key: string]: string } = {
       'PENDING': 'En attente',
@@ -136,6 +180,14 @@ export class DashboardComponent implements OnInit  {
 
   createNewBooking(): void {
     this.router.navigate(['/bookings/new']);
+  }
+
+  goToFavorites(): void {
+    this.router.navigate(['/favorites']);
+  }
+
+  exploreOffers(): void {
+    this.router.navigate(['/offers']);
   }
 
 

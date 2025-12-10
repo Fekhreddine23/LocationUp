@@ -21,41 +21,145 @@
   </div>
 
   <!-- Statistiques -->
-  <div class="stats-section" *ngIf="bookingStats.totalBookings">
-    <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-icon">📊</div>
-        <div class="stat-content">
-          <div class="stat-number">{{ bookingStats.totalBookings }}</div>
-          <div class="stat-label">Total Réservations</div>
+  <ng-container *ngIf="!statsLoading; else statsSkeleton">
+    <div class="stats-section card-surface">
+      <div class="stats-grid">
+        <div class="stat-card accent-primary">
+          <div class="stat-icon">💶</div>
+          <div class="stat-content">
+            <div class="stat-number">{{ formatCurrency(bookingStats.totalRevenue) }}</div>
+            <div class="stat-label">Revenus Totaux</div>
+          </div>
         </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon">⏳</div>
-        <div class="stat-content">
-          <div class="stat-number">{{ bookingStats.pendingBookings }}</div>
-          <div class="stat-label">En Attente</div>
+        <div class="stat-card accent-success">
+          <div class="stat-icon">📈</div>
+          <div class="stat-content">
+            <div class="stat-number">{{ formatCurrency(bookingStats.monthToDateRevenue) }}</div>
+            <div class="stat-label">Revenus du Mois</div>
+          </div>
         </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon">✅</div>
-        <div class="stat-content">
-          <div class="stat-number">{{ bookingStats.confirmedBookings }}</div>
-          <div class="stat-label">Confirmées</div>
+        <div class="stat-card accent-warning">
+          <div class="stat-icon">🕒</div>
+          <div class="stat-content">
+            <div class="stat-number">{{ formatCurrency(bookingStats.outstandingRevenue) }}</div>
+            <div class="stat-label">En Attente</div>
+          </div>
         </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon">💰</div>
-        <div class="stat-content">
-          <div class="stat-number">{{ formatCurrency(bookingStats.totalRevenue) }}</div>
-          <div class="stat-label">Revenu Total</div>
+        <div class="stat-card accent-info">
+          <div class="stat-icon">⚖️</div>
+          <div class="stat-content">
+            <div class="stat-number">{{ formatPercentage(bookingStats.confirmationRate) }}</div>
+            <div class="stat-label">Taux de Confirmation</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">📊</div>
+          <div class="stat-content">
+            <div class="stat-number">{{ bookingStats.totalBookings }}</div>
+            <div class="stat-label">Total Réservations</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">⏳</div>
+          <div class="stat-content">
+            <div class="stat-number">{{ bookingStats.pendingBookings }}</div>
+            <div class="stat-label">En Attente</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">✅</div>
+          <div class="stat-content">
+            <div class="stat-number">{{ bookingStats.confirmedBookings }}</div>
+            <div class="stat-label">Confirmées</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">🏁</div>
+          <div class="stat-content">
+            <div class="stat-number">{{ bookingStats.completedBookings }}</div>
+            <div class="stat-label">Terminées</div>
+          </div>
         </div>
       </div>
     </div>
-  </div>
+  </ng-container>
+
+  <ng-template #statsSkeleton>
+    <div class="stats-section stats-skeleton card-surface" aria-live="polite">
+      <div class="stats-grid">
+        <div class="stat-card skeleton" *ngFor="let _ of statSkeletonCards">
+          <div class="stat-icon"></div>
+          <div class="stat-content">
+            <div class="skeleton-line"></div>
+            <div class="skeleton-line short"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </ng-template>
+
+  <!-- Section alertes / anomalies -->
+  <section class="action-alerts-panel card-surface" [class.loading-state]="actionAlertsLoading">
+    <div class="panel-header">
+      <div>
+        <h3>Alertes paiement / Action requise</h3>
+        <p>{{ actionAlerts.length }} dossiers à surveiller</p>
+      </div>
+      <div class="panel-actions">
+        <button type="button" class="ghost-btn" (click)="refreshActionAlerts()">↻ Actualiser</button>
+        <button type="button" class="primary-btn" (click)="downloadActionAlertsCsv()">⬇️ Export</button>
+      </div>
+    </div>
+    <div class="action-alerts-filters">
+      <div class="severity-toggle">
+        <button type="button" [class.active]="actionAlertSeverity === 'ALL'" (click)="setActionAlertSeverity('ALL')">Toutes</button>
+        <button type="button" [class.active]="actionAlertSeverity === 'ALERTE'" (click)="setActionAlertSeverity('ALERTE')">Alertes</button>
+        <button type="button" [class.active]="actionAlertSeverity === 'CRITIQUE'" (click)="setActionAlertSeverity('CRITIQUE')">Critiques</button>
+      </div>
+      <div class="status-chips">
+        <button type="button"
+                *ngFor="let status of ['PENDING','REQUIRES_ACTION','FAILED','EXPIRED']"
+                [class.active]="actionAlertStatuses[status]"
+                (click)="toggleActionAlertStatus(status)">
+          {{ status }}
+        </button>
+      </div>
+      <div class="alert-search">
+        <input type="search" [(ngModel)]="actionAlertSearch" placeholder="Recherche (client, message...)" (keyup.enter)="applyActionAlertSearch()">
+        <button type="button" class="ghost-btn" (click)="applyActionAlertSearch()">Filtrer</button>
+        <button type="button" class="ghost-btn" (click)="resetActionAlertFilters()">Réinitialiser</button>
+      </div>
+    </div>
+    <div class="alerts-list" *ngIf="!actionAlertsLoading && actionAlerts.length > 0; else alertFallback">
+      <article class="alert-card" *ngFor="let alert of actionAlerts">
+        <div class="alert-badge" [ngClass]="alert.severity.toLowerCase()">
+          {{ alert.severity }}
+        </div>
+        <div class="alert-main">
+          <div class="alert-header">
+            <span class="alert-id">Réservation #{{ alert.reservationId }}</span>
+            <span class="alert-amount">{{ alert.amount | number:'1.2-2' }} €</span>
+          </div>
+          <div class="alert-message">{{ alert.message }}</div>
+          <div class="alert-meta">
+            <span>Client : <strong>{{ alert.customer }}</strong></span>
+            <span>Status : <strong>{{ alert.paymentStatus }}</strong></span>
+            <span>{{ alert.reservationDate | date:'dd/MM à HH:mm' }}</span>
+          </div>
+        </div>
+      </article>
+    </div>
+    <ng-template #alertFallback>
+      <div class="alerts-empty" *ngIf="!actionAlertsLoading && actionAlerts.length === 0">Aucune alerte à traiter 🎉</div>
+      <div class="alerts-loader loading-state" *ngIf="actionAlertsLoading">
+        <div class="app-skeleton-line" *ngFor="let _ of actionAlertSkeletons"></div>
+      </div>
+      <div class="alerts-error" *ngIf="actionAlertError">{{ actionAlertError }}</div>
+    </ng-template>
+  </section>
 
   <!-- Barre de recherche et filtres -->
-  <div class="filters-section">
+  <div class="filters-section card-surface">
     <div class="search-bar">
       <input 
         type="text" 
@@ -87,12 +191,18 @@
         🔄 Actualiser
       </button>
     </div>
+    <div class="filter-actions">
+      <label class="anomaly-toggle">
+        <input type="checkbox" [(ngModel)]="showAnomaliesOnly" (change)="applyFilters()">
+        <span>Afficher uniquement les paiements à risque</span>
+      </label>
+      <button (click)="downloadBookingsCsv()" class="export-btn">
+        ⬇️ Export CSV
+      </button>
+    </div>
   </div>
 
-
-
-
-  <!-- 🆕 SECTION FILTRES ACTIFS - AJOUTE ICI -->
+  <!-- Filtres actifs -->
   <div class="active-filters" *ngIf="hasActiveFilters()">
     <div class="active-filter" *ngIf="getActiveUserFilter() as userFilter">
       <span class="filter-label">👤 Utilisateur:</span>
@@ -117,142 +227,149 @@
         ×
       </button>
     </div>
+
+    <div class="active-filter" *ngIf="showAnomaliesOnly">
+      <span class="filter-label">⚠️ Anomalies:</span>
+      <span class="filter-value">Paiements sous surveillance</span>
+      <button (click)="clearAnomalyFilter()" class="btn-clear-filter" title="Supprimer le filtre">
+        ×
+      </button>
+    </div>
     
     <button *ngIf="hasMultipleFilters()" (click)="clearAllFilters()" class="btn-clear-all">
       🗑️ Supprimer tous les filtres
     </button>
   </div>
 
-
-
-
-
-
-
-
-
   <!-- Tableau des réservations -->
-  <div class="bookings-table-container">
+  <div class="bookings-table-container card-surface" [class.is-loading]="isLoading">
     <div class="table-header">
       <div class="table-stats">
         {{ displayedBookingsCount }} réservation(s) trouvée(s)
       </div>
     </div>
 
-    <div *ngIf="isLoading" class="loading-state">
-      Chargement des réservations...
+    <div *ngIf="isLoading" class="table-loading-skeleton loading-state" aria-live="polite">
+      <div class="skeleton-row" *ngFor="let _ of skeletonRows">
+        <span class="app-skeleton-line" *ngFor="let __ of skeletonColumns"></span>
+      </div>
     </div>
 
-    <div *ngIf="!isLoading && filteredBookings.length === 0" class="empty-state">
-      Aucune réservation trouvée
+    <div *ngIf="!isLoading && filteredBookings.length === 0" class="empty-state" aria-live="polite">
+      <p>Aucune réservation trouvée avec ce filtre.</p>
+      <button (click)="loadBookings()" class="ghost-btn">↻ Actualiser</button>
     </div>
 
-    <table *ngIf="!isLoading && filteredBookings.length > 0" class="bookings-table">
-      <thead>
-        <tr>
-          <th>Réservation</th>
-          <th>Utilisateur</th>
-          <th>Service</th>
-          <th>Date</th>
-          <th>Prix</th>
-          <th>Statut</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let booking of filteredBookings" class="booking-row">
-          <td class="booking-info">
-            <div class="booking-id">#{{ booking.reservationId }}</div>
-            <div class="booking-date">
-              Créée le {{ formatShortDate(booking.createdAt) }}
-            </div>
-          </td>
-          <td class="user-info">
-            <div class="user-avatar">
-              {{ booking.user?.username?.charAt(0)?.toUpperCase() || '?' }}
-            </div>
-            <div class="user-details">
-              <strong>{{ booking.user?.username || 'Utilisateur inconnu' }}</strong>
-              <span class="user-email">{{ booking.user?.email || 'Email non disponible' }}</span>
-            </div>
-          </td>
-          <td class="service-info">
-            <div class="service-name">{{ booking.offer?.mobilityService || 'Service inconnu' }}</div>
-            <div class="service-location">{{ booking.offer?.pickupLocation || 'Lieu non disponible' }}</div>
-          </td>
-          <td class="reservation-date">
-            {{ formatDate(booking.reservationDate) }}
-          </td>
-          <td class="booking-price">
-            {{ formatCurrency(booking.totalPrice ?? booking.offer?.price) }}
-          </td>
-          <td>
-            <span [class]="'status-badge ' + getStatusClass(booking.status)">
-              {{ getStatusText(booking.status) }}
-            </span>
-          </td>
-          <td class="actions">
-            <button (click)="viewBookingDetails(booking)" class="btn-view" title="Détails">
-              👁️
-            </button>
-            <button 
-              *ngIf="canConfirm(booking)"
-              (click)="confirmBooking(booking)" 
-              class="btn-confirm" 
-              title="Confirmer">
-              ✅
-            </button>
-            <button 
-              *ngIf="canForceConfirm(booking)"
-              (click)="confirmBookingForced(booking)" 
-              class="btn-force-confirm" 
-              title="Forcer la confirmation sans paiement">
-              ⚠️
-            </button>
-            <button 
-              *ngIf="canCollectPayment(booking)"
-              (click)="collectPayment(booking)" 
-              class="btn-payment" 
-              title="Encaisser via Stripe">
-              💳
-            </button>
-            <button
-              *ngIf="canForceExpire(booking)"
-              (click)="forcePaymentExpiration(booking)"
-              class="btn-expire"
-              [disabled]="isPaymentActionLoading(booking.reservationId)"
-              title="Forcer l'expiration du paiement">
-              ⏳
-            </button>
-            <button
-              *ngIf="canForceRefund(booking)"
-              (click)="forcePaymentRefund(booking)"
-              class="btn-refund"
-              [disabled]="isPaymentActionLoading(booking.reservationId)"
-              title="Rembourser manuellement">
-              💸
-            </button>
-            <button 
-              *ngIf="canCancel(booking)"
-              (click)="cancelBooking(booking)" 
-              class="btn-cancel" 
-              title="Annuler">
-              ❌
-            </button>
-            <button 
-              *ngIf="canComplete(booking)"
-              (click)="completeBooking(booking)" 
-              class="btn-complete" 
-              title="Terminer">
-              🏁
-            </button>
-            <button (click)="confirmDelete(booking)" class="btn-delete" title="Supprimer">
-              🗑️
-            </button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+    <div class="responsive-table" *ngIf="!isLoading && filteredBookings.length > 0">
+      <table class="bookings-table">
+        <thead>
+          <tr>
+            <th>Réservation</th>
+            <th>Utilisateur</th>
+            <th>Service</th>
+            <th>Date</th>
+            <th>Prix</th>
+            <th>Statut</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let booking of filteredBookings" class="booking-row"
+              [class.focused-booking]="booking.reservationId === focusedReservationId"
+              [attr.id]="'booking-row-' + booking.reservationId">
+            <td class="booking-info" [attr.data-label]="'Réservation'">
+              <div class="booking-id">#{{ booking.reservationId }}</div>
+              <div class="booking-date">
+                Créée le {{ formatShortDate(booking.createdAt) }}
+              </div>
+            </td>
+            <td class="user-info" [attr.data-label]="'Utilisateur'">
+              <div class="user-avatar">
+                {{ booking.user?.username?.charAt(0)?.toUpperCase() || '?' }}
+              </div>
+              <div class="user-details">
+                <strong>{{ booking.user?.username || 'Utilisateur inconnu' }}</strong>
+                <span class="user-email">{{ booking.user?.email || 'Email non disponible' }}</span>
+              </div>
+            </td>
+            <td class="service-info" [attr.data-label]="'Service'">
+              <div class="service-name">{{ booking.offer?.mobilityService || 'Service inconnu' }}</div>
+              <div class="service-location">{{ booking.offer?.pickupLocation || 'Lieu non disponible' }}</div>
+            </td>
+            <td class="reservation-date" [attr.data-label]="'Date'">
+              {{ formatDate(booking.reservationDate) }}
+            </td>
+            <td class="booking-price" [attr.data-label]="'Prix'">
+              {{ formatCurrency(booking.totalPrice ?? booking.offer?.price) }}
+            </td>
+            <td [attr.data-label]="'Statut'">
+              <span [class]="'status-badge ' + getStatusClass(booking.status)">
+                {{ getStatusText(booking.status) }}
+              </span>
+            </td>
+            <td class="actions" [attr.data-label]="'Actions'">
+              <button (click)="viewBookingDetails(booking)" class="btn-view" title="Détails">
+                👁️
+              </button>
+              <button 
+                *ngIf="canConfirm(booking)"
+                (click)="confirmBooking(booking)" 
+                class="btn-confirm" 
+                title="Confirmer">
+                ✅
+              </button>
+              <button 
+                *ngIf="canForceConfirm(booking)"
+                (click)="confirmBookingForced(booking)" 
+                class="btn-force-confirm" 
+                title="Forcer la confirmation sans paiement">
+                ⚠️
+              </button>
+              <button 
+                *ngIf="canCollectPayment(booking)"
+                (click)="collectPayment(booking)" 
+                class="btn-payment" 
+                title="Encaisser via Stripe">
+                💳
+              </button>
+              <button
+                *ngIf="canForceExpire(booking)"
+                (click)="forcePaymentExpiration(booking)"
+                class="btn-expire"
+                [disabled]="isPaymentActionLoading(booking.reservationId)"
+                title="Forcer l'expiration du paiement">
+                ⏳
+              </button>
+              <button
+                *ngIf="canForceRefund(booking)"
+                (click)="forcePaymentRefund(booking)"
+                class="btn-refund"
+                [disabled]="isPaymentActionLoading(booking.reservationId)"
+                title="Rembourser manuellement">
+                💸
+              </button>
+              <button 
+                *ngIf="canCancel(booking)"
+                (click)="cancelBooking(booking)" 
+                class="btn-cancel" 
+                title="Annuler">
+                ❌
+              </button>
+              <button 
+                *ngIf="canComplete(booking)"
+                (click)="completeBooking(booking)" 
+                class="btn-complete" 
+                title="Terminer">
+                🏁
+              </button>
+              <button (click)="confirmDelete(booking)" class="btn-delete" title="Supprimer">
+                🗑️
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
 
     <!-- Pagination -->
     <div *ngIf="totalPages > 1" class="pagination">
@@ -278,12 +395,19 @@
 
   <!-- Modal de détails -->
   <div *ngIf="isDetailModalOpen" class="modal-overlay">
-    <div class="modal large-modal">
+    <div class="modal large-modal card-surface" [class.loading-state]="isDetailModalProcessing">
+      <div class="modal-loader" *ngIf="isDetailModalProcessing">
+        <span class="loader-dot"></span>
+        <span>Chargement des données...</span>
+      </div>
       <div class="modal-header">
         <h3>Détails de la Réservation #{{ selectedBooking?.reservationId }}</h3>
-        <button (click)="isDetailModalOpen = false" class="close-btn">×</button>
+        <button (click)="closeDetailModal()" class="close-btn">×</button>
       </div>
       <div class="modal-content" *ngIf="selectedBooking">
+        <div class="detail-loading-overlay" *ngIf="detailAuxLoading" aria-live="polite">
+          <div class="app-skeleton-line" *ngFor="let _ of detailSkeletonLines"></div>
+        </div>
         <div class="detail-grid">
           <div class="detail-section">
             <h4>Informations Utilisateur</h4>
@@ -296,7 +420,7 @@
               <span class="detail-value">{{ selectedBooking.user?.email || 'Non communiqué' }}</span>
             </div>
             <button 
-              (click)="viewUserBookings(selectedBooking.user?.id)"
+              (click)="viewUserBookings(selectedBooking.user?.id, selectedBooking.user?.username)"
               class="btn-link">
               Voir toutes les réservations de cet utilisateur
             </button>
@@ -363,48 +487,63 @@
           </div>
           <div class="detail-section">
             <h4>Historique Stripe</h4>
-            <div *ngIf="paymentEventsLoading" class="info-text">Chargement des événements...</div>
-            <div *ngIf="paymentEventsError" class="warning-text">{{ paymentEventsError }}</div>
-            <div *ngIf="!paymentEventsLoading && !paymentEventsError && paymentEvents.length === 0" class="info-text">
-              Aucun événement Stripe enregistré pour cette réservation.
-            </div>
-            <ul *ngIf="!paymentEventsLoading && paymentEvents.length > 0" class="events-timeline">
-              <li *ngFor="let event of paymentEvents">
-                <div class="event-header">
-                  <span class="event-type">{{ event.type }}</span>
-                  <span class="event-date">{{ formatDate(event.receivedAt) }}</span>
-                </div>
-                <div class="event-status">
-                  Statut: <strong>{{ event.status }}</strong>
-                </div>
-                <div class="event-id">Event ID: {{ event.eventId }}</div>
-                <div class="event-error" *ngIf="event.errorMessage">
-                  ⚠️ {{ event.errorMessage }}
-                </div>
-              </li>
-            </ul>
+            <ng-container *ngIf="paymentEventsLoading; else stripeHistory">
+              <div class="detail-skeleton loading-state" aria-live="polite">
+                <span class="app-skeleton-line" *ngFor="let _ of detailSkeletonLines"></span>
+              </div>
+            </ng-container>
+            <ng-template #stripeHistory>
+              <div *ngIf="paymentEventsError" class="warning-text">{{ paymentEventsError }}</div>
+              <div *ngIf="!paymentEventsError && paymentEvents.length === 0" class="info-text">
+                Aucun événement Stripe enregistré pour cette réservation.
+              </div>
+              <ul *ngIf="!paymentEventsError && paymentEvents.length > 0" class="events-timeline">
+                <li *ngFor="let event of paymentEvents">
+                  <div class="event-header">
+                    <span class="event-type badge badge-muted">{{ event.type }}</span>
+                    <span class="event-date">{{ formatDate(event.receivedAt) }}</span>
+                  </div>
+                  <div class="event-status">
+                    <span [ngClass]="getEventStatusBadgeClass(event.status)">
+                      {{ event.status || '—' }}
+                    </span>
+                  </div>
+                  <div class="event-id code-value">Event ID: {{ event.eventId }}</div>
+                  <div class="event-error" *ngIf="event.errorMessage">
+                    ⚠️ {{ event.errorMessage }}
+                  </div>
+                </li>
+              </ul>
+            </ng-template>
           </div>
           <div class="detail-section">
             <h4>Actions administrateur</h4>
-            <div *ngIf="adminActionsLoading" class="info-text">Chargement des actions...</div>
-            <div *ngIf="adminActionsError" class="warning-text">{{ adminActionsError }}</div>
-            <div *ngIf="!adminActionsLoading && !adminActionsError && adminActions.length === 0" class="info-text">
-              Aucune action administrateur enregistrée.
-            </div>
-            <ul *ngIf="!adminActionsLoading && adminActions.length > 0" class="events-timeline">
-              <li *ngFor="let action of adminActions">
-                <div class="event-header">
-                  <span class="event-type">{{ action.actionType }}</span>
-                  <span class="event-date">{{ formatDate(action.createdAt) }}</span>
-                </div>
-                <div class="event-status">
-                  Admin: <strong>{{ action.adminUsername }}</strong>
-                </div>
-                <div class="event-error" *ngIf="action.details">
-                  {{ action.details }}
-                </div>
-              </li>
-            </ul>
+            <ng-container *ngIf="adminActionsLoading; else adminActionsHistory">
+              <div class="detail-skeleton loading-state" aria-live="polite">
+                <span class="app-skeleton-line" *ngFor="let _ of detailSkeletonLines"></span>
+              </div>
+            </ng-container>
+            <ng-template #adminActionsHistory>
+              <div *ngIf="adminActionsError" class="warning-text">{{ adminActionsError }}</div>
+              <div *ngIf="!adminActionsError && adminActions.length === 0" class="info-text">
+                Aucune action administrateur enregistrée.
+              </div>
+              <ul *ngIf="!adminActionsError && adminActions.length > 0" class="events-timeline">
+                <li *ngFor="let action of adminActions">
+                  <div class="event-header">
+                    <span class="event-type" [ngClass]="getAdminActionBadgeClass(action.actionType)">{{ action.actionType }}</span>
+                    <span class="event-date">{{ formatDate(action.createdAt) }}</span>
+                  </div>
+                  <div class="event-status">
+                    <span class="badge badge-muted">Admin</span>
+                    <strong>{{ action.adminUsername }}</strong>
+                  </div>
+                  <div class="event-error" *ngIf="action.details">
+                    {{ action.details }}
+                  </div>
+                </li>
+              </ul>
+            </ng-template>
           </div>
         </div>
       </div>
@@ -421,7 +560,7 @@
           class="btn-force-confirm-text">
           ⚠️ Forcer la confirmation
         </button>
-        <button (click)="isDetailModalOpen = false" class="btn-cancel">
+          <button (click)="closeDetailModal()" class="btn-cancel">
           Fermer
         </button>
         <div class="action-buttons" *ngIf="selectedBooking">
@@ -470,12 +609,12 @@
 
   <!-- Modal de confirmation de suppression -->
   <div *ngIf="isDeleteModalOpen" class="modal-overlay">
-    <div class="modal">
+    <div class="modal card-surface" [class.loading-state]="isDeleteProcessing">
       <div class="modal-header">
         <h3>Confirmer la suppression</h3>
         <button (click)="isDeleteModalOpen = false" class="close-btn">×</button>
       </div>
-      <div class="modal-content" *ngIf="selectedBooking">
+      <div class="modal-content" *ngIf="selectedBooking; else deleteModalSkeleton">
         <p>Êtes-vous sûr de vouloir supprimer la réservation <strong>#{{ selectedBooking.reservationId }}</strong> ?</p>
         <p class="warning-text">Cette action est irréversible et supprimera définitivement la réservation.</p>
         <div class="booking-preview">
@@ -488,10 +627,18 @@
         <button (click)="isDeleteModalOpen = false" class="btn-cancel">
           Annuler
         </button>
-        <button (click)="deleteBooking()" class="btn-danger">
+        <button (click)="deleteBooking()" class="btn-danger" [disabled]="isDeleteProcessing">
           🗑️ Supprimer
         </button>
       </div>
     </div>
   </div>
 </div>
+
+<ng-template #deleteModalSkeleton>
+  <div class="modal-content loading-state">
+    <div class="modal-skeleton-grid">
+      <span class="app-skeleton-line" *ngFor="let _ of modalSkeletonLines"></span>
+    </div>
+  </div>
+</ng-template>

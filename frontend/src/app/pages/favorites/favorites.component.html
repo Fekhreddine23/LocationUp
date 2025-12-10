@@ -1,0 +1,54 @@
+<app-breadcrumbs [items]="breadcrumbItems"></app-breadcrumbs>
+
+<section class="favorites-page">
+  <header class="page-header surface-panel">
+    <div class="header-copy">
+      <p class="eyebrow">Vos coups de cœur</p>
+      <h1>Mes offres favorites</h1>
+      <p class="subtitle">Toutes les offres que vous suivez, synchronisées avec votre compte.</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-ghost" type="button" (click)="goToOffers()">
+        ← Retour au catalogue
+      </button>
+    </div>
+  </header>
+
+  <div *ngIf="isLoading" class="surface-panel loading-state" role="status" aria-live="polite">
+    <div class="spinner"></div>
+    <p>Chargement de vos favoris...</p>
+    <div class="skeleton-grid">
+      <div class="skeleton-card" *ngFor="let _ of [1,2,3]">
+        <div class="app-skeleton-line large"></div>
+        <div class="app-skeleton-line"></div>
+        <div class="app-skeleton-pill"></div>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="!isLoading && errorMessage" class="surface-panel error-state" role="alert">
+    <p>{{ errorMessage }}</p>
+    <button class="btn btn-primary" type="button" (click)="goToOffers()">Voir les offres disponibles</button>
+  </div>
+
+  <div *ngIf="!isLoading && !errorMessage" class="surface-panel favorites-panel">
+    <ng-container *ngIf="favorites.length; else emptyFavorites">
+      <div class="favorites-grid">
+        <app-offer-card
+          *ngFor="let offer of favorites; trackBy: trackByOffer"
+          [offer]="offer"
+          [isFavorite]="true"
+          (favoriteToggled)="toggleFavorite($event)">
+        </app-offer-card>
+      </div>
+    </ng-container>
+  </div>
+
+  <ng-template #emptyFavorites>
+    <div class="empty-state" role="status">
+      <p>Vous n'avez pas encore ajouté d'offres en favoris.</p>
+      <p class="muted">Cliquez sur « Ajouter aux favoris » depuis le catalogue pour les retrouver ici.</p>
+      <button class="btn btn-primary" type="button" (click)="goToOffers()">Explorer les offres</button>
+    </div>
+  </ng-template>
+</section>

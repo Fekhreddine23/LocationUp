@@ -1,6 +1,8 @@
 package com.mobility.mobility_backend.service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -388,6 +390,100 @@ public class ReservationService {
 		Reservation savedReservation = reservationRepository.save(reservation);
 		paymentNotificationService.notifyPaymentRefunded(savedReservation, reason);
 		return reservationMapper.toDTO(savedReservation);
+	}
+
+	public List<Reservation> findReservationsForExport(String query, String statusFilter, LocalDate startDate,
+			LocalDate endDate, boolean anomaliesOnly, Integer userId) {
+		List<Reservation> base = resolveBaseReservations(query);
+
+		return base.stream().filter(reservation -> matchesStatusFilter(reservation, statusFilter))
+				.filter(reservation -> matchesUserFilter(reservation, userId))
+				.filter(reservation -> matchesDateFilter(reservation, startDate, endDate))
+				.filter(reservation -> !anomaliesOnly || isPaymentAnomaly(reservation))
+				.sorted((a, b) -> {
+					LocalDateTime dateA = a.getReservationDate() != null ? a.getReservationDate() : a.getCreatedAt();
+					LocalDateTime dateB = b.getReservationDate() != null ? b.getReservationDate() : b.getCreatedAt();
+					if (dateA == null && dateB == null) {
+						return 0;
+					}
+					if (dateA == null) {
+						return 1;
+					}
+					if (dateB == null) {
+						return -1;
+					}
+					return dateB.compareTo(dateA);
+				}).collect(Collectors.toList());
+	}
+
+	private List<Reservation> resolveBaseReservations(String query) {
+		if (query == null || query.isBlank()) {
+			return reservationRepository.findAll();
+		}
+		String sanitized = query.trim();
+		if (sanitized.matches("\\d+")) {
+			return reservationRepository.findById(Integer.valueOf(sanitized)).map(List::of)
+					.orElseGet(Collections::emptyList);
+		}
+		return reservationRepository.searchByKeyword(sanitized, Pageable.unpaged()).getContent();
+	}
+
+	private boolean matchesStatusFilter(Reservation reservation, String statusFilter) {
+		if (statusFilter == null || statusFilter.isBlank() || "ALL".equalsIgnoreCase(statusFilter)) {
+			return true;
+		}
+		String normalized = statusFilter.trim().toUpperCase();
+		try {
+			Reservation.ReservationStatus reservationStatus = Reservation.ReservationStatus.valueOf(normalized);
+			return reservation.getStatus() == reservationStatus;
+		} catch (IllegalArgumentException ex) {
+			try {
+				Reservation.PaymentStatus paymentStatus = Reservation.PaymentStatus.valueOf(normalized);
+				return reservation.getPaymentStatus() == paymentStatus;
+			} catch (IllegalArgumentException ignored) {
+				return true;
+			}
+		}
+	}
+
+	private boolean matchesUserFilter(Reservation reservation, Integer userId) {
+		if (userId == null) {
+			return true;
+		}
+		return reservation.getUser() != null && reservation.getUser().getId() != null
+				&& reservation.getUser().getId().equals(userId);
+	}
+
+	private boolean matchesDateFilter(Reservation reservation, LocalDate startDate, LocalDate endDate) {
+		if (startDate == null && endDate == null) {
+			return true;
+		}
+		LocalDate reservationDay = null;
+		if (reservation.getReservationDate() != null) {
+			reservationDay = reservation.getReservationDate().toLocalDate();
+		} else if (reservation.getCreatedAt() != null) {
+			reservationDay = reservation.getCreatedAt().toLocalDate();
+		}
+		if (reservationDay == null) {
+			return false;
+		}
+		if (startDate != null && reservationDay.isBefore(startDate)) {
+			return false;
+		}
+		if (endDate != null && reservationDay.isAfter(endDate)) {
+			return false;
+		}
+		return true;
+	}
+
+	private boolean isPaymentAnomaly(Reservation reservation) {
+		if (reservation.getPaymentStatus() == null) {
+			return false;
+		}
+		return reservation.getPaymentStatus() == Reservation.PaymentStatus.PENDING
+				|| reservation.getPaymentStatus() == Reservation.PaymentStatus.REQUIRES_ACTION
+				|| reservation.getPaymentStatus() == Reservation.PaymentStatus.FAILED
+				|| reservation.getPaymentStatus() == Reservation.PaymentStatus.EXPIRED;
 	}
 
 }

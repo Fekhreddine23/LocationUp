@@ -22,6 +22,7 @@ import com.stripe.param.checkout.SessionCreateParams;
 public class PaymentService {
 
 	private final ReservationRepository reservationRepository;
+	private final PaymentNotificationService paymentNotificationService;
 
 	@Value("${stripe.secret.key:}")
 	private String stripeSecretKey;
@@ -32,8 +33,10 @@ public class PaymentService {
 	@Value("${app.payment.cancel-url:http://localhost:4200/payments/cancel}")
 	private String defaultCancelUrl;
 
-	public PaymentService(ReservationRepository reservationRepository) {
+	public PaymentService(ReservationRepository reservationRepository,
+			PaymentNotificationService paymentNotificationService) {
 		this.reservationRepository = reservationRepository;
+		this.paymentNotificationService = paymentNotificationService;
 	}
 
 	public PaymentSessionResponse createCheckoutSession(PaymentSessionRequest request) throws StripeException {
@@ -42,6 +45,7 @@ public class PaymentService {
 		}
 		Reservation reservation = reservationRepository.findById(request.getReservationId())
 				.orElseThrow(() -> new IllegalArgumentException("Réservation introuvable"));
+		Reservation.PaymentStatus previousStatus = reservation.getPaymentStatus();
 
 		if (reservation.getOffer() == null || reservation.getOffer().getPrice() == null) {
 			throw new IllegalStateException("Impossible de créer un paiement pour une offre sans prix");
@@ -85,6 +89,11 @@ public class PaymentService {
 		reservation.setPaymentReference(session.getId());
 		reservation.setUpdatedAt(java.time.LocalDateTime.now());
 		reservationRepository.save(reservation);
+
+		if (previousStatus == Reservation.PaymentStatus.EXPIRED
+				|| previousStatus == Reservation.PaymentStatus.FAILED) {
+			paymentNotificationService.notifyPaymentRetryRequested(reservation);
+		}
 
 		return new PaymentSessionResponse(session.getId(), session.getUrl());
 	}

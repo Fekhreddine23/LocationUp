@@ -9,7 +9,6 @@ import { RecentActivity } from '../../../core/models/RecentActivity.model';
 import { AdminService } from '../../../core/services/admin.service';
 import { UserResponse } from '../../../core/models/UserResponse.model';
 import { Breadcrumbs } from '../../../components/breadcrumbs/breadcrumbs';
-import { Spinner } from '../../../components/spinner/spinner';
 import { HealthStatusService } from '../../../core/services/health/healthStatusService';
 import { HeathStatus } from '../../../components/heath-status/heath-status';
 import { BaseChartDirective, provideCharts, withDefaultRegisterables } from 'ng2-charts';
@@ -19,7 +18,7 @@ import { DashboardTrends } from '../../../core/models/DashboardTrends.model';
 @Component({
   selector: 'app-admin-dashboards',
   standalone: true,
-  imports: [CommonModule, RouterModule, Breadcrumbs, Spinner, HeathStatus, BaseChartDirective],
+  imports: [CommonModule, RouterModule, Breadcrumbs, HeathStatus, BaseChartDirective],
   providers: [provideCharts(withDefaultRegisterables())],
   templateUrl: './admin-dashboards.html',
   styleUrls: ['./admin-dashboards.scss']
@@ -47,6 +46,9 @@ export class AdminDashboards implements OnInit, OnDestroy {
   dashboardTrends: DashboardTrends | null = null;
   trendRanges = [3, 6, 12];
   selectedTrendRange = 6;
+  readonly dashboardSkeletonStats = Array.from({ length: 4 });
+  readonly dashboardSkeletonCharts = Array.from({ length: 3 });
+  readonly dashboardSkeletonList = Array.from({ length: 4 });
 
   breadcrumbItems = [
     { label: 'Administration', url: '/admin', active: true }
