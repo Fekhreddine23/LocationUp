@@ -36,6 +36,25 @@
     </div>
   </div>
 
+  <div class="identity-metrics" *ngIf="data">
+    <div class="identity-card verified">
+      <span>Identités vérifiées</span>
+      <strong>{{ data.identitiesVerified }}</strong>
+    </div>
+    <div class="identity-card processing">
+      <span>Analyses en cours</span>
+      <strong>{{ data.identitiesProcessing }}</strong>
+    </div>
+    <div class="identity-card requires">
+      <span>Actions requises</span>
+      <strong>{{ data.identitiesRequiresInput }}</strong>
+    </div>
+    <div class="identity-card pending">
+      <span>En attente</span>
+      <strong>{{ data.identitiesPending }}</strong>
+    </div>
+  </div>
+
   <div class="chart-card">
     <h3>Évolution des revenus</h3>
     <canvas baseChart

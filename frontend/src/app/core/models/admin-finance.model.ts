@@ -46,6 +46,11 @@ export interface FinanceOverview {
   alerts: PaymentAlert[];
   outstandingByWeek: OutstandingPoint[];
   outstandingByMonth: OutstandingPoint[];
+  identitiesTotal: number;
+  identitiesVerified: number;
+  identitiesProcessing: number;
+  identitiesRequiresInput: number;
+  identitiesPending: number;
 }
 
 export interface FinanceAlertFilters {

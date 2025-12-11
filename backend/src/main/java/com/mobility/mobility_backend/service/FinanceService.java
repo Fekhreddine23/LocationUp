@@ -28,17 +28,21 @@ import com.mobility.mobility_backend.entity.Reservation;
 import com.mobility.mobility_backend.entity.PaymentEventLog;
 import com.mobility.mobility_backend.repository.ReservationRepository;
 import com.mobility.mobility_backend.repository.PaymentEventLogRepository;
+import com.mobility.mobility_backend.service.IdentityVerificationService;
 
 @Service
 public class FinanceService {
 
     private final ReservationRepository reservationRepository;
     private final PaymentEventLogRepository paymentEventLogRepository;
+    private final IdentityVerificationService identityVerificationService;
 
     public FinanceService(ReservationRepository reservationRepository,
-		PaymentEventLogRepository paymentEventLogRepository) {
+		PaymentEventLogRepository paymentEventLogRepository,
+		IdentityVerificationService identityVerificationService) {
 	this.reservationRepository = reservationRepository;
 	this.paymentEventLogRepository = paymentEventLogRepository;
+	this.identityVerificationService = identityVerificationService;
     }
 
 	public FinanceOverviewDTO getFinanceOverview(int months) {
@@ -69,6 +73,12 @@ public class FinanceService {
 		LocalDateTime sixMonthsAgo = LocalDateTime.now().minusMonths(6);
 		overview.setOutstandingByWeek(mapOutstandingPoints(reservationRepository.findOutstandingByWeek(eightWeeksAgo)));
 		overview.setOutstandingByMonth(mapOutstandingPoints(reservationRepository.findOutstandingByMonth(sixMonthsAgo)));
+		var identityStats = identityVerificationService.getGlobalStats();
+		overview.setIdentitiesTotal(identityStats.getTotal());
+		overview.setIdentitiesVerified(identityStats.getVerified());
+		overview.setIdentitiesProcessing(identityStats.getProcessing());
+		overview.setIdentitiesRequiresInput(identityStats.getRequiresInput());
+		overview.setIdentitiesPending(identityStats.getPending());
 
 		return overview;
 	}

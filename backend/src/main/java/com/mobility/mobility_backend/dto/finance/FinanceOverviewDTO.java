@@ -14,6 +14,11 @@ public class FinanceOverviewDTO {
 	private List<PaymentAlertDTO> alerts = new ArrayList<>();
     private List<OutstandingPointDTO> outstandingByWeek = new ArrayList<>();
     private List<OutstandingPointDTO> outstandingByMonth = new ArrayList<>();
+    private long identitiesTotal;
+    private long identitiesVerified;
+    private long identitiesProcessing;
+    private long identitiesRequiresInput;
+    private long identitiesPending;
 
 	public double getTotalRevenue() {
 		return totalRevenue;
@@ -85,5 +90,45 @@ public class FinanceOverviewDTO {
 
     public void setOutstandingByMonth(List<OutstandingPointDTO> outstandingByMonth) {
         this.outstandingByMonth = outstandingByMonth;
+    }
+
+    public long getIdentitiesTotal() {
+        return identitiesTotal;
+    }
+
+    public void setIdentitiesTotal(long identitiesTotal) {
+        this.identitiesTotal = identitiesTotal;
+    }
+
+    public long getIdentitiesVerified() {
+        return identitiesVerified;
+    }
+
+    public void setIdentitiesVerified(long identitiesVerified) {
+        this.identitiesVerified = identitiesVerified;
+    }
+
+    public long getIdentitiesProcessing() {
+        return identitiesProcessing;
+    }
+
+    public void setIdentitiesProcessing(long identitiesProcessing) {
+        this.identitiesProcessing = identitiesProcessing;
+    }
+
+    public long getIdentitiesRequiresInput() {
+        return identitiesRequiresInput;
+    }
+
+    public void setIdentitiesRequiresInput(long identitiesRequiresInput) {
+        this.identitiesRequiresInput = identitiesRequiresInput;
+    }
+
+    public long getIdentitiesPending() {
+        return identitiesPending;
+    }
+
+    public void setIdentitiesPending(long identitiesPending) {
+        this.identitiesPending = identitiesPending;
     }
 }

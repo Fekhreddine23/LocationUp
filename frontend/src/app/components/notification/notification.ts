@@ -245,6 +245,11 @@ async markAsRead(notification: NotificationPayload): Promise<void> {
     const metadata = notification.metadata ?? {};
     const eventType = this.getMetadataValue(metadata, 'eventType')?.toLowerCase();
     const entityType = this.getMetadataValue(metadata, 'entityType')?.toLowerCase();
+    const systemEvent = this.getMetadataValue(metadata, 'systemEvent')?.toLowerCase();
+    const isIdentityEvent =
+      entityType === 'identity' ||
+      (eventType?.includes('identity') ?? false) ||
+      (systemEvent?.startsWith('identity') ?? false);
 
     return Boolean(
       this.isPaymentRelated(eventType, entityType, this.getMetadataValue(metadata, 'paymentStatus')?.toLowerCase()) ||
@@ -254,7 +259,8 @@ async markAsRead(notification: NotificationPayload): Promise<void> {
       eventType === 'offer_available' ||
       notification.category?.toUpperCase() === 'BUSINESS_EVENT' ||
       notification.category?.toUpperCase() === 'SECURITY_ALERT' ||
-      notification.category?.toUpperCase() === 'SYSTEM_ALERT'
+      notification.category?.toUpperCase() === 'SYSTEM_ALERT' ||
+      isIdentityEvent
     );
   }
 
@@ -269,7 +275,17 @@ async markAsRead(notification: NotificationPayload): Promise<void> {
   }): string | undefined {
     const { notification, eventType, entityType, paymentStatus, reservationId, offerTitle, systemEvent } = context;
 
+    const metadata = notification.metadata ?? {};
+    if (entityType === 'identity') {
+      const identityStatus = this.getMetadataValue(metadata, 'identityStatus');
+      return this.buildIdentityToastMessage(identityStatus, notification);
+    }
+
     if (notification.category?.toUpperCase() === 'SYSTEM_ALERT') {
+      if (systemEvent && systemEvent.startsWith('identity')) {
+        const identityStatus = this.getMetadataValue(metadata, 'identityStatus');
+        return this.buildIdentityToastMessage(identityStatus, notification);
+      }
       if (systemEvent === 'maintenance') {
         return 'Une maintenance planifiée va débuter prochainement.';
       }
@@ -336,6 +352,22 @@ async markAsRead(notification: NotificationPayload): Promise<void> {
       eventType === 'cancelled' ||
       eventType === 'completed'
     );
+  }
+
+  private buildIdentityToastMessage(status?: string, notification?: NotificationPayload): string {
+    const normalized = status?.toUpperCase();
+    switch (normalized) {
+      case 'VERIFIED':
+        return 'Identité validée. Les documents sont approuvés.';
+      case 'PROCESSING':
+        return 'Vos documents sont en cours d’analyse.';
+      case 'REQUIRES_INPUT':
+        return 'Des compléments sont nécessaires pour finaliser la vérification.';
+      case 'REJECTED':
+        return 'Les documents ont été rejetés. Merci de les renvoyer.';
+      default:
+        return notification?.content ?? notification?.title ?? 'Mise à jour de votre vérification d’identité.';
+    }
   }
 
   private buildPaymentToastMessage(
