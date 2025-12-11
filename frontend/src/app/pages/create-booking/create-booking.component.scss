@@ -110,6 +110,38 @@
   }
 }
 
+.identity-block {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+  border-radius: 14px;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  background: rgba(254, 243, 199, 0.7);
+  margin-bottom: 1rem;
+
+  .identity-icon {
+    font-size: 1.4rem;
+  }
+
+  .identity-text {
+    flex: 1;
+
+    h4 {
+      margin: 0 0 0.25rem;
+      color: #92400e;
+    }
+
+    p {
+      margin: 0 0 0.5rem;
+      color: #92400e;
+    }
+  }
+
+  .btn {
+    border-radius: 999px;
+  }
+}
+
 .loading-offer {
   text-align: center;
   padding: 40px;

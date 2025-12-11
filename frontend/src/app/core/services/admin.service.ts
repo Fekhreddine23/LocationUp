@@ -348,7 +348,8 @@ export class AdminService {
       paymentReference: rawBooking.paymentReference ?? rawBooking.payment_reference ?? undefined,
       paymentDate: rawBooking.paymentDate ?? rawBooking.payment_date ?? undefined,
       user,
-      offer
+      offer,
+      identityStatus: rawBooking.userIdentityStatus ?? rawBooking.identityStatus ?? undefined
     };
   }
 

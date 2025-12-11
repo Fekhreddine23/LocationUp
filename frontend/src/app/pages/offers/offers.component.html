@@ -94,6 +94,12 @@
 
   <div *ngIf="!isLoading && !errorMessage" class="results-panel surface-panel">
     <ng-container *ngIf="filteredOffers.length; else noResults">
+      <div class="identity-reminder" *ngIf="isUserAuthenticated && !identityLoading && !isIdentityVerified">
+        <p>
+          ⚠️ Vérifiez votre identité pour accéder à toutes les offres. 
+          <a routerLink="/profile#identity">Commencer la vérification</a>
+        </p>
+      </div>
       <div class="offers-grid">
         <app-offer-card 
           *ngFor="let offer of filteredOffers; trackBy: trackByOffer"
@@ -156,6 +162,10 @@
           <label>Statut</label>
           <p>{{ quickViewOffer ? getAvailabilityLabel(quickViewOffer) : '' }}</p>
         </div>
+      </div>
+      <div class="identity-warning" *ngIf="isUserAuthenticated && !identityLoading && !isIdentityVerified">
+        <p>⚠️ Votre identité n'est pas encore vérifiée. Terminez ce processus pour réserver plus rapidement.</p>
+        <button type="button" class="btn btn-ghost" routerLink="/profile#identity">Vérifier maintenant</button>
       </div>
 
       <div class="insights-grid" *ngIf="quickViewInsights">

@@ -139,6 +139,47 @@
       </div>
     </div>
 
+    <!-- Section Vérification d'identité -->
+    <div class="profile-section identity-section">
+      <div class="identity-header">
+        <h2>Vérification d'identité</h2>
+        <p>Ajoutez vos documents officiels pour accélérer la validation des réservations.</p>
+      </div>
+      <div class="identity-card" [class.loading]="identityLoading">
+        <div class="identity-status">
+          <span>Statut actuel :</span>
+          <span class="identity-badge" [ngClass]="getIdentityBadgeClass()">
+            {{ getIdentityLabel() }}
+          </span>
+        </div>
+        <small class="identity-updated" *ngIf="identityStatus?.updatedAt">
+          Mis à jour le {{ identityStatus?.updatedAt | date:'dd/MM à HH:mm' }}
+        </small>
+        <p class="identity-reason" *ngIf="identityStatus?.reason">
+          {{ identityStatus?.reason }}
+        </p>
+        <div class="identity-actions">
+          <button class="btn primary" type="button"
+                  (click)="startIdentityVerification()"
+                  [disabled]="identityActionLoading">
+            <span *ngIf="identityActionLoading" class="mini-spinner"></span>
+            {{ identityActionLoading ? 'Ouverture de Stripe…' : 'Vérifier mon identité' }}
+          </button>
+          <button class="btn ghost" type="button"
+                  (click)="refreshIdentityStatus()"
+                  [disabled]="identityLoading">
+            ↻ Actualiser
+          </button>
+        </div>
+        <p class="identity-hint">
+          Vos documents sont gérés de manière sécurisée via Stripe Identity. Une notification vous sera envoyée lors de la validation.
+        </p>
+      </div>
+      <div *ngIf="identityError" class="alert alert-warning">
+        ⚠️ {{ identityError }}
+      </div>
+    </div>
+
     <!-- Section Sécurité / 2FA -->
     <div class="profile-section" *ngIf="user">
       <h2>Sécurité</h2>

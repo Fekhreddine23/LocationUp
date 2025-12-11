@@ -10,6 +10,8 @@ import { Subscription } from 'rxjs';
 import { BookingsService, Booking } from '../../core/services/bookings';
 import { AuthService } from '../../core/services/auth.service';
 import { NotificationService } from '../../core/services/notification.service';
+import { IdentityService } from '../../core/services/identity.service';
+import { IdentityStatus } from '../../core/models/identity.model';
 
 interface QuickViewHighlight {
   icon: string;
@@ -59,6 +61,8 @@ export class OffersComponent implements OnInit, OnDestroy {
   private hasLoadedBookingsOnce = false;
   private bookingsLoading = false;
   isUserAuthenticated = false;
+  identityStatus: IdentityStatus | null = null;
+  identityLoading = false;
 
   constructor(
     public offersService: OffersService,
@@ -66,7 +70,8 @@ export class OffersComponent implements OnInit, OnDestroy {
     private fb: FormBuilder,
     private bookingsService: BookingsService,
     private authService: AuthService,
-    private notificationService: NotificationService
+    private notificationService: NotificationService,
+    private identityService: IdentityService
   ) {
     this.filterForm = this.fb.group({
       search: [''],
@@ -100,13 +105,18 @@ export class OffersComponent implements OnInit, OnDestroy {
         if (!this.isUserAuthenticated) {
           this.userBookingsByOffer.clear();
           this.hasLoadedBookingsOnce = false;
-        } else if (!wasAuthenticated || !this.hasLoadedBookingsOnce) {
-          this.loadUserBookingsContext();
+          this.identityStatus = null;
+        } else {
+          if (!wasAuthenticated || !this.hasLoadedBookingsOnce) {
+            this.loadUserBookingsContext();
+          }
+          this.loadIdentityStatus();
         }
       })
     );
     if (this.isUserAuthenticated) {
       this.loadUserBookingsContext();
+      this.loadIdentityStatus();
     }
   }
 
@@ -325,6 +335,11 @@ export class OffersComponent implements OnInit, OnDestroy {
 
   reserveOffer(offer?: Offer | null): void {
     if (!offer) {
+      return;
+    }
+    if (this.isUserAuthenticated && !this.isIdentityVerified) {
+      this.notificationService.warning('Vérifiez votre identité pour poursuivre la réservation.');
+      this.router.navigate(['/profile'], { fragment: 'identity' });
       return;
     }
     this.router.navigate(['/bookings/new'], {
@@ -546,5 +561,27 @@ export class OffersComponent implements OnInit, OnDestroy {
       subject: `Question sur l'offre #${offer.offerId}`,
       message: `Bonjour, pourriez-vous me confirmer les disponibilités de l'offre #${offer.offerId} ?`
     };
+  }
+  private loadIdentityStatus(): void {
+    if (!this.isUserAuthenticated) {
+      this.identityStatus = null;
+      return;
+    }
+    this.identityLoading = true;
+    this.identityService.getStatus().subscribe({
+      next: status => {
+        this.identityStatus = status;
+        this.identityLoading = false;
+      },
+      error: err => {
+        console.warn('Impossible de charger le statut identité', err);
+        this.identityLoading = false;
+        this.identityStatus = null;
+      }
+    });
+  }
+
+  get isIdentityVerified(): boolean {
+    return (this.identityStatus?.status?.toUpperCase() ?? '') === 'VERIFIED';
   }
 }

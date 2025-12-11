@@ -7,6 +7,12 @@ import { AuthService } from '../../core/services/auth.service';
 import { User } from '../../core/models/auth.models';
 import { UserStatsService } from '../../core/services/user-stats.service';
 import { TwoFactorSetup } from '../../components/twoFactor/two-factor-setup';
+import { IdentityService } from '../../core/services/identity.service';
+import { IdentityStatus } from '../../core/models/identity.model';
+import { NotificationService } from '../../core/services/notification.service';
+import { loadStripe, Stripe } from '@stripe/stripe-js';
+import { environment } from '../../../environments/environment';
+import { firstValueFrom } from 'rxjs';
 
 @Component({
   selector: 'app-profile',
@@ -38,12 +44,21 @@ export class ProfileComponent implements OnInit {
     cancelledBookings: 0,
     completedBookings: 0
   };
+  identityStatus: IdentityStatus | null = null;
+  identityLoading = false;
+  identityActionLoading = false;
+  identityError = '';
+  private stripePromise: Promise<Stripe | null>;
 
   constructor(
     private authService: AuthService,
     private userStatsService: UserStatsService,
-    private router: Router
-  ) {}
+    private router: Router,
+    private identityService: IdentityService,
+    private notificationService: NotificationService
+  ) {
+    this.stripePromise = loadStripe(environment.stripe.publishableKey);
+  }
 
   ngOnInit(): void {
     this.loadUserProfile();
@@ -66,15 +81,102 @@ export class ProfileComponent implements OnInit {
       next: (stats) => {
         this.userStats = stats;
         this.isLoading = false;
+        this.fetchIdentityStatus();
       },
       error: (error) => {
         console.error('Erreur chargement statistiques:', error);
         this.errorMessage = 'Erreur lors du chargement des statistiques';
         this.isLoading = false;
+        this.fetchIdentityStatus();
       }
     });
 
     
+  }
+
+  fetchIdentityStatus(): void {
+    if (!this.user) {
+      return;
+    }
+    this.identityLoading = true;
+    this.identityError = '';
+    this.identityService.getStatus().subscribe({
+      next: (status) => {
+        this.identityStatus = status;
+        this.identityLoading = false;
+      },
+      error: (error) => {
+        console.error('Erreur statut identité:', error);
+        this.identityError = 'Impossible de récupérer le statut d’identité.';
+        this.identityLoading = false;
+      }
+    });
+  }
+
+  async startIdentityVerification(): Promise<void> {
+    if (this.identityActionLoading) {
+      return;
+    }
+    this.identityActionLoading = true;
+    this.identityError = '';
+    try {
+      const session = await firstValueFrom(
+        this.identityService.createSession(`${window.location.origin}/profile/identity`)
+      );
+      const stripe = await this.stripePromise;
+      if (!stripe) {
+        throw new Error('Stripe non initialisé côté client');
+      }
+      const { error } = await stripe.verifyIdentity(session.clientSecret);
+      if (error) {
+        console.error('Erreur Stripe Identity', error);
+        this.identityError = error.message ?? 'La vérification a été interrompue.';
+        this.notificationService.error(this.identityError);
+      } else {
+        this.notificationService.success(
+          'Merci ! Documents envoyés, nous vous notifierons dès validation.'
+        );
+      }
+    } catch (error: any) {
+      console.error('Impossible de démarrer la vérification', error);
+      const message = error?.message || 'Impossible de lancer la vérification.';
+      this.identityError = message;
+      this.notificationService.error(message);
+    } finally {
+      this.identityActionLoading = false;
+      this.fetchIdentityStatus();
+    }
+  }
+
+  refreshIdentityStatus(): void {
+    this.fetchIdentityStatus();
+  }
+
+  getIdentityLabel(): string {
+    const status = this.identityStatus?.status?.toUpperCase() ?? 'NONE';
+    switch (status) {
+      case 'VERIFIED':
+        return 'Identité vérifiée';
+      case 'PROCESSING':
+        return 'Analyse en cours';
+      case 'REQUIRES_INPUT':
+        return 'Documents incomplets';
+      case 'PENDING':
+      case 'NONE':
+        return 'Vérification non réalisée';
+      case 'REJECTED':
+        return 'Documents rejetés';
+      default:
+        return status;
+    }
+  }
+
+  getIdentityBadgeClass(): string {
+    const status = this.identityStatus?.status?.toUpperCase() ?? 'NONE';
+    if (status === 'VERIFIED') return 'badge-success';
+    if (status === 'REQUIRES_INPUT' || status === 'REJECTED') return 'badge-danger';
+    if (status === 'PROCESSING') return 'badge-info';
+    return 'badge-muted';
   }
 
   loadUserStats(): void {

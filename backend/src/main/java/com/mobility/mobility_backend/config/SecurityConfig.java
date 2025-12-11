@@ -53,6 +53,8 @@ public class SecurityConfig {
 				.permitAll().requestMatchers("/ws/**").permitAll() // Pour WebSocket si utilisé plus tard
 				.requestMatchers("/api/auth/**").permitAll()
 				.requestMatchers(HttpMethod.POST, "/api/payments/webhook").permitAll()
+				.requestMatchers(HttpMethod.POST, "/api/identity/webhook").permitAll()
+				.requestMatchers("/api/identity/webhook").permitAll()
 				.requestMatchers("/api/payments/**").authenticated()
 						.requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
 						.requestMatchers("/h2-console/**").permitAll().requestMatchers("/actuator/**").permitAll()

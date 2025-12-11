@@ -36,16 +36,19 @@ public class ReservationService {
 	private final OfferRepository offerRepository;
 	private final ReservationMapper reservationMapper;
 	private final PaymentNotificationService paymentNotificationService;
+	private final IdentityVerificationService identityVerificationService;
 
 	@Autowired
 	public ReservationService(ReservationRepository reservationRepository, UserRepository userRepository,
 			OfferRepository offerRepository, ReservationMapper reservationMapper,
-			PaymentNotificationService paymentNotificationService) {
+			PaymentNotificationService paymentNotificationService,
+			IdentityVerificationService identityVerificationService) {
 		this.reservationRepository = reservationRepository;
 		this.userRepository = userRepository;
 		this.offerRepository = offerRepository;
 		this.reservationMapper = reservationMapper;
 		this.paymentNotificationService = paymentNotificationService;
+		this.identityVerificationService = identityVerificationService;
 	}
 
 	// Récupérer toutes les réservations
@@ -53,6 +56,7 @@ public class ReservationService {
 		System.out.println("🔵 [ReservationService] Getting all reservations");
 		List<ReservationDTO> reservations = reservationRepository.findAll().stream().map(reservationMapper::toDTO)
 				.collect(Collectors.toList());
+		enrichIdentityStatuses(reservations);
 		System.out.println("🟢 [ReservationService] Found " + reservations.size() + " reservations");
 		return reservations;
 	}
@@ -61,6 +65,7 @@ public class ReservationService {
 	public Optional<ReservationDTO> getReservationById(Integer id) {
 		System.out.println("🔵 [ReservationService] Getting reservation by ID: " + id);
 		Optional<ReservationDTO> result = reservationRepository.findById(id).map(reservationMapper::toDTO);
+		result.ifPresent(this::enrichIdentityStatus);
 		if (result.isPresent()) {
 			System.out.println("🟢 [ReservationService] Reservation found: " + result.get().getReservationId());
 		} else {
@@ -83,6 +88,7 @@ public class ReservationService {
 
 		List<ReservationDTO> reservations = reservationRepository.findByUserId(userId).stream()
 				.map(reservationMapper::toDTO).collect(Collectors.toList());
+		enrichIdentityStatuses(reservations);
 
 		System.out.println(
 				"🟢 [ReservationService] Found " + reservations.size() + " reservations for user ID: " + userId);
@@ -195,7 +201,9 @@ public class ReservationService {
 		Page<Reservation> reservationsPage = reservationRepository.findAll(pageable);
 
 		// Utilisation de votre mapper pour la conversion
-		return reservationsPage.map(reservationMapper::toDTO);
+		Page<ReservationDTO> mapped = reservationsPage.map(reservationMapper::toDTO);
+		enrichIdentityStatuses(mapped.getContent());
+		return mapped;
 	}
 
 	public Page<ReservationDTO> searchReservations(String query, Pageable pageable) {
@@ -213,7 +221,9 @@ public class ReservationService {
 			return Page.empty(pageable);
 		}
 		Page<Reservation> searchResults = reservationRepository.searchByKeyword(sanitized, pageable);
-		return searchResults.map(reservationMapper::toDTO);
+		Page<ReservationDTO> mapped = searchResults.map(reservationMapper::toDTO);
+		enrichIdentityStatuses(mapped.getContent());
+		return mapped;
 	}
 
 	public ReservationTimelineDTO getReservationTimeline(Integer reservationId) {
@@ -414,6 +424,27 @@ public class ReservationService {
 					}
 					return dateB.compareTo(dateA);
 				}).collect(Collectors.toList());
+	}
+
+	private void enrichIdentityStatuses(List<ReservationDTO> reservations) {
+		if (reservations == null || reservations.isEmpty()) {
+			return;
+		}
+		List<Integer> userIds = reservations.stream().map(ReservationDTO::getUserId).filter(Objects::nonNull)
+				.distinct().collect(Collectors.toList());
+		Map<Integer, String> statuses = identityVerificationService.getLatestStatusForUsers(userIds);
+		reservations.forEach(dto -> {
+			if (dto.getUserId() != null) {
+				dto.setUserIdentityStatus(statuses.get(dto.getUserId()));
+			}
+		});
+	}
+
+	private void enrichIdentityStatus(ReservationDTO dto) {
+		if (dto == null || dto.getUserId() == null) {
+			return;
+		}
+		dto.setUserIdentityStatus(identityVerificationService.getLatestStatusLabel(dto.getUserId()));
 	}
 
 	private List<Reservation> resolveBaseReservations(String query) {

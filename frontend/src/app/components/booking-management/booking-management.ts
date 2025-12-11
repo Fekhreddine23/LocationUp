@@ -79,6 +79,7 @@ export class BookingManagement implements OnInit, OnDestroy {
     FAILED: true,
     EXPIRED: false
   };
+  identityFilter: 'ALL' | 'VERIFIED' | 'UNVERIFIED' = 'ALL';
   private readonly alertExportRange = 6;
   
   // Messages
@@ -225,6 +226,12 @@ export class BookingManagement implements OnInit, OnDestroy {
 
     if (this.showAnomaliesOnly) {
       filtered = filtered.filter(booking => this.isBookingAnomaly(booking));
+    }
+
+    if (this.identityFilter === 'VERIFIED') {
+      filtered = filtered.filter(booking => this.isIdentityVerifiedStatus(booking.identityStatus));
+    } else if (this.identityFilter === 'UNVERIFIED') {
+      filtered = filtered.filter(booking => !this.isIdentityVerifiedStatus(booking.identityStatus));
     }
 
     this.commitFilteredBookings(filtered);
@@ -1162,7 +1169,8 @@ export class BookingManagement implements OnInit, OnDestroy {
     return this.activeUserFilter !== null || 
            this.statusFilter !== 'ALL' || 
            this.dateFilter !== '' ||
-           this.showAnomaliesOnly;
+           this.showAnomaliesOnly ||
+           this.identityFilter !== 'ALL';
   }
 
   getActiveUserFilter(): { id: number, name: string } | null {
@@ -1175,12 +1183,70 @@ export class BookingManagement implements OnInit, OnDestroy {
     if (this.statusFilter !== 'ALL') count++;
     if (this.dateFilter) count++;
     if (this.showAnomaliesOnly) count++;
+    if (this.identityFilter !== 'ALL') count++;
     return count > 1;
   }
 
   toggleAnomalyFilter(): void {
     this.showAnomaliesOnly = !this.showAnomaliesOnly;
     this.applyFilters();
+  }
+
+  setIdentityFilter(filter: 'ALL' | 'VERIFIED' | 'UNVERIFIED'): void {
+    this.identityFilter = filter;
+    this.applyFilters();
+  }
+
+  clearIdentityFilter(): void {
+    this.identityFilter = 'ALL';
+    this.applyFilters();
+  }
+
+  getIdentityFilterLabel(): string {
+    switch (this.identityFilter) {
+      case 'VERIFIED':
+        return 'Identité vérifiée';
+      case 'UNVERIFIED':
+        return 'À vérifier';
+      default:
+        return 'Toutes';
+    }
+  }
+
+  getIdentityLabel(status?: string | null): string {
+    const value = status?.toUpperCase() ?? 'NONE';
+    switch (value) {
+      case 'VERIFIED':
+        return 'Identité vérifiée';
+      case 'PROCESSING':
+        return 'Analyse en cours';
+      case 'REQUIRES_INPUT':
+        return 'Documents incomplets';
+      case 'REJECTED':
+        return 'Documents rejetés';
+      case 'PENDING':
+      case 'NONE':
+      default:
+        return 'À vérifier';
+    }
+  }
+
+  getIdentityBadgeClass(status?: string | null): string {
+    const value = status?.toUpperCase() ?? 'NONE';
+    if (value === 'VERIFIED') {
+      return 'identity-chip success';
+    }
+    if (value === 'PROCESSING') {
+      return 'identity-chip info';
+    }
+    if (value === 'REQUIRES_INPUT' || value === 'REJECTED') {
+      return 'identity-chip danger';
+    }
+    return 'identity-chip muted';
+  }
+
+  private isIdentityVerifiedStatus(status?: string | null): boolean {
+    return (status ?? '').toUpperCase() === 'VERIFIED';
   }
 
   clearAnomalyFilter(): void {
@@ -1262,6 +1328,7 @@ export class BookingManagement implements OnInit, OnDestroy {
     this.dateFilter = '';
     this.searchQuery = '';
     this.showAnomaliesOnly = false;
+    this.identityFilter = 'ALL';
     this.router.navigate(['/admin/bookings']);
     this.applyFilters();
   }

@@ -196,6 +196,18 @@
         <input type="checkbox" [(ngModel)]="showAnomaliesOnly" (change)="applyFilters()">
         <span>Afficher uniquement les paiements à risque</span>
       </label>
+      <div class="identity-filter">
+        <span>Identité :</span>
+        <button type="button" [class.active]="identityFilter === 'ALL'" (click)="setIdentityFilter('ALL')">
+          Toutes
+        </button>
+        <button type="button" [class.active]="identityFilter === 'VERIFIED'" (click)="setIdentityFilter('VERIFIED')">
+          Validées
+        </button>
+        <button type="button" [class.active]="identityFilter === 'UNVERIFIED'" (click)="setIdentityFilter('UNVERIFIED')">
+          À vérifier
+        </button>
+      </div>
       <button (click)="downloadBookingsCsv()" class="export-btn">
         ⬇️ Export CSV
       </button>
@@ -224,6 +236,13 @@
       <span class="filter-label">📅 Date:</span>
       <span class="filter-value">{{ formatDisplayDate(dateFilter) }}</span>
       <button (click)="clearDateFilter()" class="btn-clear-filter" title="Supprimer le filtre">
+        ×
+      </button>
+    </div>
+    <div class="active-filter" *ngIf="identityFilter !== 'ALL'">
+      <span class="filter-label">🪪 Identité:</span>
+      <span class="filter-value">{{ getIdentityFilterLabel() }}</span>
+      <button (click)="clearIdentityFilter()" class="btn-clear-filter" title="Supprimer le filtre">
         ×
       </button>
     </div>
@@ -290,6 +309,9 @@
               <div class="user-details">
                 <strong>{{ booking.user?.username || 'Utilisateur inconnu' }}</strong>
                 <span class="user-email">{{ booking.user?.email || 'Email non disponible' }}</span>
+                <span class="identity-chip" [ngClass]="getIdentityBadgeClass(booking.identityStatus)">
+                  {{ getIdentityLabel(booking.identityStatus) }}
+                </span>
               </div>
             </td>
             <td class="service-info" [attr.data-label]="'Service'">
@@ -418,6 +440,12 @@
             <div class="detail-item">
               <span class="detail-label">Email:</span>
               <span class="detail-value">{{ selectedBooking.user?.email || 'Non communiqué' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Identité:</span>
+              <span class="identity-chip" [ngClass]="getIdentityBadgeClass(selectedBooking.identityStatus)">
+                {{ getIdentityLabel(selectedBooking.identityStatus) }}
+              </span>
             </div>
             <button 
               (click)="viewUserBookings(selectedBooking.user?.id, selectedBooking.user?.username)"

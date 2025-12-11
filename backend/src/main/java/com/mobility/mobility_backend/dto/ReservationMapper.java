@@ -24,6 +24,10 @@ public class ReservationMapper {
 				.build();
 		dto.setCreatedAt(reservation.getCreatedAt());
 		dto.setUpdatedAt(reservation.getUpdatedAt());
+		if (reservation.getUser() != null) {
+			dto.setUserUsername(reservation.getUser().getUsername());
+			dto.setUserEmail(reservation.getUser().getEmail());
+		}
 		return dto;
 	}
 

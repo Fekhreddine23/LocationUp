@@ -86,6 +86,16 @@
 
       <!-- Step 2 -->
       <section *ngSwitchCase="'details'">
+        <div class="identity-block" *ngIf="!identityLoading && identityStatus?.status?.toUpperCase() !== 'VERIFIED'">
+          <div class="identity-icon">⚠️</div>
+          <div class="identity-text">
+            <h4>Vérification d'identité requise</h4>
+            <p>Pour valider votre réservation et accéder au paiement, merci de terminer la vérification.</p>
+            <button class="btn btn-outline" type="button" routerLink="/profile#identity">
+              Vérifier mon identité →
+            </button>
+          </div>
+        </div>
         <form (ngSubmit)="submitDetails()" #detailsForm="ngForm">
           <div class="form-group">
             <label for="reservationDate">Date et heure de réservation *</label>

@@ -9,6 +9,9 @@ import { User } from '../../core/models/auth.models';
 import { Offer } from '../../core/models/offer.model';
 import { Breadcrumbs } from "../../components/breadcrumbs/breadcrumbs"; 
 import { PaymentService } from '../../core/services/payment.service';
+import { IdentityService } from '../../core/services/identity.service';
+import { IdentityStatus } from '../../core/models/identity.model';
+import { NotificationService } from '../../core/services/notification.service';
 
 type BookingStep = 'offer' | 'details' | 'payment';
 
@@ -46,6 +49,8 @@ export class CreateBookingComponent implements OnInit {
     { id: 'details' as BookingStep, label: 'Détails', icon: '📝' },
     { id: 'payment' as BookingStep, label: 'Paiement', icon: '💳' }
   ];
+  identityStatus: IdentityStatus | null = null;
+  identityLoading = false;
 
   constructor(
     private bookingsService: BookingsService,
@@ -53,7 +58,9 @@ export class CreateBookingComponent implements OnInit {
     private offersService: OffersService,
     private router: Router,
     private route: ActivatedRoute,
-    private paymentService: PaymentService
+    private paymentService: PaymentService,
+    private identityService: IdentityService,
+    private notificationService: NotificationService
   ) { }
 
   ngOnInit(): void {
@@ -64,6 +71,7 @@ export class CreateBookingComponent implements OnInit {
     
      // Charger uniquement l'offre spécifique depuis l'URL
     this.loadSelectedOffer();
+    this.fetchIdentityStatus();
     
   }
 
@@ -86,7 +94,7 @@ export class CreateBookingComponent implements OnInit {
   }
 
 
-private loadOfferDetails(offerId: number): void {
+  private loadOfferDetails(offerId: number): void {
     this.isLoadingOffer = true;
     this.errorMessage = '';
 
@@ -127,6 +135,11 @@ private loadOfferDetails(offerId: number): void {
   goToDetailsStep(): void {
     if (!this.selectedOffer) {
       this.errorMessage = 'Aucune offre sélectionnée';
+      return;
+    }
+    if (this.identityStatus?.status?.toUpperCase() !== 'VERIFIED') {
+      this.errorMessage = 'Veuillez vérifier votre identité avant de poursuivre.';
+      this.notificationService.warning('Vérifiez votre identité via votre profil.');
       return;
     }
     this.errorMessage = '';
@@ -234,4 +247,18 @@ private loadOfferDetails(offerId: number): void {
   { label: 'Nouvelle Réservation', url: '/bookings/new', active: true }
 ];
 
+  private fetchIdentityStatus(): void {
+    this.identityLoading = true;
+    this.identityService.getStatus().subscribe({
+      next: status => {
+        this.identityStatus = status;
+        this.identityLoading = false;
+      },
+      error: err => {
+        console.warn('Impossible de charger le statut identité', err);
+        this.identityLoading = false;
+        this.identityStatus = null;
+      }
+    });
+  }
 }

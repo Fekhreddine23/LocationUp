@@ -20,6 +20,7 @@ export interface AdminBooking {
     pickupLocation?: string;
     price?: number;
   };
+  identityStatus?: string;
 }
 
 

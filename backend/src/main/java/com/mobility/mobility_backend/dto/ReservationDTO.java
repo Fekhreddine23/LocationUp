@@ -14,6 +14,9 @@ private LocalDateTime reservationDate;
 	private Double paymentAmount;
 	private LocalDateTime createdAt;
 	private LocalDateTime updatedAt;
+	private String userUsername;
+	private String userEmail;
+	private String userIdentityStatus;
 
 	// Constructeurs
 	public ReservationDTO() {
@@ -186,5 +189,29 @@ private LocalDateTime reservationDate;
 
 	public void setUpdatedAt(LocalDateTime updatedAt) {
 		this.updatedAt = updatedAt;
+	}
+
+	public String getUserUsername() {
+		return userUsername;
+	}
+
+	public void setUserUsername(String userUsername) {
+		this.userUsername = userUsername;
+	}
+
+	public String getUserEmail() {
+		return userEmail;
+	}
+
+	public void setUserEmail(String userEmail) {
+		this.userEmail = userEmail;
+	}
+
+	public String getUserIdentityStatus() {
+		return userIdentityStatus;
+	}
+
+	public void setUserIdentityStatus(String userIdentityStatus) {
+		this.userIdentityStatus = userIdentityStatus;
 	}
 }
