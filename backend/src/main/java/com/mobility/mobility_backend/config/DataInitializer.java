@@ -14,7 +14,6 @@ import com.mobility.mobility_backend.entity.City;
 import com.mobility.mobility_backend.entity.MobilityService;
 import com.mobility.mobility_backend.entity.Offer;
 import com.mobility.mobility_backend.entity.Reservation;
-import com.mobility.mobility_backend.entity.Role;
 import com.mobility.mobility_backend.entity.User;
 import com.mobility.mobility_backend.repository.AdminRepository;
 import com.mobility.mobility_backend.repository.CityRepository;
@@ -51,10 +50,10 @@ public class DataInitializer implements CommandLineRunner {
 
 	@Override
 	public void run(String... args) throws Exception {
-		
+
 		 System.out.println("Data initialization disabled - using data.sql instead");
 		// Nettoyer d'abord
-		 
+
 		/*
 		userRepository.deleteAll();
 
@@ -101,7 +100,7 @@ public class DataInitializer implements CommandLineRunner {
 		createSampleReservations(); // ⚠️ Enfin réservations
 		createSampleReservations();
 		*/
-		
+
 	}
 
 	private void createSampleOffers() {

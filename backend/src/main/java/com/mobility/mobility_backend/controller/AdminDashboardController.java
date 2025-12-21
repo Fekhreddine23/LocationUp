@@ -26,7 +26,7 @@ import com.mobility.mobility_backend.service.cache.AdminStatsCacheService;
 public class AdminDashboardController {
 
 	private final DashboardService dashboardService;
-	
+
 	@Autowired
 	private AdminStatsCacheService adminStatsCacheService;
 
@@ -82,16 +82,16 @@ public class AdminDashboardController {
 		// Vérifier si des données sont en cache
 		AdminStatsDTO cachedStats = adminStatsCacheService.getCachedStats();
 		boolean hasCachedStats = cachedStats != null;
-		
+
 		String status = String.format("""
 			📊 État du Cache Admin:
 			✅ Statistiques en cache: %s
 			🕒 Dernière mise à jour: %s
-			""", 
+			""",
 			hasCachedStats ? "OUI" : "NON",
 			hasCachedStats ? cachedStats.getLastUpdated() : "N/A"
 		);
-		
+
 		return ResponseEntity.ok(status);
 	}
 

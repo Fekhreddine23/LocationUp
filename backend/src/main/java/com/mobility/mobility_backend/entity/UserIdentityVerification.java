@@ -31,6 +31,12 @@ public class UserIdentityVerification {
 	@Column(name = "stripe_session_id", unique = true, length = 120)
 	private String stripeSessionId;
 
+	@Column(name = "reservation_id")
+	private Integer reservationId;
+
+	@Column(name = "document_type", length = 60)
+	private String documentType;
+
 	@Enumerated(EnumType.STRING)
 	@Column(name = "status", nullable = false)
 	private VerificationStatus status = VerificationStatus.PENDING;
@@ -81,6 +87,22 @@ public class UserIdentityVerification {
 
 	public void setStripeSessionId(String stripeSessionId) {
 		this.stripeSessionId = stripeSessionId;
+	}
+
+	public Integer getReservationId() {
+		return reservationId;
+	}
+
+	public void setReservationId(Integer reservationId) {
+		this.reservationId = reservationId;
+	}
+
+	public String getDocumentType() {
+		return documentType;
+	}
+
+	public void setDocumentType(String documentType) {
+		this.documentType = documentType;
 	}
 
 	public VerificationStatus getStatus() {

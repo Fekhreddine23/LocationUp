@@ -40,6 +40,9 @@ public class User implements UserDetails {
 	@Column(nullable = false)
 	private String password;
 
+	@Column(name = "avatar_path")
+	private String avatarPath;
+
 	@Enumerated(EnumType.STRING)
 	private Role role;
 
@@ -93,6 +96,14 @@ public class User implements UserDetails {
 
 	public void setPassword(String password) {
 		this.password = password;
+	}
+
+	public String getAvatarPath() {
+		return avatarPath;
+	}
+
+	public void setAvatarPath(String avatarPath) {
+		this.avatarPath = avatarPath;
 	}
 
 	public LocalDateTime getCreatedAt() {

@@ -12,6 +12,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 public class CreateOfferDTO {
+	private static final int IMAGE_URL_MAX_LENGTH = 500;
 
 	@NotBlank(message = "Le lieu de départ est requis")
 	private String pickupLocationName;
@@ -32,6 +33,11 @@ public class CreateOfferDTO {
 	@NotNull(message = "Le prix ne peut pas être nul")
 	@DecimalMin(value = "0.0", inclusive = false, message = "Le prix doit être supérieur à 0")
 	private BigDecimal price;
+
+	@Size(max = IMAGE_URL_MAX_LENGTH, message = "L'URL de l'image ne peut pas dépasser " + IMAGE_URL_MAX_LENGTH + " caractères")
+	private String imageUrl;
+
+	private java.util.List<@Size(max = IMAGE_URL_MAX_LENGTH, message = "Une URL d'image ne peut pas dépasser " + IMAGE_URL_MAX_LENGTH + " caractères") String> galleryUrls;
 
 	private Offer.OfferStatus status = Offer.OfferStatus.PENDING;
 
@@ -83,6 +89,22 @@ public class CreateOfferDTO {
 
 	public void setPrice(BigDecimal price) {
 		this.price = price;
+	}
+
+	public String getImageUrl() {
+		return imageUrl;
+	}
+
+	public void setImageUrl(String imageUrl) {
+		this.imageUrl = imageUrl;
+	}
+
+	public java.util.List<String> getGalleryUrls() {
+		return galleryUrls;
+	}
+
+	public void setGalleryUrls(java.util.List<String> galleryUrls) {
+		this.galleryUrls = galleryUrls;
 	}
 
 	public Offer.OfferStatus getStatus() {

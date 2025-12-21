@@ -1,6 +1,8 @@
 package com.mobility.mobility_backend.service;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.springframework.security.access.AccessDeniedException;
@@ -62,13 +64,21 @@ public class FavoriteService {
 
 	@Transactional(readOnly = true)
 	public List<Integer> getFavoriteOfferIdsForCurrentUser() {
-		User user = getCurrentUser();
+		Optional<User> userOpt = resolveAuthenticatedUser();
+		if (userOpt.isEmpty()) {
+			return Collections.emptyList();
+		}
+		User user = userOpt.get();
 		return favoriteRepository.findOfferIdsByUserId(user.getId());
 	}
 
 	@Transactional(readOnly = true)
 	public List<OfferDTO> getFavoriteOffersForCurrentUser() {
-		User user = getCurrentUser();
+		Optional<User> userOpt = resolveAuthenticatedUser();
+		if (userOpt.isEmpty()) {
+			return Collections.emptyList();
+		}
+		User user = userOpt.get();
 		return favoriteRepository.findByUser_Id(user.getId()).stream().map(OfferFavorite::getOffer).map(offer -> {
 			OfferDTO dto = offerMapper.toDTO(offer);
 			dto.setFavorite(true);
@@ -77,15 +87,26 @@ public class FavoriteService {
 	}
 
 	private User getCurrentUser() {
-		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+		Optional<User> userOpt = resolveAuthenticatedUser();
+		if (userOpt.isPresent()) {
+			return userOpt.get();
+		}
 
+		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 		if (authentication == null || !authentication.isAuthenticated()
 				|| "anonymousUser".equals(authentication.getPrincipal())) {
 			throw new AccessDeniedException("Utilisateur non authentifié");
 		}
 
-		String username = authentication.getName();
-		return userRepository.findByUsername(username)
-				.orElseThrow(() -> new AccessDeniedException("Utilisateur introuvable: " + username));
+		throw new AccessDeniedException("Utilisateur introuvable: " + authentication.getName());
+	}
+
+	private Optional<User> resolveAuthenticatedUser() {
+		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+		if (authentication == null || !authentication.isAuthenticated()
+				|| "anonymousUser".equals(authentication.getPrincipal())) {
+			return Optional.empty();
+		}
+		return userRepository.findByUsername(authentication.getName());
 	}
 }

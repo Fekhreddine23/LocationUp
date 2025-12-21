@@ -18,6 +18,7 @@ public class UserDTO {
 	private String role; // String au lieu de Enum
 	private String email;
 	private String status;
+	private String avatarUrl;
 
 	// Constructeurs
 	public UserDTO() {
@@ -94,6 +95,14 @@ public class UserDTO {
 
 	public void setStatus(String status) {
 		this.status = status;
+	}
+
+	public String getAvatarUrl() {
+		return avatarUrl;
+	}
+
+	public void setAvatarUrl(String avatarUrl) {
+		this.avatarUrl = avatarUrl;
 	}
 
 }

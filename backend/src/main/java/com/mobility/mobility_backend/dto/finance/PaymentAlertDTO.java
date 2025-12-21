@@ -11,6 +11,8 @@ public class PaymentAlertDTO {
 	private String severity;
 	private String message;
 	private LocalDateTime reservationDate;
+	private boolean identityVerified;
+	private String identityStatus;
 
 	public PaymentAlertDTO() {
 	}
@@ -24,6 +26,12 @@ public class PaymentAlertDTO {
 		this.severity = severity;
 		this.message = message;
 		this.reservationDate = reservationDate;
+	}
+	public PaymentAlertDTO(Integer reservationId, String customer, double amount, String paymentStatus, String severity,
+			String message, LocalDateTime reservationDate, boolean identityVerified, String identityStatus) {
+		this(reservationId, customer, amount, paymentStatus, severity, message, reservationDate);
+		this.identityVerified = identityVerified;
+		this.identityStatus = identityStatus;
 	}
 
 	public Integer getReservationId() {
@@ -80,5 +88,21 @@ public class PaymentAlertDTO {
 
 	public void setReservationDate(LocalDateTime reservationDate) {
 		this.reservationDate = reservationDate;
+	}
+
+	public boolean isIdentityVerified() {
+		return identityVerified;
+	}
+
+	public void setIdentityVerified(boolean identityVerified) {
+		this.identityVerified = identityVerified;
+	}
+
+	public String getIdentityStatus() {
+		return identityStatus;
+	}
+
+	public void setIdentityStatus(String identityStatus) {
+		this.identityStatus = identityStatus;
 	}
 }

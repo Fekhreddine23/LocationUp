@@ -1,6 +1,7 @@
 package com.mobility.mobility_backend.entity;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 import jakarta.persistence.Column;
@@ -58,6 +59,30 @@ public class Reservation {
 
 	@Column(name = "updated_at")
 	private LocalDateTime updatedAt;
+
+	@Column(name = "driver_license_number", length = 120)
+	private String driverLicenseNumber;
+
+	@Column(name = "driver_license_country", length = 8)
+	private String driverLicenseCountry;
+
+	@Column(name = "driver_license_category", length = 30)
+	private String driverLicenseCategory;
+
+	@Column(name = "driver_license_expiry")
+	private LocalDate driverLicenseExpiry;
+
+	@Column(name = "driver_usage_reason", length = 512)
+	private String driverUsageReason;
+
+	@Column(name = "driver_km_per_year")
+	private Integer driverKmPerYear;
+
+	@Column(name = "driver_notes", length = 512)
+	private String driverNotes;
+
+	@Column(name = "driver_profile_completed_at")
+	private LocalDateTime driverProfileCompletedAt;
 
 	// Getters and Setters
 
@@ -147,6 +172,70 @@ public class Reservation {
 
 	public void setUpdatedAt(LocalDateTime updatedAt) {
 		this.updatedAt = updatedAt;
+	}
+
+	public String getDriverLicenseNumber() {
+		return driverLicenseNumber;
+	}
+
+	public void setDriverLicenseNumber(String driverLicenseNumber) {
+		this.driverLicenseNumber = driverLicenseNumber;
+	}
+
+	public String getDriverLicenseCountry() {
+		return driverLicenseCountry;
+	}
+
+	public void setDriverLicenseCountry(String driverLicenseCountry) {
+		this.driverLicenseCountry = driverLicenseCountry;
+	}
+
+	public String getDriverLicenseCategory() {
+		return driverLicenseCategory;
+	}
+
+	public void setDriverLicenseCategory(String driverLicenseCategory) {
+		this.driverLicenseCategory = driverLicenseCategory;
+	}
+
+	public LocalDate getDriverLicenseExpiry() {
+		return driverLicenseExpiry;
+	}
+
+	public void setDriverLicenseExpiry(LocalDate driverLicenseExpiry) {
+		this.driverLicenseExpiry = driverLicenseExpiry;
+	}
+
+	public String getDriverUsageReason() {
+		return driverUsageReason;
+	}
+
+	public void setDriverUsageReason(String driverUsageReason) {
+		this.driverUsageReason = driverUsageReason;
+	}
+
+	public Integer getDriverKmPerYear() {
+		return driverKmPerYear;
+	}
+
+	public void setDriverKmPerYear(Integer driverKmPerYear) {
+		this.driverKmPerYear = driverKmPerYear;
+	}
+
+	public String getDriverNotes() {
+		return driverNotes;
+	}
+
+	public void setDriverNotes(String driverNotes) {
+		this.driverNotes = driverNotes;
+	}
+
+	public LocalDateTime getDriverProfileCompletedAt() {
+		return driverProfileCompletedAt;
+	}
+
+	public void setDriverProfileCompletedAt(LocalDateTime driverProfileCompletedAt) {
+		this.driverProfileCompletedAt = driverProfileCompletedAt;
 	}
 
 	public enum ReservationStatus {

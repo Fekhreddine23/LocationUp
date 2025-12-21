@@ -1,12 +1,13 @@
 package com.mobility.mobility_backend.dto.auth;
 
 public class AuthenticationResponse {
-	private String token;
+	private String token; // Access token
+	private String refreshToken; // Refresh token (non exposé côté front, utilisé pour le cookie)
 	private String username;
 	private String role;
 	private Integer userId;
+	private String avatarUrl;
 
-	// Constructeurs
 	public AuthenticationResponse() {
 	}
 
@@ -16,15 +17,13 @@ public class AuthenticationResponse {
 		this.role = role;
 	}
 
-	// NOUVEAU Constructeur avec userId
 	public AuthenticationResponse(String token, String username, String role, Integer userId) {
 		this.token = token;
 		this.username = username;
 		this.role = role;
-		this.setUserId(userId); // ← MÊME TYPE QUE User.id
+		this.userId = userId;
 	}
 
-	// Getters et Setters
 	public String getToken() {
 		return token;
 	}
@@ -57,4 +56,19 @@ public class AuthenticationResponse {
 		this.userId = userId;
 	}
 
+	public String getAvatarUrl() {
+		return avatarUrl;
+	}
+
+	public void setAvatarUrl(String avatarUrl) {
+		this.avatarUrl = avatarUrl;
+	}
+
+	public String getRefreshToken() {
+		return refreshToken;
+	}
+
+	public void setRefreshToken(String refreshToken) {
+		this.refreshToken = refreshToken;
+	}
 }

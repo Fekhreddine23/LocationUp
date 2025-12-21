@@ -2,6 +2,7 @@ package com.mobility.mobility_backend.dto;
 
 import org.springframework.stereotype.Component;
 
+import com.mobility.mobility_backend.dto.driver.DriverProfileDTO;
 import com.mobility.mobility_backend.entity.Reservation;
 
 @Component
@@ -28,6 +29,7 @@ public class ReservationMapper {
 			dto.setUserUsername(reservation.getUser().getUsername());
 			dto.setUserEmail(reservation.getUser().getEmail());
 		}
+		dto.setDriverProfile(buildDriverProfileSnapshot(reservation));
 		return dto;
 	}
 
@@ -110,5 +112,20 @@ public class ReservationMapper {
 		if (reservationDTO.getUpdatedAt() != null) {
 			reservation.setUpdatedAt(reservationDTO.getUpdatedAt());
 		}
+	}
+
+	private DriverProfileDTO buildDriverProfileSnapshot(Reservation reservation) {
+		if (reservation == null) {
+			return null;
+		}
+		DriverProfileDTO snapshot = new DriverProfileDTO();
+		snapshot.setLicenseNumber(reservation.getDriverLicenseNumber());
+		snapshot.setLicenseCountry(reservation.getDriverLicenseCountry());
+		snapshot.setLicenseCategory(reservation.getDriverLicenseCategory());
+		snapshot.setLicenseExpiresOn(reservation.getDriverLicenseExpiry());
+		snapshot.setUsageReason(reservation.getDriverUsageReason());
+		snapshot.setAnnualKilometers(reservation.getDriverKmPerYear());
+		snapshot.setNotes(reservation.getDriverNotes());
+		return snapshot;
 	}
 }

@@ -49,6 +49,9 @@ public class Admin {
 	@Column(nullable = false)
 	private String role;
 
+	@Column(name = "avatar_path")
+	private String avatarPath;
+
 	@CreationTimestamp
 	@Column(name = "created_at", updatable = false)
 	private LocalDateTime createdAt;
@@ -167,6 +170,14 @@ public class Admin {
 
 	public void setRole(String role) {
 		this.role = role;
+	}
+
+	public String getAvatarPath() {
+		return avatarPath;
+	}
+
+	public void setAvatarPath(String avatarPath) {
+		this.avatarPath = avatarPath;
 	}
 
 	// ========== EQUALS & HASHCODE ==========

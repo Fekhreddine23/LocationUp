@@ -22,6 +22,9 @@ public class JwtService {
 	@Value("${app.jwt.expiration:86400000}") // 24 heures par défaut
 	private long jwtExpiration;
 
+	@Value("${app.jwt.refresh-expiration:604800000}") // 7 jours par défaut
+	private long refreshExpiration;
+
 	public String generateToken(UserDetails userDetails) {
 
 		Map<String, Object> claims = new HashMap<>();
@@ -32,13 +35,23 @@ public class JwtService {
 
 		claims.put("role", role);
 		System.out.println("🔐 Adding role to JWT: " + role);
-		return generateToken(claims, userDetails);
+		return generateToken(claims, userDetails, jwtExpiration);
 	}
 
 	public String generateToken(Map<String, Object> extraClaims, UserDetails userDetails) {
+		return generateToken(extraClaims, userDetails, jwtExpiration);
+	}
+
+	public String generateRefreshToken(UserDetails userDetails) {
+		Map<String, Object> claims = new HashMap<>();
+		claims.put("type", "refresh");
+		return generateToken(claims, userDetails, refreshExpiration);
+	}
+
+	public String generateToken(Map<String, Object> extraClaims, UserDetails userDetails, long expirationMs) {
 		// Version simplifiée sans JJWT
 		String header = "{\"alg\":\"HS256\",\"typ\":\"JWT\"}";
-		String payload = createPayload(userDetails.getUsername(), extraClaims);
+		String payload = createPayload(userDetails.getUsername(), extraClaims, expirationMs);
 
 		String headerEncoded = Base64.getUrlEncoder().withoutPadding().encodeToString(header.getBytes());
 		String payloadEncoded = Base64.getUrlEncoder().withoutPadding().encodeToString(payload.getBytes());
@@ -50,13 +63,17 @@ public class JwtService {
 
 	// ⭐ NOUVELLE MÉTHODE : Pour générer un token avec juste un username
 	public String generateToken(String username) {
-		return generateToken(username, new HashMap<>());
+		return generateToken(username, new HashMap<>(), jwtExpiration);
 	}
 
 	// ⭐ NOUVELLE MÉTHODE : Pour générer un token avec username et claims
 	public String generateToken(String username, Map<String, Object> extraClaims) {
+		return generateToken(username, extraClaims, jwtExpiration);
+	}
+
+	private String generateToken(String username, Map<String, Object> extraClaims, long expirationMs) {
 		String header = "{\"alg\":\"HS256\",\"typ\":\"JWT\"}";
-		String payload = createPayload(username, extraClaims);
+		String payload = createPayload(username, extraClaims, expirationMs);
 
 		String headerEncoded = Base64.getUrlEncoder().withoutPadding().encodeToString(header.getBytes());
 		String payloadEncoded = Base64.getUrlEncoder().withoutPadding().encodeToString(payload.getBytes());
@@ -66,9 +83,9 @@ public class JwtService {
 		return headerEncoded + "." + payloadEncoded + "." + signature;
 	}
 
-	private String createPayload(String username, Map<String, Object> extraClaims) {
+	private String createPayload(String username, Map<String, Object> extraClaims, long expirationMs) {
 		long currentTime = System.currentTimeMillis();
-		long expirationTime = currentTime + jwtExpiration;
+		long expirationTime = currentTime + expirationMs;
 
 		StringBuilder payload = new StringBuilder();
 		payload.append("{\"sub\":\"").append(username).append("\"");
@@ -107,6 +124,18 @@ public class JwtService {
 
 		final String username = extractUsername(token);
 		return (username != null && username.equals(userDetails.getUsername())) && !isTokenExpired(token);
+	}
+
+	public boolean isRefreshTokenValid(String token, UserDetails userDetails) {
+		if (!isTokenValid(token, userDetails)) {
+			return false;
+		}
+		String type = extractClaim(token, "type");
+		return "refresh".equalsIgnoreCase(type);
+	}
+
+	public long getRefreshExpirationMs() {
+		return refreshExpiration;
 	}
 
 	private boolean isTokenExpired(String token) {

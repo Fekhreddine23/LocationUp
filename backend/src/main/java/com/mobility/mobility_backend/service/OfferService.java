@@ -25,6 +25,7 @@ import com.mobility.mobility_backend.repository.AdminRepository;
 import com.mobility.mobility_backend.repository.CityRepository;
 import com.mobility.mobility_backend.repository.MobilityServiceRepository;
 import com.mobility.mobility_backend.repository.OfferRepository;
+import com.mobility.mobility_backend.util.SanitizationUtils;
 
 @Service
 @Transactional
@@ -84,17 +85,23 @@ public class OfferService {
 			// CHARGEMENT DES ENTITÉS LIÉES
 			System.out.println("📥 Chargement des entités liées...");
 
-			City pickupLocation = cityRepository.findByName(createOfferDTO.getPickupLocationName()).orElseGet(() -> {
+			String sanitizedPickupName = SanitizationUtils.sanitizeText(createOfferDTO.getPickupLocationName());
+			String sanitizedReturnName = SanitizationUtils.sanitizeText(createOfferDTO.getReturnLocationName());
+			if (sanitizedPickupName.isBlank() || sanitizedReturnName.isBlank()) {
+				throw new IllegalArgumentException("Les lieux de départ/retour ne peuvent pas être vides");
+			}
+
+			City pickupLocation = cityRepository.findByName(sanitizedPickupName).orElseGet(() -> {
 				// Crée la ville si elle n'existe pas
 				City newCity = new City();
-				newCity.setName(createOfferDTO.getPickupLocationName());
+				newCity.setName(sanitizedPickupName);
 				System.out.println("➕ Création nouvelle ville: " + newCity.getName());
 				return cityRepository.save(newCity);
 			});
 
-			City returnLocation = cityRepository.findByName(createOfferDTO.getReturnLocationName()).orElseGet(() -> {
+			City returnLocation = cityRepository.findByName(sanitizedReturnName).orElseGet(() -> {
 				City newCity = new City();
-				newCity.setName(createOfferDTO.getReturnLocationName().trim());
+				newCity.setName(sanitizedReturnName);
 				return cityRepository.save(newCity);
 			});
 
@@ -118,10 +125,12 @@ public class OfferService {
 			offer.setMobilityService(mobilityService);
 			offer.setAdmin(admin);
 			offer.setPickupDatetime(createOfferDTO.getPickupDatetime());
-			offer.setDescription(createOfferDTO.getDescription());
+			offer.setDescription(SanitizationUtils.sanitizeText(createOfferDTO.getDescription()));
 			offer.setPrice(createOfferDTO.getPrice());
 			offer.setStatus(createOfferDTO.getStatus());
 			offer.setActive(createOfferDTO.isActive());
+			offer.setImageUrl(createOfferDTO.getImageUrl());
+			offer.setGalleryUrls(formatGalleryUrls(createOfferDTO.getGalleryUrls()));
 
 			System.out.println("💾 Sauvegarde de l'offre...");
 			Offer savedOffer = offerRepository.save(offer);
@@ -140,7 +149,7 @@ public class OfferService {
 		try {
 			System.out.println("🔍 Recherche d'un administrateur...");
 
-			// Méthode 1: Récupérer l'admin connecté depuis le contexte de sécurité
+			// Récupérer l'admin connecté depuis le contexte de sécurité
 			Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 			if (authentication != null && authentication.isAuthenticated()
 					&& !"anonymousUser".equals(authentication.getPrincipal())) {
@@ -156,24 +165,7 @@ public class OfferService {
 				}
 			}
 
-			// Méthode 2: Fallback - premier admin avec vérification
-			System.out.println("⚠️ Utilisation du fallback - recherche du premier admin");
-			List<Admin> admins = adminRepository.findAll();
-
-			if (admins.isEmpty()) {
-				throw new RuntimeException("❌ Aucun administrateur trouvé dans la base de données");
-			}
-
-			Admin firstAdmin = admins.get(0);
-
-			// VÉRIFICATION CRITIQUE : s'assurer que l'admin a un ID
-			if (firstAdmin.getAdminId() == null) {
-				throw new RuntimeException("❌ L'administrateur trouvé n'a pas d'ID valide");
-			}
-
-			System.out.println(
-					"✅ Utilisation de l'admin: " + firstAdmin.getUsername() + " (ID: " + firstAdmin.getAdminId() + ")");
-			return firstAdmin;
+			throw new RuntimeException("❌ Aucun administrateur authentifié dans le contexte de sécurité");
 
 		} catch (Exception e) {
 			System.out.println("❌ Erreur dans getCurrentAdmin: " + e.getMessage());
@@ -243,7 +235,7 @@ public class OfferService {
 
 		// Mettre à jour les autres champs
 		if (offerDTO.getDescription() != null) {
-			existingOffer.setDescription(offerDTO.getDescription());
+			existingOffer.setDescription(SanitizationUtils.sanitizeText(offerDTO.getDescription()));
 		}
 		if (offerDTO.getPrice() != null) {
 			existingOffer.setPrice(offerDTO.getPrice());
@@ -254,6 +246,12 @@ public class OfferService {
 		if (offerDTO.getStatus() != null) {
 			existingOffer.setStatus(offerDTO.getStatus());
 		}
+		if (offerDTO.getImageUrl() != null) {
+			existingOffer.setImageUrl(offerDTO.getImageUrl());
+		}
+		if (offerDTO.getGalleryUrls() != null) {
+			existingOffer.setGalleryUrls(formatGalleryUrls(offerDTO.getGalleryUrls()));
+		}
 
 		existingOffer.setActive(offerDTO.isActive());
 
@@ -262,6 +260,32 @@ public class OfferService {
 		System.out.println("✅ Offre mise à jour ID: " + updatedOffer.getOfferId());
 
 		return Optional.of(offerMapper.toDTO(updatedOffer));
+	}
+
+	private String formatGalleryUrls(java.util.List<String> urls) {
+		if (urls == null || urls.isEmpty()) {
+			return null;
+		}
+		final int MAX_IMAGES = 5;
+		java.util.List<String> filtered = urls.stream()
+				.filter(u -> u != null && !u.isBlank())
+				.map(String::trim)
+				.filter(this::isSafeImageUrl)
+				.limit(MAX_IMAGES)
+				.toList();
+		if (filtered.isEmpty()) {
+			return null;
+		}
+		try {
+			return com.mobility.mobility_backend.dto.OfferMapper.OBJECT_MAPPER.writeValueAsString(filtered);
+		} catch (Exception e) {
+			return String.join(",", filtered);
+		}
+	}
+
+	private boolean isSafeImageUrl(String url) {
+		if (url.startsWith("/uploads/")) return true;
+		return url.startsWith("http://") || url.startsWith("https://");
 	}
 
 	public boolean deleteOffer(Integer id) {

@@ -63,6 +63,8 @@ public class SecurityConfig {
 						.requestMatchers("/api/reservations/test-simple").permitAll().requestMatchers("/api/test/**")
 						.permitAll().requestMatchers("/api/debug/**").permitAll()
 
+						.requestMatchers("/api/users/avatar/**").permitAll()
+
 						// ✅ les offres consultables publiquement, mais actions (favoris…) nécessitent un JWT
 						.requestMatchers(HttpMethod.GET, "/api/offers/**").permitAll()
 
@@ -121,7 +123,7 @@ public class SecurityConfig {
 		return config.getAuthenticationManager();
 	}
 
- 
+
 	@Bean
 	public PasswordEncoder passwordEncoder() {
 	    System.out.println("🔐 [SecurityConfig] Creating BCryptPasswordEncoder");

@@ -189,6 +189,9 @@ public class UserServiceImpl implements UserService {
 		dto.setId(saved.getId());
 		dto.setUsername(saved.getUsername());
 		dto.setEmail(saved.getEmail());
+		if (saved.getAvatarPath() != null && !saved.getAvatarPath().isBlank()) {
+			dto.setAvatarUrl("/api/users/avatar/" + saved.getAvatarPath());
+		}
 		return dto;
 	}
 

@@ -72,16 +72,16 @@ public class Offer {
 	@DecimalMin(value = "0.0", inclusive = false, message = "Le prix doit être supérieur à 0")
 	@Column(nullable = false, precision = 10, scale = 2)
 	private BigDecimal price;
-	
-	
+
+
 	@Size(max = IMAGE_URL_MAX_LENGTH, message = "L'URL de l'image ne peut pas dépasser " + IMAGE_URL_MAX_LENGTH + " caractères")
 	@Column(name = "image_url", length = IMAGE_URL_MAX_LENGTH)
 	private String imageUrl;
-	
-	
-	
 
-	
+
+
+
+
 
 	@CreationTimestamp
 	@Column(name = "created_at", updatable = false)
@@ -100,6 +100,9 @@ public class Offer {
 
 	@Column(name = "active", nullable = false)
 	private boolean active = true; // Valeur par défaut
+
+	@Column(name = "gallery_urls", columnDefinition = "TEXT")
+	private String galleryUrls; // JSON array stored as string
 
 	// Constructeurs
 	public Offer() {
@@ -246,13 +249,13 @@ public class Offer {
 	public void setCreatedAt(LocalDateTime createdAt) {
 		this.createdAt = createdAt;
 	}
-	
-	
+
+
 	public String getImageUrl() {
 		return imageUrl;
-		
+
 	}
-	
+
 	public void setImageUrl(String imageUrl) {
 		this.imageUrl = imageUrl;
 	}
@@ -271,6 +274,14 @@ public class Offer {
 
 	public void setVersion(Long version) {
 		this.version = version;
+	}
+
+	public String getGalleryUrls() {
+		return galleryUrls;
+	}
+
+	public void setGalleryUrls(String galleryUrls) {
+		this.galleryUrls = galleryUrls;
 	}
 
 	// Méthodes utilitaires
@@ -319,10 +330,9 @@ public class Offer {
 
 	public void setActive(boolean active) {
 		this.active = active;
-
 	}
 
-	public boolean getActive(boolean active) {
+	public boolean isActive() {
 		return active;
 	}
 

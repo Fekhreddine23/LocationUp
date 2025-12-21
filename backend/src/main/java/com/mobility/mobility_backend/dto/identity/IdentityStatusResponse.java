@@ -1,6 +1,8 @@
 package com.mobility.mobility_backend.dto.identity;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 public class IdentityStatusResponse {
 
@@ -8,6 +10,7 @@ public class IdentityStatusResponse {
 	private boolean verified;
 	private String reason;
 	private LocalDateTime updatedAt;
+	private List<IdentityDocumentDTO> documents = new ArrayList<>();
 
 	public IdentityStatusResponse() {
 	}
@@ -17,6 +20,12 @@ public class IdentityStatusResponse {
 		this.verified = verified;
 		this.reason = reason;
 		this.updatedAt = updatedAt;
+	}
+
+	public IdentityStatusResponse(String status, boolean verified, String reason, LocalDateTime updatedAt,
+			List<IdentityDocumentDTO> documents) {
+		this(status, verified, reason, updatedAt);
+		setDocuments(documents);
 	}
 
 	public String getStatus() {
@@ -49,5 +58,13 @@ public class IdentityStatusResponse {
 
 	public void setUpdatedAt(LocalDateTime updatedAt) {
 		this.updatedAt = updatedAt;
+	}
+
+	public List<IdentityDocumentDTO> getDocuments() {
+		return documents;
+	}
+
+	public void setDocuments(List<IdentityDocumentDTO> documents) {
+		this.documents = documents != null ? documents : new ArrayList<>();
 	}
 }

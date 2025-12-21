@@ -1,33 +1,32 @@
 package com.mobility.mobility_backend.service.cache;
 
-import org.springframework.stereotype.Service;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
-
 @Service
 public class MemoryCacheService {
-	
+
 	  private static final Logger logger = LoggerFactory.getLogger(MemoryCacheService.class);
-	    
+
 	    private final ConcurrentHashMap<String, CacheEntry> memoryCache = new ConcurrentHashMap<>();
-	    
+
 	    private static final long DEFAULT_TTL = 30; // 30 minutes
 
 	    private static class CacheEntry {
 	        Object data;
 	        long timestamp;
 	        long ttl;
-	        
+
 	        CacheEntry(Object data, long ttl) {
 	            this.data = data;
 	            this.timestamp = System.currentTimeMillis();
 	            this.ttl = ttl;
 	        }
-	        
+
 	        boolean isExpired() {
 	            return System.currentTimeMillis() - timestamp > ttl;
 	        }

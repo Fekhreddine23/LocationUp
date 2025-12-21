@@ -81,8 +81,9 @@ public class TwoFactorAuthService {
 
 		for (char c : base32.toCharArray()) {
 			int value = base32Chars.indexOf(c);
-			if (value == -1)
+			if (value == -1) {
 				continue;
+			}
 
 			buffer = (buffer << 5) | value;
 			bitsLeft += 5;

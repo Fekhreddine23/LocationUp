@@ -18,15 +18,15 @@ public class MobilityApplication {
 	 * @Bean public CommandLineRunner dataInitializer(UserRepository userRepository,
 	 * PasswordEncoder passwordEncoder) { return args -> {
 	 * System.out.println("🎯🎯🎯 BEAN DATAINITIALIZER EXECUTING! 🎯🎯🎯");
-	 * 
+	 *
 	 * // Nettoyer la base de données avant de créer un nouvel utilisateur
 	 * userRepository.deleteAll();
-	 * 
+	 *
 	 * // Créer un utilisateur User user = new User(); user.setUsername("testuser");
 	 * user.setEmail("test@example.com");
 	 * user.setPassword(passwordEncoder.encode("password123")); // Hachage du mot de
 	 * passe user.setRole(Role.ROLE_USER); // Assigner un rôle à l'utilisateur
-	 * 
+	 *
 	 * // Sauvegarder l'utilisateur dans la base de données User savedUser =
 	 * userRepository.save(user); System.out.println("✅ User created with ID: " +
 	 * savedUser.getId()); System.out.println("🔐 Password hash: " +

@@ -15,4 +15,8 @@ public interface UserIdentityVerificationRepository
 	Optional<UserIdentityVerification> findByStripeSessionId(String sessionId);
 
 	List<UserIdentityVerification> findAllByOrderByUpdatedAtDesc();
+
+	List<UserIdentityVerification> findByUser_IdInOrderByUpdatedAtDesc(List<Integer> userIds);
+
+	List<UserIdentityVerification> findByUser_IdOrderByUpdatedAtDesc(Integer userId);
 }

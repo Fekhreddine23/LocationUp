@@ -1,6 +1,11 @@
 package com.mobility.mobility_backend.dto;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
+import com.mobility.mobility_backend.dto.driver.DriverProfileDTO;
+import com.mobility.mobility_backend.dto.identity.IdentityDocumentDTO;
 
 public class ReservationDTO {
 	private Integer reservationId;
@@ -17,6 +22,10 @@ private LocalDateTime reservationDate;
 	private String userUsername;
 	private String userEmail;
 	private String userIdentityStatus;
+	private LocalDateTime userIdentityUpdatedAt;
+	private String userIdentityReason;
+	private DriverProfileDTO driverProfile;
+	private List<IdentityDocumentDTO> identityDocuments = new ArrayList<>();
 
 	// Constructeurs
 	public ReservationDTO() {
@@ -213,5 +222,37 @@ private LocalDateTime reservationDate;
 
 	public void setUserIdentityStatus(String userIdentityStatus) {
 		this.userIdentityStatus = userIdentityStatus;
+	}
+
+	public LocalDateTime getUserIdentityUpdatedAt() {
+		return userIdentityUpdatedAt;
+	}
+
+	public void setUserIdentityUpdatedAt(LocalDateTime userIdentityUpdatedAt) {
+		this.userIdentityUpdatedAt = userIdentityUpdatedAt;
+	}
+
+	public String getUserIdentityReason() {
+		return userIdentityReason;
+	}
+
+	public void setUserIdentityReason(String userIdentityReason) {
+		this.userIdentityReason = userIdentityReason;
+	}
+
+	public DriverProfileDTO getDriverProfile() {
+		return driverProfile;
+	}
+
+	public void setDriverProfile(DriverProfileDTO driverProfile) {
+		this.driverProfile = driverProfile;
+	}
+
+	public List<IdentityDocumentDTO> getIdentityDocuments() {
+		return identityDocuments;
+	}
+
+	public void setIdentityDocuments(List<IdentityDocumentDTO> identityDocuments) {
+		this.identityDocuments = identityDocuments != null ? identityDocuments : new ArrayList<>();
 	}
 }

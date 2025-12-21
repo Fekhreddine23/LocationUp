@@ -7,12 +7,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 public class TempPasswordController {
-    
+
     @GetMapping("/generate-password")
     public String generatePassword(@RequestParam String password) {
         BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
         String hash = encoder.encode(password);
-        
+
         return "Raw: " + password + "\n" +
                "BCrypt: " + hash + "\n" +
                "SQL: INSERT INTO admins (username, email, password, role, admin_level) VALUES " +

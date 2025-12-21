@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import com.mobility.mobility_backend.dto.CreateOfferDTO;
 import com.mobility.mobility_backend.dto.OfferDTO;
@@ -25,7 +26,6 @@ import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/offers")
-//@PreAuthorize("hasAnyRole('USER', 'ADMIN')")
 public class OfferController {
 
 	private final OfferService offerService;
@@ -55,6 +55,7 @@ public class OfferController {
 	// Créer une nouvelle offre - CORRECTION : Retourne ResponseEntity<?> au lieu de
 	// ResponseEntity<OfferDTO>
 	@PostMapping
+	@PreAuthorize("hasRole('ADMIN')")
 	public ResponseEntity<?> createOffer(@Valid @RequestBody CreateOfferDTO createOfferDTO) {
 		try {
 			OfferDTO createdOffer = offerService.createOffer(createOfferDTO);
@@ -66,6 +67,7 @@ public class OfferController {
 
 	// Mettre à jour une offre - CORRECTION : Retourne ResponseEntity<?>
 	@PutMapping("/{id}")
+	@PreAuthorize("hasRole('ADMIN')")
 	public ResponseEntity<?> updateOffer(@PathVariable Integer id, @Valid @RequestBody OfferDTO offerDTO) {
 		try {
 			Optional<OfferDTO> updatedOffer = offerService.updateOffer(id, offerDTO);
@@ -78,29 +80,34 @@ public class OfferController {
 
 	// Supprimer une offre
 	@DeleteMapping("/{id}")
+	@PreAuthorize("hasRole('ADMIN')")
 	public ResponseEntity<Void> deleteOffer(@PathVariable Integer id) {
 		boolean deleted = offerService.deleteOffer(id);
 		return deleted ? new ResponseEntity<>(HttpStatus.NO_CONTENT) : new ResponseEntity<>(HttpStatus.NOT_FOUND);
 	}
 
 	@PostMapping("/{offerId}/favorite")
+	@PreAuthorize("hasAnyAuthority('ROLE_USER','ROLE_ADMIN')")
 	public ResponseEntity<Map<String, Object>> markAsFavorite(@PathVariable Integer offerId) {
 		favoriteService.addFavorite(offerId);
 		return ResponseEntity.ok(Map.of("offerId", offerId, "favorite", true));
 	}
 
 	@DeleteMapping("/{offerId}/favorite")
+	@PreAuthorize("hasAnyAuthority('ROLE_USER','ROLE_ADMIN')")
 	public ResponseEntity<Map<String, Object>> removeFavorite(@PathVariable Integer offerId) {
 		favoriteService.removeFavorite(offerId);
 		return ResponseEntity.ok(Map.of("offerId", offerId, "favorite", false));
 	}
 
 	@GetMapping("/favorites")
+	@PreAuthorize("hasAnyAuthority('ROLE_USER','ROLE_ADMIN')")
 	public ResponseEntity<List<OfferDTO>> getFavoriteOffers() {
 		return ResponseEntity.ok(favoriteService.getFavoriteOffersForCurrentUser());
 	}
 
 	@GetMapping("/favorites/ids")
+	@PreAuthorize("hasAnyAuthority('ROLE_USER','ROLE_ADMIN')")
 	public ResponseEntity<List<Integer>> getFavoriteIds() {
 		return ResponseEntity.ok(favoriteService.getFavoriteOfferIdsForCurrentUser());
 	}

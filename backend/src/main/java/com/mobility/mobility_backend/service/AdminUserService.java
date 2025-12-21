@@ -13,11 +13,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.mobility.mobility_backend.dto.AdminStatsDTO;
 import com.mobility.mobility_backend.dto.UserDTO;
-import com.mobility.mobility_backend.entity.Reservation;
+import com.mobility.mobility_backend.entity.Reservation.ReservationStatus;
 import com.mobility.mobility_backend.entity.Role;
 import com.mobility.mobility_backend.entity.User;
-import com.mobility.mobility_backend.repository.UserRepository;
 import com.mobility.mobility_backend.repository.ReservationRepository;
+import com.mobility.mobility_backend.repository.UserRepository;
 import com.mobility.mobility_backend.service.cache.AdminStatsCacheService;
 
 @Service
@@ -25,10 +25,10 @@ import com.mobility.mobility_backend.service.cache.AdminStatsCacheService;
 public class AdminUserService {
 
 	private final UserRepository userRepository;
-	
+
 	@Autowired
 	private ReservationRepository reservationRepository;
-	
+
 	@Autowired
 	private AdminStatsCacheService adminStatsCacheService;
 
@@ -54,11 +54,11 @@ public class AdminUserService {
 		List<UserDTO> users = userPage.getContent().stream()
 				.map(this::convertToDTO)
 				.collect(Collectors.toList());
-		
+
 		// Mettre en cache
 		adminStatsCacheService.cacheUsers(page, size, users);
 		System.out.println("💾 Utilisateurs mis en CACHE - Page: " + page + ", Size: " + size);
-		
+
 		return users;
 	}
 
@@ -75,11 +75,11 @@ public class AdminUserService {
 
 		// Si pas en cache, calculer
 		AdminStatsDTO stats = calculateAdminStats();
-		
+
 		// Mettre en cache
 		adminStatsCacheService.cacheStats(stats);
 		System.out.println("💾 Statistiques mises en CACHE");
-		
+
 		return stats;
 	}
 
@@ -89,7 +89,7 @@ public class AdminUserService {
 	private AdminStatsDTO calculateAdminStats() {
 		Long totalUsers = userRepository.count();
 		Long totalReservations = reservationRepository.count();
-		Long activeReservations = reservationRepository.countByStatus(Reservation.ReservationStatus.CONFIRMED);
+		Long activeReservations = reservationRepository.countByStatus(ReservationStatus.CONFIRMED);
 		//Double totalRevenue = reservationRepository.getTotalRevenue();
 
 		return new AdminStatsDTO(
@@ -111,11 +111,11 @@ public class AdminUserService {
 			Role role = Role.valueOf(newRole.toUpperCase());
 			user.setRole(role);
 			User updatedUser = userRepository.save(user);
-			
+
 			// Invalider le cache car les données ont changé
 			invalidateUserCache();
 			System.out.println("🗑️ Cache invalidé après changement de rôle");
-			
+
 			return convertToDTO(updatedUser);
 		} catch (IllegalArgumentException e) {
 			throw new RuntimeException("Rôle invalide: " + newRole + ". Rôles valides: ROLE_USER, ROLE_ADMIN");
@@ -152,11 +152,11 @@ public class AdminUserService {
 		}
 
 		User updatedUser = userRepository.save(user);
-		
+
 		// Invalider le cache car les données ont changé
 		invalidateUserCache();
 		System.out.println("🗑️ Cache invalidé après mise à jour utilisateur");
-		
+
 		return convertToDTO(updatedUser);
 	}
 
@@ -169,7 +169,7 @@ public class AdminUserService {
 		// Implémentez la logique de désactivation selon votre modèle
 		// user.setActive(false);
 		userRepository.save(user);
-		
+
 		// Invalider le cache
 		invalidateUserCache();
 		System.out.println("🗑️ Cache invalidé après désactivation utilisateur");
@@ -184,7 +184,7 @@ public class AdminUserService {
 		// Implémentez la logique d'activation selon votre modèle
 		// user.setActive(true);
 		userRepository.save(user);
-		
+
 		// Invalider le cache
 		invalidateUserCache();
 		System.out.println("🗑️ Cache invalidé après activation utilisateur");
@@ -198,7 +198,7 @@ public class AdminUserService {
 			throw new RuntimeException("Utilisateur non trouvé avec l'ID: " + userId);
 		}
 		userRepository.deleteById(userId);
-		
+
 		// Invalider le cache
 		invalidateUserCache();
 		System.out.println("🗑️ Cache invalidé après suppression utilisateur");
@@ -229,8 +229,9 @@ public class AdminUserService {
 		dto.setRole(user.getRole().name());
 		dto.setFirstname(user.getFirstName());
 		dto.setLastname(user.getLastName());
-		dto.setEmail(user.getEmail());
-		dto.setRole(user.getRole().name());
+		if (user.getAvatarPath() != null && !user.getAvatarPath().isBlank()) {
+			dto.setAvatarUrl("/api/users/avatar/" + user.getAvatarPath());
+		}
 		return dto;
 	}
 }

@@ -41,7 +41,10 @@ public class IdentityController {
 			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 		}
 		String returnUrl = request != null ? request.getReturnUrl() : null;
-		IdentitySessionResponse response = identityVerificationService.startVerification(userId, returnUrl);
+		IdentitySessionResponse response = identityVerificationService.startVerification(userId,
+				request != null ? request.getReservationId() : null,
+				request != null ? request.getDocumentType() : null,
+				returnUrl);
 		return ResponseEntity.ok(response);
 	}
 

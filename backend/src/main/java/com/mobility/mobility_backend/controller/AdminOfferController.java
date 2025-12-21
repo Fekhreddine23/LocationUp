@@ -18,10 +18,13 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.http.MediaType;
 
 import com.mobility.mobility_backend.dto.CreateOfferDTO;
 import com.mobility.mobility_backend.dto.OfferDTO;
 import com.mobility.mobility_backend.service.OfferService;
+import com.mobility.mobility_backend.service.storage.ImageStorageService;
 
 @RestController
 @RequestMapping("/api/admin")
@@ -29,10 +32,12 @@ import com.mobility.mobility_backend.service.OfferService;
 public class AdminOfferController {
 
 	private final OfferService offerService;
+	private final ImageStorageService imageStorageService;
 
 	@Autowired
-	public AdminOfferController(OfferService offerService) {
+	public AdminOfferController(OfferService offerService, ImageStorageService imageStorageService) {
 		this.offerService = offerService;
+		this.imageStorageService = imageStorageService;
 	}
 
 	// 📋 Récupérer toutes les offres (paginated)
@@ -121,6 +126,16 @@ public class AdminOfferController {
 		} catch (Exception e) {
 			System.out.println("❌ Erreur création: " + e.getMessage());
 			return ResponseEntity.badRequest().body("Erreur lors de la création: " + e.getMessage());
+		}
+	}
+
+	@PostMapping(value = "/offers/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+	public ResponseEntity<?> uploadOfferImage(@RequestParam("file") MultipartFile file) {
+		try {
+			String url = imageStorageService.storeOfferImage(file);
+			return ResponseEntity.ok(Map.of("url", url));
+		} catch (Exception e) {
+			return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
 		}
 	}
 }

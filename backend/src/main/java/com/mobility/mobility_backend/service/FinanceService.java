@@ -6,13 +6,13 @@ import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.time.format.TextStyle;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
-import java.util.Comparator;
 
 import org.springframework.stereotype.Service;
 
@@ -24,11 +24,11 @@ import com.mobility.mobility_backend.dto.finance.PaymentAlertDTO;
 import com.mobility.mobility_backend.dto.finance.PaymentEventDTO;
 import com.mobility.mobility_backend.dto.finance.PaymentStatusBreakdownDTO;
 import com.mobility.mobility_backend.dto.finance.PeriodAmountProjection;
-import com.mobility.mobility_backend.entity.Reservation;
+import com.mobility.mobility_backend.dto.identity.IdentityStatusResponse;
 import com.mobility.mobility_backend.entity.PaymentEventLog;
-import com.mobility.mobility_backend.repository.ReservationRepository;
+import com.mobility.mobility_backend.entity.Reservation;
 import com.mobility.mobility_backend.repository.PaymentEventLogRepository;
-import com.mobility.mobility_backend.service.IdentityVerificationService;
+import com.mobility.mobility_backend.repository.ReservationRepository;
 
 @Service
 public class FinanceService {
@@ -139,11 +139,11 @@ public class FinanceService {
 						log.getType(), log.getStatus(), log.getErrorMessage(), log.getReceivedAt()))
 				.collect(Collectors.toList());
 	}
-	
-	
-	
-	/*gère désormais les alertes via une méthode paramétrable (getAlerts) capable de filtrer par sévérité, 
-	 * statut, texte, période et exigence d’action, avec limite configurable et CSV basé sur les résultats filtrés. 
+
+
+
+	/*gère désormais les alertes via une méthode paramétrable (getAlerts) capable de filtrer par sévérité,
+	 * statut, texte, période et exigence d’action, avec limite configurable et CSV basé sur les résultats filtrés.
 	 * L’overview tire aussi parti de cette méthode afin de présenter les mêmes données que l’API d’alertes.*/
 
 	public List<PaymentAlertDTO> getAlerts(String severity,
@@ -207,7 +207,7 @@ public class FinanceService {
 
 	public String buildAlertsCsv(List<PaymentAlertDTO> alerts) {
 		StringBuilder builder = new StringBuilder();
-		builder.append("Reservation,Client,Montant,Statut,Gravite,Message,Date\n");
+		builder.append("Reservation,Client,Montant,Statut,Gravite,Message,Date,Identite verifiee?,Statut identite\n");
 		alerts.forEach(alert -> builder
 				.append(alert.getReservationId()).append(',')
 				.append(escapeCsv(alert.getCustomer())).append(',')
@@ -215,7 +215,9 @@ public class FinanceService {
 				.append(alert.getPaymentStatus()).append(',')
 				.append(alert.getSeverity()).append(',')
 				.append(escapeCsv(alert.getMessage())).append(',')
-				.append(alert.getReservationDate()).append('\n'));
+				.append(alert.getReservationDate()).append(',')
+				.append(alert.isIdentityVerified() ? "oui" : "non").append(',')
+				.append(escapeCsv(alert.getIdentityStatus())).append('\n'));
 		return builder.toString();
 	}
 
@@ -302,11 +304,16 @@ public class FinanceService {
 	private PaymentAlertDTO toAlert(Reservation reservation) {
 		String severity = reservation.getPaymentStatus() == Reservation.PaymentStatus.FAILED ? "CRITIQUE" : "ALERTE";
 		String message = buildAlertMessage(reservation);
+		IdentityStatusResponse identityStatus = reservation.getUser() != null
+				? identityVerificationService.getStatus(reservation.getUser().getId())
+				: new IdentityStatusResponse("NONE", false, null, null);
 		return new PaymentAlertDTO(reservation.getReservationId(),
 				reservation.getUser() != null ? reservation.getUser().getUsername() : "Client",
 				round(resolveReservationAmount(reservation)),
 				reservation.getPaymentStatus() != null ? reservation.getPaymentStatus().name() : "PENDING", severity,
-				message, reservation.getReservationDate());
+				message, reservation.getReservationDate(),
+				identityStatus.isVerified(),
+				identityStatus.getStatus());
 	}
 
 	private String buildAlertMessage(Reservation reservation) {

@@ -39,7 +39,7 @@ public class DashboardService {
 	private final UserRepository userRepository;
 	private final ReservationRepository reservationRepository;
 	private final OfferRepository offerRepository;
-	
+
 
 	@Autowired
 	private AdminStatsCacheService adminStatsCacheService;
@@ -65,11 +65,11 @@ public class DashboardService {
 
 		// Si pas en cache, calculer les statistiques
 		AdminStatsDTO stats = calculateAdminStats();
-		
+
 		// Mettre en cache
 		adminStatsCacheService.cacheStats(stats);
 		System.out.println("💾 Statistiques mises en CACHE");
-		
+
 		return stats;
 	}
 
@@ -86,12 +86,12 @@ public class DashboardService {
 
 		// Utilisez le constructeur avec lastUpdated
 		return new AdminStatsDTO(
-			totalUsers, 
-			activeUsers, 
-			totalReservations, 
-			pendingReservations, 
-			totalOffers, 
-			totalRevenue, 
+			totalUsers,
+			activeUsers,
+			totalReservations,
+			pendingReservations,
+			totalOffers,
+			totalRevenue,
 			LocalDateTime.now() // ← Date de mise à jour
 		);
 	}
@@ -113,11 +113,11 @@ public class DashboardService {
 
 		// Si pas en cache, récupérer depuis la base
 		List<RecentActivityDTO> activity = fetchRecentActivity();
-		
+
 		// Mettre en cache
 		adminStatsCacheService.cacheRecentActivity(activity);
 		System.out.println("💾 Activité récente mise en CACHE");
-		
+
 		return activity;
 	}
 
@@ -165,7 +165,7 @@ public class DashboardService {
 	public AdminStatsDTO refreshAdminStats() {
 		// Invalider le cache
 		invalidateStatsCache();
-		
+
 		// Recalculer et remettre en cache
 		return getAdminStats();
 	}

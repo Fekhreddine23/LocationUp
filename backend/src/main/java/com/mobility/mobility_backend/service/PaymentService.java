@@ -4,8 +4,10 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.mobility.mobility_backend.dto.payment.PaymentSessionRequest;
 import com.mobility.mobility_backend.dto.payment.PaymentSessionResponse;
@@ -23,6 +25,7 @@ public class PaymentService {
 
 	private final ReservationRepository reservationRepository;
 	private final PaymentNotificationService paymentNotificationService;
+	private final IdentityVerificationService identityVerificationService;
 
 	@Value("${stripe.secret.key:}")
 	private String stripeSecretKey;
@@ -34,9 +37,11 @@ public class PaymentService {
 	private String defaultCancelUrl;
 
 	public PaymentService(ReservationRepository reservationRepository,
-			PaymentNotificationService paymentNotificationService) {
+			PaymentNotificationService paymentNotificationService,
+			IdentityVerificationService identityVerificationService) {
 		this.reservationRepository = reservationRepository;
 		this.paymentNotificationService = paymentNotificationService;
+		this.identityVerificationService = identityVerificationService;
 	}
 
 	public PaymentSessionResponse createCheckoutSession(PaymentSessionRequest request) throws StripeException {
@@ -45,6 +50,11 @@ public class PaymentService {
 		}
 		Reservation reservation = reservationRepository.findById(request.getReservationId())
 				.orElseThrow(() -> new IllegalArgumentException("Réservation introuvable"));
+		Integer userId = reservation.getUser() != null ? reservation.getUser().getId() : null;
+		if (userId == null || !identityVerificationService.isIdentityVerified(userId)) {
+			throw new ResponseStatusException(HttpStatus.PRECONDITION_FAILED,
+					"Vérifiez vos documents d'identité avant de lancer le paiement.");
+		}
 		Reservation.PaymentStatus previousStatus = reservation.getPaymentStatus();
 
 		if (reservation.getOffer() == null || reservation.getOffer().getPrice() == null) {

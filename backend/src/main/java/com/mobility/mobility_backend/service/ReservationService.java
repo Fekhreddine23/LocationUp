@@ -2,11 +2,11 @@ package com.mobility.mobility_backend.service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -14,11 +14,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.mobility.mobility_backend.dto.ReservationCreationDTO;
 import com.mobility.mobility_backend.dto.ReservationDTO;
 import com.mobility.mobility_backend.dto.ReservationMapper;
+import com.mobility.mobility_backend.dto.driver.DriverProfileDTO;
+import com.mobility.mobility_backend.dto.identity.IdentityStatusResponse;
 import com.mobility.mobility_backend.dto.timeline.ReservationTimelineDTO;
 import com.mobility.mobility_backend.dto.timeline.TimelineEventDTO;
 import com.mobility.mobility_backend.entity.Offer;
@@ -37,18 +41,21 @@ public class ReservationService {
 	private final ReservationMapper reservationMapper;
 	private final PaymentNotificationService paymentNotificationService;
 	private final IdentityVerificationService identityVerificationService;
+	private final DriverProfileService driverProfileService;
 
 	@Autowired
 	public ReservationService(ReservationRepository reservationRepository, UserRepository userRepository,
 			OfferRepository offerRepository, ReservationMapper reservationMapper,
 			PaymentNotificationService paymentNotificationService,
-			IdentityVerificationService identityVerificationService) {
+			IdentityVerificationService identityVerificationService,
+			DriverProfileService driverProfileService) {
 		this.reservationRepository = reservationRepository;
 		this.userRepository = userRepository;
 		this.offerRepository = offerRepository;
 		this.reservationMapper = reservationMapper;
 		this.paymentNotificationService = paymentNotificationService;
 		this.identityVerificationService = identityVerificationService;
+		this.driverProfileService = driverProfileService;
 	}
 
 	// Récupérer toutes les réservations
@@ -123,6 +130,11 @@ public class ReservationService {
 		reservation.setPaymentStatus(Reservation.PaymentStatus.PENDING);
 		reservation.setCreatedAt(LocalDateTime.now());
 		reservation.setUpdatedAt(LocalDateTime.now());
+		DriverProfileDTO driverProfile = creationDTO.getDriverProfile();
+		if (driverProfile == null) {
+			driverProfile = driverProfileService.getProfileSnapshot(user.getId());
+		}
+		applyDriverProfile(reservation, driverProfile);
 
 		System.out.println("🟡 [ReservationService] Saving reservation...");
 		Reservation savedReservation = reservationRepository.save(reservation);
@@ -171,6 +183,11 @@ public class ReservationService {
 			System.out.println("🟡 [ReservationService] Reservation found, current status: " + reservation.getStatus());
 			System.out.println("🟡 [ReservationService] Reservation user ID: " + reservation.getUser().getId());
 			System.out.println("🟡 [ReservationService] Reservation offer ID: " + reservation.getOffer().getOfferId());
+			Integer userId = reservation.getUser() != null ? reservation.getUser().getId() : null;
+			if (userId == null || !identityVerificationService.isIdentityVerified(userId)) {
+				throw new ResponseStatusException(HttpStatus.PRECONDITION_FAILED,
+						"Vérifiez vos documents d'identité avant de confirmer la réservation.");
+			}
 
 			reservation.setStatus(Reservation.ReservationStatus.CONFIRMED);
 			Reservation updatedReservation = reservationRepository.save(reservation);
@@ -432,19 +449,41 @@ public class ReservationService {
 		}
 		List<Integer> userIds = reservations.stream().map(ReservationDTO::getUserId).filter(Objects::nonNull)
 				.distinct().collect(Collectors.toList());
-		Map<Integer, String> statuses = identityVerificationService.getLatestStatusForUsers(userIds);
-		reservations.forEach(dto -> {
-			if (dto.getUserId() != null) {
-				dto.setUserIdentityStatus(statuses.get(dto.getUserId()));
-			}
-		});
+		Map<Integer, IdentityStatusResponse> statuses = identityVerificationService.getLatestStatusForUsers(userIds);
+		reservations.forEach(dto -> applyIdentitySnapshot(dto, statuses.get(dto.getUserId())));
 	}
 
 	private void enrichIdentityStatus(ReservationDTO dto) {
 		if (dto == null || dto.getUserId() == null) {
 			return;
 		}
-		dto.setUserIdentityStatus(identityVerificationService.getLatestStatusLabel(dto.getUserId()));
+		applyIdentitySnapshot(dto, identityVerificationService.getStatus(dto.getUserId()));
+	}
+
+	private void applyIdentitySnapshot(ReservationDTO dto, IdentityStatusResponse status) {
+		if (dto == null || status == null) {
+			return;
+		}
+		dto.setUserIdentityStatus(status.getStatus());
+		dto.setUserIdentityUpdatedAt(status.getUpdatedAt());
+		dto.setUserIdentityReason(status.getReason());
+		dto.setIdentityDocuments(status.getDocuments());
+	}
+
+	private void applyDriverProfile(Reservation reservation, DriverProfileDTO driverProfile) {
+		if (reservation == null || driverProfile == null) {
+			return;
+		}
+		reservation.setDriverLicenseNumber(driverProfile.getLicenseNumber());
+		reservation.setDriverLicenseCountry(driverProfile.getLicenseCountry());
+		reservation.setDriverLicenseCategory(driverProfile.getLicenseCategory());
+		reservation.setDriverLicenseExpiry(driverProfile.getLicenseExpiresOn());
+		reservation.setDriverUsageReason(driverProfile.getUsageReason());
+		reservation.setDriverKmPerYear(driverProfile.getAnnualKilometers());
+		reservation.setDriverNotes(driverProfile.getNotes());
+		if (reservation.getDriverProfileCompletedAt() == null) {
+			reservation.setDriverProfileCompletedAt(LocalDateTime.now());
+		}
 	}
 
 	private List<Reservation> resolveBaseReservations(String query) {
@@ -495,10 +534,7 @@ public class ReservationService {
 		} else if (reservation.getCreatedAt() != null) {
 			reservationDay = reservation.getCreatedAt().toLocalDate();
 		}
-		if (reservationDay == null) {
-			return false;
-		}
-		if (startDate != null && reservationDay.isBefore(startDate)) {
+		if ((reservationDay == null) || (startDate != null && reservationDay.isBefore(startDate))) {
 			return false;
 		}
 		if (endDate != null && reservationDay.isAfter(endDate)) {

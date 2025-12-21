@@ -30,7 +30,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.mobility.mobility_backend.dto.BookingStatsDTO;
 import com.mobility.mobility_backend.dto.ReservationDTO;
-import com.mobility.mobility_backend.dto.finance.PaymentEventDTO;
 import com.mobility.mobility_backend.dto.payment.AdminPaymentSessionRequest;
 import com.mobility.mobility_backend.dto.payment.PaymentAdminActionRequest;
 import com.mobility.mobility_backend.dto.payment.PaymentSessionRequest;

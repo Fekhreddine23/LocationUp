@@ -4,11 +4,11 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.List;
 
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -35,7 +35,7 @@ public class FinanceController {
 		return ResponseEntity.ok(financeService.getFinanceOverview(months));
 	}
 
-	
+
 	/* expose ces filtres côté API (/finance/alerts et export CSV) via des query params
 	 *  (sévérité, statuts multiples, recherche, dates, actionOnly, limite)  */
 	@GetMapping("/alerts")

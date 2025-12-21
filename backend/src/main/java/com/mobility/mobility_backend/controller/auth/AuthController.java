@@ -1,6 +1,8 @@
 package com.mobility.mobility_backend.controller.auth;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.ResponseCookie;
+import org.springframework.http.HttpHeaders;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -28,12 +30,29 @@ public class AuthController {
 		if (request.getRole() == null) {
 			request.setRole(Role.ROLE_USER);
 		}
-		return ResponseEntity.ok(authenticationService.register(request));
+		AuthenticationResponse response = authenticationService.register(request);
+		ResponseCookie refreshCookie = authenticationService.buildRefreshCookie(response.getRefreshToken());
+		return ResponseEntity.ok()
+				.header(HttpHeaders.SET_COOKIE, refreshCookie.toString())
+				.body(response);
 
 	}
 
 	@PostMapping("/login")
 	public ResponseEntity<AuthenticationResponse> login(@RequestBody AuthenticationRequest request) {
-		return ResponseEntity.ok(authenticationService.authenticate(request));
+		AuthenticationResponse response = authenticationService.authenticate(request);
+		ResponseCookie refreshCookie = authenticationService.buildRefreshCookie(response.getRefreshToken());
+		return ResponseEntity.ok()
+				.header(HttpHeaders.SET_COOKIE, refreshCookie.toString())
+				.body(response);
+	}
+
+	@PostMapping("/refresh")
+	public ResponseEntity<AuthenticationResponse> refreshToken(@RequestBody(required = false) AuthenticationRequest ignored) {
+		AuthenticationResponse response = authenticationService.refreshAccessToken();
+		ResponseCookie refreshCookie = authenticationService.buildRefreshCookie(response.getRefreshToken());
+		return ResponseEntity.ok()
+				.header(HttpHeaders.SET_COOKIE, refreshCookie.toString())
+				.body(response);
 	}
 }

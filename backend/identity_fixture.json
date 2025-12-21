@@ -1,0 +1,22 @@
+{
+  "resources": {
+    "verification_session": {
+      "type": "document",
+      "metadata": {
+        "userId": "5"
+      },
+      "last_verification_report": "{{verification_report_identity_document.id}}"
+    },
+    "verification_report_identity_document": {
+      "type": "identity_document",
+      "document": {
+        "status": "verified",
+        "type": "passport",
+        "files": [
+          "file_123"
+        ],
+        "issuing_country": "FR"
+      }
+    }
+  }
+}

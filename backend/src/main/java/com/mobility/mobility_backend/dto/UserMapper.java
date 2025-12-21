@@ -11,8 +11,17 @@ public class UserMapper {
 		if (user == null) {
 			return null;
 		}
-		return new UserDTO(user.getId(), user.getUsername(), user.getEmail(), user.getFirstName(), user.getLastName(),
-				user.getEmail(), user.getPassword());
+		UserDTO dto = new UserDTO();
+		dto.setId(user.getId());
+		dto.setUsername(user.getUsername());
+		dto.setEmail(user.getEmail());
+		dto.setFirstname(user.getFirstName());
+		dto.setLastname(user.getLastName());
+		dto.setRole(user.getRole() != null ? user.getRole().name() : null);
+		if (user.getAvatarPath() != null && !user.getAvatarPath().isBlank()) {
+			dto.setAvatarUrl("/api/users/avatar/" + user.getAvatarPath());
+		}
+		return dto;
 	}
 
 	public static User toEntity(UserDTO userDTO) {
