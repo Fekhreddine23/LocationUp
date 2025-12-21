@@ -17,6 +17,8 @@ export interface Offer {
   pickupLocationCity?: string;
   returnLocationCity?: string;
   status?: OfferStatus;
+  active?: boolean;
+  galleryUrls?: string[];
   mobilityService?: string;
   mobilityServiceName?: string;
   pickupLocation?: string;
@@ -45,6 +47,7 @@ export interface CreateOfferRequest {
   adminId?: number;
   status?: OfferStatus;
   active?: boolean;
+  imageUrl?: string;
   
   // SUPPRIMEZ ces champs - ils ne sont pas dans le DTO backend
   // mobilityService?: string;        // ❌ SUPPRIMER

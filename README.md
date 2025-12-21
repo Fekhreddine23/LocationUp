@@ -129,6 +129,22 @@ SERVER_PORT=8088
 SPRING_PROFILES_ACTIVE=dev
 SPRING_DATASOURCE_URL=jdbc:h2:mem:testdb
 ```
+
+## 📦 Stockage des images (upload)
+
+- Dossier : `backend/uploads/offers` (servi via `/uploads/**` avec headers de sécurité CSP/nosniff et cache 1h).
+- Quotas par défaut : 5 Mo max par fichier, 5 fichiers max par galerie, quota global 500 Mo sur le dossier (purge automatique des fichiers les plus anciens si le quota est dépassé).
+- Formats acceptés : JPEG/PNG/WEBP (vérification MIME + signature binaire).
+- Schéma DB : colonne `gallery_urls` (TEXT stockant une liste JSON) ajoutée via `backend/src/main/resources/schema.sql` pour compatibilité H2/embarquée.
+
+Pour purger le dossier d’uploads en dev : supprimer `backend/uploads/offers/*` puis relancer l’appli.
+
+## 🔐 Authentification & Sécurité
+
+- Modèle recommandé : **JWT Bearer** envoyé via l’en-tête `Authorization: Bearer <token>` pour toutes les routes protégées (admin, favoris, réservations, paiements, etc.).
+- Si vous utilisez des cookies plutôt que l’en-tête, activez **SameSite=Lax/Strict** et **Secure** (HTTPS) et **CSRF** (Spring Security) pour éviter les attaques cross-site.
+- Les endpoints `@PreAuthorize` exigent des rôles explicites (`ROLE_ADMIN`, `ROLE_USER`). Exemple : création/mise à jour/suppression d’offre = admin uniquement ; favoris = user/admin.
+- Le fallback d’admin implicite est supprimé : toute action admin requiert un admin authentifié.
 ### Profils disponibles
 
 - dev → Développement avec H2
@@ -156,6 +172,14 @@ docker-compose up backend
 ```bash 
 POST   /api/auth/login          → Connexion utilisateur
 ```
+
+## 🌐 Profils d'exécution
+
+- **dev/demo (par défaut)** : `ddl-auto=create-drop`, `schema.sql` + `data.sql` appliqués, H2 possible. Idéal pour la démo/CI locale.
+- **prod** : profil `prod` (`SPRING_PROFILES_ACTIVE=prod`) avec `ddl-auto=validate`, pas d'init SQL auto (`schema.sql/data.sql` désactivés), DB réelle (PostgreSQL par défaut). Config dans `backend/src/main/resources/application-prod.yml`.
+- Flyway est activé en prod : les migrations se trouvent dans `backend/src/main/resources/db/migration` (ex: ajout `gallery_urls`, table `refresh_tokens`). Baseline automatique si aucune migration n'a été appliquée.
+
+Pensez à fournir les variables d'env en prod (DB, secrets JWT, mails, etc.).
 ### Administration
 ```bash
 GET    /api/admin/users-management            → Liste des utilisateurs
@@ -258,4 +282,3 @@ docker build -t locationup-frontend
 ```
 docker run -p 80:80 locationup-frontend
 ```
-

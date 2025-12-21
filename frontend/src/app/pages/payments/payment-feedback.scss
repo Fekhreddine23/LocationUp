@@ -5,7 +5,7 @@
   border-radius: 18px;
   box-shadow: 0 20px 45px rgba(15, 23, 42, 0.15);
   text-align: left;
-  background: #fff;
+  background: var(--card-bg);
 
   h1 {
     margin-bottom: 0.75rem;
@@ -41,7 +41,7 @@
     }
 
     &.subtle {
-      background: #f8fafc;
+      background: var(--card-bg);
       border-radius: 12px;
       padding: 0.75rem;
     }
@@ -52,7 +52,7 @@
     border-radius: 14px;
     padding: 1.25rem;
     margin-bottom: 1.5rem;
-    background: #f8fafc;
+    background: var(--card-bg);
   }
 
   .recap-row {
@@ -95,7 +95,7 @@
 
       &.secondary {
         background: #e2e8f0;
-        color: #1f2937;
+        color: var(--text-primary);
       }
     }
   }

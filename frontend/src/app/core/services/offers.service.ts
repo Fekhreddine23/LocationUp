@@ -6,6 +6,7 @@ import { Offer, CreateOfferRequest } from '../../core/models/offer.model'; // �
 import { BusinessEventsService } from './business-events/business-events';
 import { AuthService } from './auth.service';
 import { NotificationService } from './notification.service';
+import { BRAND_IMAGE_MAP, BrandImageKey, findBrandKey } from '../config/brand-images';
 @Injectable({
   providedIn: 'root'
 })
@@ -215,9 +216,54 @@ export class OffersService {
 
   // Nouvelle méthode pour vérifier la disponibilité
   isOfferAvailable(offer: Offer): boolean {
-    const now = new Date();
-    const pickupDate = new Date(offer.pickupDatetime);
-    return pickupDate > now;
+    const status = (offer.status ?? 'PENDING').toString().toUpperCase();
+    if (['CANCELLED', 'COMPLETED'].includes(status)) {
+      return false;
+    }
+    if (offer.active === false) {
+      return false;
+    }
+    // Certaines offres remontent avec la date de création comme date de retrait :
+    // on considère donc l'offre disponible tant qu'elle n'est pas clôturée.
+    return true;
+  }
+
+  // Image principale d'une offre (marque → set d'assets → fallback imageUrl → unsplash)
+  resolveOfferImage(offer?: Offer | null): string {
+    if (!offer) {
+      return this.defaultImage;
+    }
+    if (offer.galleryUrls?.length) {
+      const first = offer.galleryUrls.find(Boolean);
+      if (first) {
+        return first;
+      }
+    }
+    const brandImages = this.getBrandImages(offer);
+    if (brandImages.length) {
+      return brandImages[0];
+    }
+    return offer.imageUrl || this.defaultImage;
+  }
+
+  getBrandImages(offer: Offer): string[] {
+    const brandKey = this.getBrandKey(offer);
+    if (!brandKey) return [];
+    const meta = BRAND_IMAGE_MAP[brandKey];
+    if (!meta) return [];
+    const ordered = new Set<string>();
+    if (meta.card) ordered.add(meta.card);
+    meta.gallery.forEach(img => ordered.add(img));
+    return Array.from(ordered);
+  }
+
+  private getBrandKey(offer: Offer): BrandImageKey | null {
+    const text = `${offer.description ?? ''} ${offer.mobilityService ?? ''}`;
+    return findBrandKey(text);
+  }
+
+  private get defaultImage(): string {
+    return 'https://images.unsplash.com/photo-1477847616630-cf9cf8815fda?auto=format&fit=crop&w=900&q=80';
   }
 
   // Filtrer les offres disponibles

@@ -19,7 +19,7 @@ form {
 h2 {
     text-align: center;
     margin-bottom: 1.5rem;
-    color: #333;
+    color: var(--text-primary);
     font-size: 1.8rem;
 }
 
@@ -92,7 +92,7 @@ input {
 .register-link {
     text-align: center;
     margin-top: 1.5rem;
-    color: #666;
+    color: var(--text-secondary);
     
     a {
         color: #667eea;

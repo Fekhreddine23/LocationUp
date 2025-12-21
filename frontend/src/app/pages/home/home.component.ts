@@ -5,6 +5,7 @@ import { OffersService } from '../../core/services/offers.service';
 import { OffersMapComponent } from '../../components/offers-map/offers-map.component';
 import { Offer } from '../../core/models/offer.model';
 import { GeocodingCacheService } from '../../core/services/geocoding-cache.service';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-home',
@@ -22,7 +23,6 @@ export class HomeComponent {
   selectedCategory = 'ALL';
   maxPrice: number | null = null;
   offerDistances = new Map<number, number>();
-  private readonly defaultOfferImage = 'https://images.unsplash.com/photo-1502877338535-766e1452684a?auto=format&fit=crop&w=900&q=80';
 
   userPosition: { lat: number; lng: number } | null = null;
   radiusKm: number | null = null;
@@ -30,7 +30,8 @@ export class HomeComponent {
 
   constructor(
     private offersService: OffersService,
-    private geocodingCache: GeocodingCacheService
+    private geocodingCache: GeocodingCacheService,
+    private router: Router
   ) { }
 
   ngOnInit(): void {
@@ -244,7 +245,7 @@ export class HomeComponent {
   }
 
   getOfferImage(offer: any): string {
-    return offer?.imageUrl || this.defaultOfferImage;
+    return this.offersService.resolveOfferImage(offer);
   }
 
   private normalizeText(value: string): string {
@@ -288,5 +289,14 @@ export class HomeComponent {
       return location.name || '';
     }
     return offer.pickupLocationName || '';
+  }
+
+  navigateToBooking(offer: Offer): void {
+    if (!offer?.offerId) {
+      return;
+    }
+    this.router.navigate(['/bookings/new'], {
+      queryParams: { offerId: offer.offerId }
+    });
   }
 }

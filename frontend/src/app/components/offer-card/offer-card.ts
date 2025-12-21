@@ -69,7 +69,7 @@ export class OfferCardComponent {
   }
 
   getOfferImage(offer: Offer): string {
-    return offer.imageUrl || this.defaultImage;
+    return this.offersService.resolveOfferImage(offer);
   }
 
   getPickupLabel(offer: Offer): string {

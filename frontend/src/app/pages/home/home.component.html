@@ -61,38 +61,70 @@
       {{ error }}
     </div>
 
-    <div *ngIf="!loading && !error">
-      <h2 style="text-align: center; color: white; margin-bottom: 20px;">
-        📋 Offres Disponibles ({{ offers.length }})
-      </h2>
-      
+    <section class="offers-wrapper" *ngIf="!loading && !error">
+      <header class="offers-header">
+        <div>
+          <p class="eyebrow">Notre sélection</p>
+          <h2>📋 Offres Disponibles ({{ offers.length }})</h2>
+          <p class="lead">
+            Des véhicules prêts à partir, filtrés selon vos besoins. Comparez les options et réservez en quelques clics.
+          </p>
+        </div>
+        <div class="hero-glance">
+          <div>
+            <strong>{{ filteredOffers.length }}</strong>
+            <span>Offres filtrées</span>
+          </div>
+          <div>
+            <strong>{{ categories.length }}</strong>
+            <span>Catégories</span>
+          </div>
+        </div>
+      </header>
+
       <div *ngIf="filteredOffers.length === 0" class="empty-state">
         Aucune offre disponible avec les filtres sélectionnés
       </div>
 
       <div *ngIf="filteredOffers.length > 0" class="offers-container">
-        <div *ngFor="let offer of filteredOffers" class="offer-card">
+        <article *ngFor="let offer of filteredOffers" class="offer-card">
           <div class="offer-visual">
             <img [src]="getOfferImage(offer)" [alt]="offer.description" loading="eager" />
             <span class="visual-chip">{{ getOfferCategoryLabel(offer) }}</span>
+            <span class="price-pill">{{ offer.price | number:'1.0-0' }} €</span>
           </div>
-          <h3 class="offer-title">{{ offer.description }}</h3>
-          <p class="offer-description">
-            {{ getMobilityServiceDisplay(offer) }} • 
-            {{ getPickupLocationDisplay(offer) }}
-          </p>
-          <div class="offer-details">
-            <span class="offer-price">{{ offer.price }}€</span>
-            <span class="offer-date">
-              {{ offer.pickupDatetime | date: 'dd/MM/yyyy HH:mm' }}
-            </span>
-            <span class="offer-distance" *ngIf="getDistanceLabel(offer) as distance">
-              📍 À {{ distance }}
-            </span>
+          <div class="offer-body">
+            <div class="offer-title-block">
+              <h3>{{ offer.description }}</h3>
+              <p>
+                {{ getMobilityServiceDisplay(offer) }} •
+                {{ getPickupLocationDisplay(offer) }}
+              </p>
+            </div>
+            <ul class="offer-meta">
+              <li>
+                <span>📅</span>
+                {{ offer.pickupDatetime | date: 'dd/MM/yyyy HH:mm' }}
+              </li>
+              <li>
+                <span>🏷️</span>
+                {{ getOfferCategoryLabel(offer) }}
+              </li>
+              <li *ngIf="getDistanceLabel(offer) as distance">
+                <span>📍</span>
+                À {{ distance }}
+              </li>
+            </ul>
           </div>
-        </div>
+          <div class="offer-footer">
+            <div class="pill" *ngIf="userPosition">Proche de vous</div>
+            <button type="button" class="primary-cta" (click)="navigateToBooking(offer)">
+              Réserver cette offre
+            </button>
+          </div>
+        </article>
       </div>
-    </div>
+    </section>
 
     <button (click)="loadOffers()" class="refresh-button">
       🔄 Actualiser les offres

@@ -55,7 +55,7 @@
 
 :host ::ng-deep .leaflet-popup-content .popup-row {
   font-size: 0.9rem;
-  color: #1f2937;
+  color: var(--text-primary);
 }
 
 :host ::ng-deep .leaflet-popup-content .popup-action {
@@ -86,7 +86,7 @@
   border: 1px solid #2563eb;
   border-radius: 999px;
   padding: 0.4rem 1rem;
-  background: #fff;
+  background: var(--card-bg);
   color: #2563eb;
   cursor: pointer;
   font-weight: 600;

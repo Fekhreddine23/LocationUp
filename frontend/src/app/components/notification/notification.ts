@@ -20,6 +20,7 @@ export class NotificationComponent implements OnInit, OnDestroy {
   isPanelOpen: boolean = false;
   isLoading: boolean = false;
   private currentUserId?: string;
+  private currentUserRole?: string;
   
   private subscription?: Subscription;
 
@@ -31,6 +32,7 @@ export class NotificationComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.currentUserId = this.getCurrentUserId();
+    this.currentUserRole = this.getCurrentUserRole();
     this.loadExistingNotifications();
     this.connectToRealtimeNotifications();
   }
@@ -42,7 +44,7 @@ export class NotificationComponent implements OnInit, OnDestroy {
     const userId = this.getCurrentUserId();
     if (userId) {
       const notifications = await this.notificationStreamService.getUserNotifications(userId);
-      this.notifications = notifications;
+      this.notifications = notifications.filter(notification => this.isNotificationForUser(notification));
       this.updateUnreadCount();
       console.log('📥 Notifications existantes chargées:', notifications.length);
     }
@@ -76,6 +78,9 @@ async markAsRead(notification: NotificationPayload): Promise<void> {
 
     this.subscription = this.notificationStreamService.connect(userId).subscribe({
       next: (notification: NotificationPayload) => {
+        if (!this.isNotificationForUser(notification)) {
+          return;
+        }
         console.log('📩 Nouvelle notification reçue:', notification);
         this.handleRealtimeNotification(notification);
       },
@@ -86,6 +91,9 @@ async markAsRead(notification: NotificationPayload): Promise<void> {
   }
 
   private handleRealtimeNotification(notification: NotificationPayload): void {
+    if (!this.isNotificationForUser(notification)) {
+      return;
+    }
     this.addNotification(notification);
     this.updateUnreadCount();
     if (this.shouldDisplayToast(notification)) {
@@ -356,15 +364,22 @@ async markAsRead(notification: NotificationPayload): Promise<void> {
 
   private buildIdentityToastMessage(status?: string, notification?: NotificationPayload): string {
     const normalized = status?.toUpperCase();
+    const metadata = notification?.metadata ?? {};
+    const identityUser = this.getMetadataValue(metadata, 'identityUserId');
+    const prefix = identityUser ? `Profil #${identityUser} · ` : '';
     switch (normalized) {
       case 'VERIFIED':
-        return 'Identité validée. Les documents sont approuvés.';
+        return identityUser ? `${prefix}Documents validés.` : 'Documents validés.';
       case 'PROCESSING':
-        return 'Vos documents sont en cours d’analyse.';
+        return identityUser ? `${prefix}Analyse en cours.` : 'Vos documents sont en cours d’analyse.';
       case 'REQUIRES_INPUT':
-        return 'Des compléments sont nécessaires pour finaliser la vérification.';
+        return identityUser
+          ? `${prefix}Compléments requis pour valider ce profil.`
+          : 'Des compléments sont nécessaires pour finaliser la vérification.';
       case 'REJECTED':
-        return 'Les documents ont été rejetés. Merci de les renvoyer.';
+        return identityUser
+          ? `${prefix}Documents rejetés.`
+          : 'Les documents ont été rejetés. Merci de les renvoyer.';
       default:
         return notification?.content ?? notification?.title ?? 'Mise à jour de votre vérification d’identité.';
     }
@@ -444,6 +459,42 @@ async markAsRead(notification: NotificationPayload): Promise<void> {
       return String(value);
     }
     return undefined;
+  }
+
+  private isNotificationForUser(notification: NotificationPayload): boolean {
+    if (!notification) {
+      return false;
+    }
+    const metadata = notification.metadata ?? {};
+    const targetRole = this.getMetadataValue(metadata, 'targetRole');
+    if (targetRole) {
+      const roles = targetRole.split(',').map(role => role.trim().toUpperCase()).filter(Boolean);
+      const currentRole = (this.currentUserRole ?? this.authService.currentUserValue?.role ?? '')
+        .toUpperCase();
+      if (!currentRole || !roles.includes(currentRole)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  private getCurrentUserRole(): string {
+    const currentUser = this.authService.currentUserValue;
+    if (currentUser?.role) {
+      return currentUser.role;
+    }
+    try {
+      const storedUser = localStorage.getItem('currentUser');
+      if (storedUser) {
+        const parsed = JSON.parse(storedUser);
+        if (parsed?.role) {
+          return parsed.role;
+        }
+      }
+    } catch (error) {
+      console.error('NotificationComponent: impossible de récupérer le rôle', error);
+    }
+    return '';
   }
 
   private extractOfferFromMessage(notification: NotificationPayload): string | undefined {

@@ -12,6 +12,8 @@ import { PaymentService } from '../../core/services/payment.service';
 import { IdentityService } from '../../core/services/identity.service';
 import { IdentityStatus } from '../../core/models/identity.model';
 import { NotificationService } from '../../core/services/notification.service';
+import { DriverProfile, createEmptyDriverProfile } from '../../core/models/driver-profile.model';
+import { DriverProfileService } from '../../core/services/driver-profile.service';
 
 type BookingStep = 'offer' | 'details' | 'payment';
 
@@ -26,7 +28,8 @@ export class CreateBookingComponent implements OnInit {
   bookingRequest: CreateBookingRequest = {
     userId: 0,
     offerId: 0,
-    reservationDate: ''
+    reservationDate: '',
+    driverProfile: undefined
   };
 
   currentUser: User | null = null;
@@ -51,6 +54,9 @@ export class CreateBookingComponent implements OnInit {
   ];
   identityStatus: IdentityStatus | null = null;
   identityLoading = false;
+  driverProfile: DriverProfile = createEmptyDriverProfile();
+  driverProfileLoading = false;
+  driverProfileError = '';
 
   constructor(
     private bookingsService: BookingsService,
@@ -60,7 +66,8 @@ export class CreateBookingComponent implements OnInit {
     private route: ActivatedRoute,
     private paymentService: PaymentService,
     private identityService: IdentityService,
-    private notificationService: NotificationService
+    private notificationService: NotificationService,
+    private driverProfileService: DriverProfileService
   ) { }
 
   ngOnInit(): void {
@@ -72,6 +79,7 @@ export class CreateBookingComponent implements OnInit {
      // Charger uniquement l'offre spécifique depuis l'URL
     this.loadSelectedOffer();
     this.fetchIdentityStatus();
+    this.loadDriverProfile();
     
   }
 
@@ -156,6 +164,7 @@ export class CreateBookingComponent implements OnInit {
       return;
     }
 
+    this.bookingRequest.driverProfile = { ...this.driverProfile };
     this.creationLoading = true;
     this.errorMessage = '';
     this.paymentError = '';
@@ -258,6 +267,23 @@ export class CreateBookingComponent implements OnInit {
         console.warn('Impossible de charger le statut identité', err);
         this.identityLoading = false;
         this.identityStatus = null;
+      }
+    });
+  }
+
+  private loadDriverProfile(): void {
+    this.driverProfileLoading = true;
+    this.driverProfileService.getProfile().subscribe({
+      next: profile => {
+        this.driverProfile = profile ?? createEmptyDriverProfile();
+        this.driverProfileLoading = false;
+        this.driverProfileError = '';
+      },
+      error: err => {
+        console.warn('Impossible de charger le profil conducteur', err);
+        this.driverProfile = createEmptyDriverProfile();
+        this.driverProfileLoading = false;
+        this.driverProfileError = 'Profil conducteur indisponible. Merci de le compléter dans Mon profil.';
       }
     });
   }

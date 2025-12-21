@@ -29,13 +29,21 @@
         <!-- Photo de Profil -->
         <div class="profile-photo-section">
           <div class="profile-avatar">
-            <div class="avatar-placeholder">
-              {{ getInitials() }}
-            </div>
+            <img *ngIf="avatarPreview; else initialsAvatar" [src]="avatarPreview" alt="Avatar utilisateur" />
+            <ng-template #initialsAvatar>
+              <div class="avatar-placeholder">
+                {{ getInitials() }}
+              </div>
+            </ng-template>
           </div>
-          <button class="btn btn-outline btn-sm" disabled>
+          <label class="btn btn-outline btn-sm">
             📷 Changer la photo
+            <input type="file" accept="image/*" (change)="onAvatarSelected($event)" hidden>
+          </label>
+          <button class="btn btn-text btn-sm" type="button" (click)="clearAvatar()" *ngIf="avatarPreview">
+            Réinitialiser
           </button>
+          <small class="text-muted" *ngIf="avatarMessage">{{ avatarMessage }}</small>
         </div>
 
         <!-- MODE LECTURE -->
@@ -139,6 +147,144 @@
       </div>
     </div>
 
+    <div class="profile-section admin-panel" *ngIf="isAdmin">
+      <div class="section-header">
+        <div>
+          <h2>Espace administrateur</h2>
+          <p>Pilotage des finances, utilisateurs et réservations en un clic.</p>
+        </div>
+      </div>
+      <div class="admin-grid">
+        <button class="admin-card" type="button" (click)="goToAdminHome()">
+          <span class="admin-icon">📊</span>
+          <div>
+            <strong>Dashboard global</strong>
+            <p>Vue d’ensemble et alertes critiques</p>
+          </div>
+          <span class="action-arrow">→</span>
+        </button>
+        <button class="admin-card" type="button" (click)="goToAdminFinance()">
+          <span class="admin-icon">💶</span>
+          <div>
+            <strong>Finance & identité</strong>
+            <p>Encaissements, vérifications et anomalies</p>
+          </div>
+          <span class="action-arrow">→</span>
+        </button>
+        <button class="admin-card" type="button" (click)="goToAdminUsers()">
+          <span class="admin-icon">🧑‍💼</span>
+          <div>
+            <strong>Gestion utilisateurs</strong>
+            <p>Profils, rôles et activités</p>
+          </div>
+          <span class="action-arrow">→</span>
+        </button>
+        <button class="admin-card" type="button" (click)="goToAdminBookings()">
+          <span class="admin-icon">📅</span>
+          <div>
+            <strong>Gestion réservations</strong>
+            <p>Suivi et intervention en temps réel</p>
+          </div>
+          <span class="action-arrow">→</span>
+        </button>
+      </div>
+    </div>
+
+<div class="profile-section preferences-section">
+      <div class="section-header">
+        <div>
+          <h2>Préférences de mobilité</h2>
+          <p>Personnalisez vos suggestions et alertes.</p>
+          <p id="preferences-desc" class="sr-only">
+            Ajustez vos modes favoris, budgets et alertes de manière à recevoir uniquement les offres qui
+            correspondent à vos priorités.
+          </p>
+        </div>
+      </div>
+      <div class="preferences-grid">
+        <label>
+          Mode favori
+          <span id="mode-favorite-desc" class="sr-only">
+            Sélectionnez votre mode de transport privilégié pour filtrer les recommandations.
+          </span>
+          <select [(ngModel)]="mobilityPreferences.favoriteCategory" aria-describedby="mode-favorite-desc">
+            <option value="Voiture">Voiture</option>
+            <option value="Vélo">Vélo</option>
+            <option value="Trottinette">Trottinette</option>
+            <option value="Scooter">Scooter</option>
+            <option value="Moto">Moto</option>
+          </select>
+        </label>
+        <label>
+          Budget maximal (€)
+          <span id="budget-max-desc" class="sr-only">
+            Indiquez la somme maximale que vous êtes prêt à dépenser par réservation.
+          </span>
+          <input type="number" min="10" step="5" [(ngModel)]="mobilityPreferences.maxBudget" aria-describedby="budget-max-desc">
+        </label>
+        <label class="toggle">
+          <input type="checkbox" [(ngModel)]="mobilityPreferences.ecoFriendlyOnly" aria-describedby="toggle-eco-desc">
+          <span id="toggle-eco-desc" class="sr-only">Prioriser les véhicules à faible émission de CO2.</span>
+          <span>Prioriser les véhicules bas carbone</span>
+        </label>
+        <label class="toggle">
+          <input type="checkbox" [(ngModel)]="mobilityPreferences.autopilotNotifications" aria-describedby="toggle-autopilot-desc">
+          <span id="toggle-autopilot-desc" class="sr-only">
+            Recevoir une notification dès qu’une offre correspondant à vos critères est disponible.
+          </span>
+          <span>M'avertir dès qu'une offre correspondante apparaît</span>
+        </label>
+      </div>
+      <div class="preferences-actions">
+        <button class="btn primary" type="button" (click)="saveMobilityPreferences()">💾 Sauvegarder</button>
+      </div>
+    </div>
+
+    <div class="profile-section history-section">
+      <div class="section-header">
+        <div>
+          <h2>Historique des réservations</h2>
+          <p>Dernières activités et statuts de vos trajets.</p>
+        </div>
+        <button class="btn btn-outline btn-sm" type="button" (click)="goToBookings()">Tout voir</button>
+      </div>
+      <div *ngIf="bookingHistoryLoading" class="loading-state">
+        Chargement de l’historique...
+      </div>
+      <div *ngIf="bookingHistoryError" class="alert alert-warning">
+        ⚠️ {{ bookingHistoryError }}
+      </div>
+      <ul class="timeline" *ngIf="!bookingHistoryLoading && !bookingHistoryError && bookingHistory.length">
+        <li *ngFor="let booking of bookingHistory">
+          <div class="timeline-icon">{{ getTimelineIcon(booking.status) }}</div>
+          <div class="timeline-body">
+            <div class="timeline-header">
+              <strong>Réservation #{{ booking.reservationId }}</strong>
+              <span [class]="getBookingStatusBadge(booking.status)">{{ booking.status }}</span>
+            </div>
+            <p>
+              {{ formatBookingDate(booking) }} · Offre #{{ booking.offerId }} ·
+              {{ booking.paymentStatus || 'Paiement en attente' }}
+            </p>
+            <div class="timeline-actions">
+              <button class="btn btn-link" type="button" (click)="navigateToBooking(booking)">
+                Détails
+              </button>
+              <button class="btn btn-link" type="button" *ngIf="canRetryPayment(booking)" (click)="retryPayment(booking)">
+                Relancer le paiement
+              </button>
+              <button class="btn btn-link" type="button" *ngIf="canDownloadReceipt(booking)" (click)="downloadReceipt(booking)">
+                Télécharger le reçu
+              </button>
+            </div>
+          </div>
+        </li>
+      </ul>
+      <div *ngIf="!bookingHistoryLoading && !bookingHistoryError && bookingHistory.length === 0" class="empty-state">
+        Aucune réservation pour le moment.
+      </div>
+    </div>
+
     <!-- Section Vérification d'identité -->
     <div class="profile-section identity-section">
       <div class="identity-header">
@@ -180,16 +326,89 @@
       </div>
     </div>
 
+    <div class="profile-section driver-profile-section">
+      <div class="section-header">
+        <div>
+          <h2>Profil conducteur</h2>
+          <p>Nous pré-remplissons vos prochaines réservations avec ces informations.</p>
+        </div>
+        <span class="status-pill" *ngIf="driverProfileLoading">Chargement…</span>
+      </div>
+      <div class="driver-profile-grid">
+        <label>
+          Numéro de permis
+          <input type="text" [(ngModel)]="driverProfile.licenseNumber" [disabled]="driverProfileLoading || driverProfileSaving">
+        </label>
+        <label>
+          Pays d'émission
+          <input type="text" [(ngModel)]="driverProfile.licenseCountry" maxlength="4" [disabled]="driverProfileLoading || driverProfileSaving">
+        </label>
+        <label>
+          Catégorie
+          <input type="text" [(ngModel)]="driverProfile.licenseCategory" [disabled]="driverProfileLoading || driverProfileSaving">
+        </label>
+        <label>
+          Expiration
+          <input type="date" [(ngModel)]="driverProfile.licenseExpiresOn" [disabled]="driverProfileLoading || driverProfileSaving">
+        </label>
+        <label>
+          Kilométrage annuel estimé
+          <input type="number" min="0" step="1000" [(ngModel)]="driverProfile.annualKilometers" [disabled]="driverProfileLoading || driverProfileSaving">
+        </label>
+        <label class="full-width">
+          Usage principal
+          <textarea rows="2" [(ngModel)]="driverProfile.usageReason" [disabled]="driverProfileLoading || driverProfileSaving"></textarea>
+        </label>
+      </div>
+      <div class="driver-profile-actions">
+        <button class="btn primary" type="button" (click)="saveDriverProfile()" [disabled]="driverProfileLoading || driverProfileSaving">
+          {{ driverProfileSaving ? 'Enregistrement...' : '💾 Enregistrer le profil' }}
+        </button>
+        <span class="helper-text" *ngIf="driverProfileMessage">{{ driverProfileMessage }}</span>
+      </div>
+    </div>
+
     <!-- Section Sécurité / 2FA -->
-    <div class="profile-section" *ngIf="user">
-      <h2>Sécurité</h2>
-      <p class="section-subtitle">
-        Activez l'authentification à deux facteurs pour sécuriser davantage votre compte.
-      </p>
-      <app-two-factor-setup
-        [username]="user.username"
-        (onComplete)="loadUserProfile()">
-      </app-two-factor-setup>
+    <div class="profile-section security-section" *ngIf="user">
+      <h2>Sécurité & alertes</h2>
+      <div class="security-grid">
+        <div class="security-card">
+          <h3>Authentification à deux facteurs</h3>
+          <p>Ajoutez une couche de sécurité via un code unique.</p>
+          <app-two-factor-setup
+            [username]="user.username"
+            (onComplete)="loadUserProfile()">
+          </app-two-factor-setup>
+        </div>
+        <div class="security-card">
+          <h3>Alertes en temps réel</h3>
+          <p id="security-alerts-desc" class="sr-only">
+            Gérez les notifications critiques par email, SMS ou en cas de connexion suspecte.
+          </p>
+          <label class="toggle">
+            <input type="checkbox" [(ngModel)]="securityPreferences.emailAlerts" aria-describedby="alert-email-desc security-alerts-desc">
+            <span>Alerter par email (paiements, identité)</span>
+            <span id="alert-email-desc" class="sr-only">
+              Recevoir un email lors d’un paiement suspect ou d’un changement d’identité.
+            </span>
+          </label>
+          <label class="toggle">
+            <input type="checkbox" [(ngModel)]="securityPreferences.smsAlerts" aria-describedby="alert-sms-desc security-alerts-desc">
+            <span>Alerter par SMS pour les actions critiques</span>
+            <span id="alert-sms-desc" class="sr-only">
+              Obtenir un SMS pour les actions sensibles (ajout de moyen de paiement, etc.).
+            </span>
+          </label>
+          <label class="toggle">
+            <input type="checkbox" [(ngModel)]="securityPreferences.suspiciousLoginAlerts" aria-describedby="alert-login-desc security-alerts-desc">
+            <span>Alerter en cas de connexion suspecte</span>
+            <span id="alert-login-desc" class="sr-only">
+              Signaler toute tentative de connexion inhabituelle.
+            </span>
+          </label>
+          <button class="btn primary" type="button" (click)="saveSecurityPreferences()">💾 Sauvegarder</button>
+        </div>
+      </div>
     </div>
 
     <!-- Actions -->

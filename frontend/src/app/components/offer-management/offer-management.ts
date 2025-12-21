@@ -20,6 +20,7 @@ import { MobilityService as MobilityServiceModel } from '../../core/models/Mobil
 export class OfferManagement implements OnInit {
   private static readonly DEFAULT_STATUS: OfferStatus = 'PENDING';
   private static readonly STATUS_VALUES: readonly OfferStatus[] = ['PENDING', 'CONFIRMED', 'CANCELLED', 'COMPLETED'] as const;
+  private static readonly MAX_GALLERY_IMAGES = 5;
 
   offers: AdminOffer[] = [];
   filteredOffers: AdminOffer[] = [];
@@ -30,6 +31,8 @@ export class OfferManagement implements OnInit {
   mobilityServices: MobilityServiceModel[] = [];
   mobilityCategories: string[] = ['AUTRE'];
   isLoadingServices = false;
+  imageUploadLoading = false;
+  galleryUploadLoading = false;
 
   // Pagination
   currentPage = 0;
@@ -47,6 +50,14 @@ export class OfferManagement implements OnInit {
   isEditModalOpen = false;
   isCreateModalOpen = false;
   isDeleteModalOpen = false;
+  newOfferImageFile: File | null = null;
+  newOfferImagePreview: string | null = null;
+  newOfferGalleryFiles: File[] = [];
+  newOfferGalleryPreviews: string[] = [];
+  selectedOfferImageFile: File | null = null;
+  selectedOfferImagePreview: string | null = null;
+  selectedOfferGalleryFiles: File[] = [];
+  selectedOfferGalleryPreviews: string[] = [];
 
   // Messages
   successMessage = '';
@@ -192,7 +203,61 @@ export class OfferManagement implements OnInit {
 
   // Actions sur les offres
   createOffer(): void {
+    this.newOfferImageFile = null;
+    this.newOfferImagePreview = null;
+    this.newOfferGalleryFiles = [];
+    this.newOfferGalleryPreviews = [];
     this.isCreateModalOpen = true;
+  }
+
+  onNewOfferImageSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) {
+      return;
+    }
+    this.newOfferImageFile = file;
+    this.newOfferImagePreview = this.buildObjectUrl(file);
+  }
+
+  onNewOfferGallerySelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const files = input.files ? Array.from(input.files) : [];
+    if (!files.length) {
+      return;
+    }
+    if (files.length > OfferManagement.MAX_GALLERY_IMAGES) {
+      this.errorMessage = `Maximum ${OfferManagement.MAX_GALLERY_IMAGES} images autorisées pour la galerie`;
+      this.clearMessagesAfterDelay();
+    }
+    const limited = files.slice(0, OfferManagement.MAX_GALLERY_IMAGES);
+    this.newOfferGalleryFiles = limited;
+    this.newOfferGalleryPreviews = limited.map(f => this.buildObjectUrl(f));
+  }
+
+  onEditOfferImageSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) {
+      return;
+    }
+    this.selectedOfferImageFile = file;
+    this.selectedOfferImagePreview = this.buildObjectUrl(file);
+  }
+
+  onEditOfferGallerySelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const files = input.files ? Array.from(input.files) : [];
+    if (!files.length) {
+      return;
+    }
+    if (files.length > OfferManagement.MAX_GALLERY_IMAGES) {
+      this.errorMessage = `Maximum ${OfferManagement.MAX_GALLERY_IMAGES} images autorisées pour la galerie`;
+      this.clearMessagesAfterDelay();
+    }
+    const limited = files.slice(0, OfferManagement.MAX_GALLERY_IMAGES);
+    this.selectedOfferGalleryFiles = limited;
+    this.selectedOfferGalleryPreviews = limited.map(f => this.buildObjectUrl(f));
   }
 
   submitNewOffer(): void {
@@ -207,26 +272,62 @@ export class OfferManagement implements OnInit {
       return;
     }
 
-    this.adminService.createOffer(payload).subscribe({
-      next: (createdOffer) => {
-        this.offers.unshift(createdOffer);
-        this.filteredOffers = [...this.offers];
-        this.successMessage = 'Offre créée avec succès';
-        this.isCreateModalOpen = false;
-        this.resetNewOfferForm();
+    const createOfferWithPayload = (finalPayload: CreateOfferRequest) => {
+      this.adminService.createOffer(finalPayload).subscribe({
+        next: (createdOffer) => {
+          this.offers.unshift(createdOffer);
+          this.filteredOffers = [...this.offers];
+          this.successMessage = 'Offre créée avec succès';
+          this.isCreateModalOpen = false;
+          this.resetNewOfferForm();
+          this.clearMessagesAfterDelay();
+          this.loadStats();
+        },
+        error: (error) => {
+          console.error('❌ Erreur création:', error);
+          this.errorMessage = error.message || 'Erreur lors de la création de l\'offre';
+          this.clearMessagesAfterDelay();
+        }
+      });
+    };
+
+    const uploadTasks: Array<Promise<{ imageUrl?: string; galleryUrls?: string[] }>> = [];
+
+    if (this.newOfferImageFile) {
+      uploadTasks.push(this.uploadSingleFile(this.newOfferImageFile).then(url => ({ imageUrl: url })));
+    }
+    if (this.newOfferGalleryFiles.length) {
+      uploadTasks.push(this.uploadMultipleFiles(this.newOfferGalleryFiles).then(urls => ({ galleryUrls: urls })));
+    }
+
+    if (uploadTasks.length) {
+      this.imageUploadLoading = true;
+      Promise.all(uploadTasks).then(results => {
+        this.imageUploadLoading = false;
+        const merged = results.reduce((acc, item) => {
+          if (item.imageUrl) acc.imageUrl = item.imageUrl;
+          if (item.galleryUrls) acc.galleryUrls = item.galleryUrls;
+          return acc;
+        }, {} as any);
+        createOfferWithPayload({ ...payload, ...merged });
+      }).catch(error => {
+        this.imageUploadLoading = false;
+        console.error('Erreur upload image/galerie', error);
+        this.errorMessage = error.message || 'Erreur lors du téléversement des images';
         this.clearMessagesAfterDelay();
-        this.loadStats();
-      },
-      error: (error) => {
-        console.error('❌ Erreur création:', error);
-        this.errorMessage = error.message || 'Erreur lors de la création de l\'offre';
-        this.clearMessagesAfterDelay();
-      }
-    });
+      });
+      return;
+    }
+
+    createOfferWithPayload(payload);
   }
 
   editOffer(offer: AdminOffer): void {
     this.selectedOffer = { ...offer };
+    this.selectedOfferImageFile = null;
+    this.selectedOfferImagePreview = null;
+    this.selectedOfferGalleryFiles = [];
+    this.selectedOfferGalleryPreviews = [];
 
     this.selectedOffer.pickupLocation = this.selectedOffer.pickupLocation ?? this.selectedOffer.pickupLocationName ?? '';
     this.selectedOffer.pickupLocationCity = this.selectedOffer.pickupLocationCity ?? this.selectedOffer.pickupLocationName ?? this.selectedOffer.pickupLocation ?? '';
@@ -294,24 +395,56 @@ export class OfferManagement implements OnInit {
 
   console.log('📤 Payload de mise à jour:', payload);
 
-    console.log('📤 Payload envoyé:', payload);
+    const performUpdate = (finalPayload: any) => {
+      console.log('📤 Payload envoyé:', finalPayload);
+      this.adminService.updateOffer(this.selectedOffer!.offerId, finalPayload).subscribe({
+        next: (updatedOffer) => {
+          console.log('✅ Réponse backend:', updatedOffer);
+          this.updateOfferLocally(updatedOffer);
+          this.successMessage = 'Offre mise à jour avec succès';
+          this.isEditModalOpen = false;
+          this.selectedOffer = null; // ← IMPORTANT: Réinitialiser
+          this.selectedOfferImageFile = null;
+          this.selectedOfferImagePreview = null;
+          this.clearMessagesAfterDelay();
+          this.loadStats();
+        },
+        error: (error) => {
+          console.error('❌ Erreur détaillée:', error);
+          this.errorMessage = `Erreur lors de la mise à jour: ${error.message || 'Erreur serveur'}`;
+          this.clearMessagesAfterDelay();
+        }
+      });
+    };
 
-    this.adminService.updateOffer(this.selectedOffer.offerId, payload).subscribe({
-      next: (updatedOffer) => {
-        console.log('✅ Réponse backend:', updatedOffer);
-        this.updateOfferLocally(updatedOffer);
-        this.successMessage = 'Offre mise à jour avec succès';
-        this.isEditModalOpen = false;
-        this.selectedOffer = null; // ← IMPORTANT: Réinitialiser
+    const uploadTasks: Array<Promise<{ imageUrl?: string; galleryUrls?: string[] }>> = [];
+    if (this.selectedOfferImageFile) {
+      uploadTasks.push(this.uploadSingleFile(this.selectedOfferImageFile).then(url => ({ imageUrl: url })));
+    }
+    if (this.selectedOfferGalleryFiles.length) {
+      uploadTasks.push(this.uploadMultipleFiles(this.selectedOfferGalleryFiles).then(urls => ({ galleryUrls: urls })));
+    }
+
+    if (uploadTasks.length) {
+      this.imageUploadLoading = true;
+      Promise.all(uploadTasks).then(results => {
+        this.imageUploadLoading = false;
+        const merged = results.reduce((acc, item) => {
+          if (item.imageUrl) acc.imageUrl = item.imageUrl;
+          if (item.galleryUrls) acc.galleryUrls = item.galleryUrls;
+          return acc;
+        }, {} as any);
+        performUpdate({ ...payload, ...merged });
+      }).catch(error => {
+        this.imageUploadLoading = false;
+        console.error('Erreur upload image/galerie', error);
+        this.errorMessage = error.message || 'Erreur lors du téléversement des images';
         this.clearMessagesAfterDelay();
-        this.loadStats();
-      },
-      error: (error) => {
-        console.error('❌ Erreur détaillée:', error);
-        this.errorMessage = `Erreur lors de la mise à jour: ${error.message || 'Erreur serveur'}`;
-        this.clearMessagesAfterDelay();
-      }
-    });
+      });
+      return;
+    }
+
+    performUpdate(payload);
   }
 
   confirmDelete(offer: AdminOffer): void {
@@ -392,6 +525,10 @@ export class OfferManagement implements OnInit {
     if (this.mobilityCategories.length) {
       this.newOffer.mobilityService = this.mobilityCategories[0];
     }
+    this.newOfferImageFile = null;
+    this.newOfferImagePreview = null;
+    this.newOfferGalleryFiles = [];
+    this.newOfferGalleryPreviews = [];
   }
 
   isValidOffer(): boolean {
@@ -520,7 +657,8 @@ export class OfferManagement implements OnInit {
       returnLocation: updatedOffer.returnLocationName || updatedOffer.returnLocation,
       mobilityService: updatedOffer.mobilityServiceName || this.getServiceNameById(updatedOffer.mobilityServiceId),
       pickupLocationCity: updatedOffer.pickupLocationName || updatedOffer.pickupLocation,
-      returnLocationCity: updatedOffer.returnLocationName || updatedOffer.returnLocation
+      returnLocationCity: updatedOffer.returnLocationName || updatedOffer.returnLocation,
+      imageUrl: updatedOffer.imageUrl
     };
 
     // Mise à jour des listes
@@ -563,6 +701,24 @@ export class OfferManagement implements OnInit {
     return Number.isFinite(num) && num > 0 ? num : undefined;
   }
 
+  private buildObjectUrl(file: File): string {
+    return URL.createObjectURL(file);
+  }
+
+  private uploadSingleFile(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      this.adminService.uploadOfferImage(file).subscribe({
+        next: (res) => resolve(res.url),
+        error: (err) => reject(err)
+      });
+    });
+  }
+
+  private uploadMultipleFiles(files: File[]): Promise<string[]> {
+    const uploads = files.map(file => this.uploadSingleFile(file));
+    return Promise.all(uploads);
+  }
+
   // Navigation
   goBackToDashboard(): void {
     this.router.navigate(['/admin']);
@@ -582,7 +738,7 @@ export class OfferManagement implements OnInit {
    * CORRECTION CRITIQUE : Cette méthode mappe les données du formulaire
    * vers le format attendu par le backend
    */
-  private buildCreateOfferPayload(form: AdminOfferForm): CreateOfferRequest {
+  private buildCreateOfferPayload(form: AdminOfferForm, imageUrl?: string): CreateOfferRequest {
     const pickupLocation = (form.pickupLocation ?? '').trim();
     const pickupCity = (form.pickupLocationCity ?? '').trim();
     const returnLocation = (form.returnLocation ?? '').trim();
@@ -619,6 +775,10 @@ export class OfferManagement implements OnInit {
       status: form.status ?? OfferManagement.DEFAULT_STATUS,
       active: true
     };
+
+    if (imageUrl) {
+      payload.imageUrl = imageUrl;
+    }
 
     const adminId = this.toPositiveNumber(form.adminId);
     if (adminId) {

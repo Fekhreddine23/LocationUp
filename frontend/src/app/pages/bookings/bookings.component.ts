@@ -13,7 +13,8 @@ import { Spinner } from "../../components/spinner/spinner";
 import { BreadcrumbService } from "../../core/services/breadcrumb";
 import { Breadcrumbs } from "../../components/breadcrumbs/breadcrumbs";
 import { PaymentService } from '../../core/services/payment.service';
-
+import { IdentityService } from '../../core/services/identity.service';
+import { IdentityStatus } from '../../core/models/identity.model';
 
 
 @Component({
@@ -53,6 +54,8 @@ export class BookingsComponent implements OnInit {
   timelineVisibility: { [reservationId: number]: boolean } = {};
   timelineLoading: { [reservationId: number]: boolean } = {};
   paymentSyncLoading: { [reservationId: number]: boolean } = {};
+  identityStatus: IdentityStatus | null = null;
+  identityLoading = false;
 
 
   constructor(
@@ -63,12 +66,14 @@ export class BookingsComponent implements OnInit {
     private notificationService: NotificationService,
     private loadingService: LoadingService,
     private paymentService: PaymentService,
+    private identityService: IdentityService,
 
   ) { }
 
   ngOnInit(): void {
     this.bookings$ = this.bookingsService.getMyBookings();
     this.loadBookings();
+    this.fetchIdentityStatus();
 
 
     // NOUVEAU : Écouter les états de loading globaux
@@ -106,6 +111,36 @@ export class BookingsComponent implements OnInit {
         console.error('Error loading bookings:', error);
       }
     });
+  }
+
+  private fetchIdentityStatus(): void {
+    this.identityLoading = true;
+    this.identityService.getStatus().subscribe({
+      next: (status) => {
+        this.identityStatus = status;
+        this.identityLoading = false;
+      },
+      error: () => {
+        this.identityStatus = null;
+        this.identityLoading = false;
+      }
+    });
+  }
+
+  get canPerformPaymentActions(): boolean {
+    return (this.identityStatus?.status?.toUpperCase() ?? '') === 'VERIFIED';
+  }
+
+  get identityWarningVisible(): boolean {
+    return !this.identityLoading && !this.canPerformPaymentActions;
+  }
+
+  private ensureIdentityVerified(): boolean {
+    if (this.canPerformPaymentActions) {
+      return true;
+    }
+    this.notificationService.warning('Vérifiez votre identité pour confirmer ou régler une réservation.');
+    return false;
   }
 
 
@@ -212,6 +247,9 @@ export class BookingsComponent implements OnInit {
     if (!booking.reservationId) {
       return;
     }
+    if (!this.ensureIdentityVerified()) {
+      return;
+    }
     const reservationId = booking.reservationId;
     this.paymentSyncLoading[reservationId] = true;
     this.paymentService.syncPaymentStatus(reservationId).subscribe({
@@ -257,6 +295,9 @@ export class BookingsComponent implements OnInit {
   }
 
   confirmBooking(reservationId: number): void {
+    if (!this.ensureIdentityVerified()) {
+      return;
+    }
     console.log('Confirmation de la réservation:', reservationId);
 
     this.bookingsService.confirmBooking(reservationId).subscribe({

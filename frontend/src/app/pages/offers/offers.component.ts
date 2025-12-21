@@ -12,6 +12,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { IdentityService } from '../../core/services/identity.service';
 import { IdentityStatus } from '../../core/models/identity.model';
+import { findBrandKey } from '../../core/config/brand-images';
 
 interface QuickViewHighlight {
   icon: string;
@@ -309,9 +310,20 @@ export class OffersComponent implements OnInit, OnDestroy {
   }
 
   getAvailabilityLabel(offer: Offer): string {
-    return this.offersService.isOfferAvailable(offer)
-      ? 'Disponible'
-      : 'Date dépassée';
+    const now = new Date();
+    if (!this.offersService.isOfferAvailable(offer)) {
+      const status = (offer.status ?? '').toString().toUpperCase();
+      if (status === 'CANCELLED') {
+        return 'Annulée';
+      }
+      if (status === 'COMPLETED') {
+        return 'Clôturée';
+      }
+      return 'Indisponible';
+    }
+    const pickupDate = offer.pickupDatetime ? new Date(offer.pickupDatetime) : null;
+    const hasPastPickupDate = !!pickupDate && !Number.isNaN(pickupDate.getTime()) && pickupDate < now;
+    return hasPastPickupDate ? 'Disponible (créneau à définir)' : 'Disponible';
   }
 
   trackByOffer(_: number, offer: Offer): number {
@@ -327,10 +339,7 @@ export class OffersComponent implements OnInit, OnDestroy {
   }
 
   resolveImage(offer?: Offer | null): string {
-    if (!offer?.imageUrl) {
-      return 'https://images.unsplash.com/photo-1477847616630-cf9cf8815fda?auto=format&fit=crop&w=900&q=80';
-    }
-    return offer.imageUrl;
+    return this.offersService.resolveOfferImage(offer);
   }
 
   reserveOffer(offer?: Offer | null): void {
@@ -390,6 +399,17 @@ export class OffersComponent implements OnInit, OnDestroy {
   }
 
   private buildGalleryForOffer(offer: Offer): string[] {
+    const fromOffer = offer.galleryUrls ?? [];
+    const brandImages = this.getBrandImages(offer);
+    const gallery = [
+      ...fromOffer,
+      ...brandImages
+    ].filter(Boolean);
+
+    if (gallery.length) {
+      return Array.from(new Set(gallery));
+    }
+
     const base = this.resolveImage(offer);
     const keyword = this.getGalleryKeyword(offer);
     const candidates = [
@@ -402,13 +422,29 @@ export class OffersComponent implements OnInit, OnDestroy {
   }
 
   private getGalleryKeyword(offer: Offer): string {
+    const brand = findBrandKey(`${offer.description ?? ''} ${offer.mobilityService ?? ''}`);
+    if (brand) {
+      return brand;
+    }
     const text = `${offer.description ?? ''} ${offer.mobilityService ?? ''}`.toLowerCase();
+    if (text.includes('clio') || text.includes('renault')) return 'clio';
+    if (text.includes('peugeot')) return 'peugeot';
+    if (text.includes('dacia')) return 'dacia';
+    if (text.includes('toyota')) return 'toyota';
+    if (text.includes('citroen')) return 'citroen';
+    if (text.includes('nissan')) return 'nissan';
+    if (text.includes('kangoo')) return 'kangoo';
+    if (text.includes('tesla')) return 'tesla';
     if (text.includes('voiture') || text.includes('car')) return 'car';
     if (text.includes('scooter')) return 'scooter';
     if (text.includes('velo') || text.includes('vélo') || text.includes('bike')) return 'bike';
     if (text.includes('trottinette') || text.includes('trotinette')) return 'scooter';
     if (text.includes('cargo') || text.includes('utilitaire')) return 'van';
     return 'transport';
+  }
+
+  private getBrandImages(offer: Offer): string[] {
+    return this.offersService.getBrandImages(offer);
   }
 
   private extractEquipmentList(offer: Offer): string[] {

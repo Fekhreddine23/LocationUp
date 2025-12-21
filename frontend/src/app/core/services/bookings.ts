@@ -5,6 +5,7 @@ import { delay, tap, catchError } from 'rxjs/operators';
 import { AuthService } from './auth.service';
 import { LoadingService } from './loading.service';
 import { BusinessEventsService } from './business-events/business-events';
+import { DriverProfile } from '../models/driver-profile.model';
 
 export interface Booking {
   reservationId?: number;
@@ -17,6 +18,7 @@ export interface Booking {
   paymentStatus?: 'PENDING' | 'REQUIRES_ACTION' | 'PAID' | 'FAILED' | 'REFUNDED' | 'EXPIRED';
   paymentReference?: string;
   paymentDate?: string;
+  driverProfile?: DriverProfile;
 }
 
 export interface BookingTimelineEvent {
@@ -37,6 +39,7 @@ export interface CreateBookingRequest {
   userId: number;
   offerId: number;
   reservationDate: string;
+  driverProfile?: DriverProfile;
 }
 
 @Injectable({
@@ -126,10 +129,7 @@ export class BookingsService {
     if (!currentUser) {
       throw new Error('Utilisateur non connecté');
     }
-    
-    console.log('🔍 [BookingsService] Utilisateur connecté:', currentUser);
-    console.log('🔍 [BookingsService] ID utilisateur:', currentUser.id);
-    
+
     return this.getBookingsByUser(currentUser.id);
   }
 

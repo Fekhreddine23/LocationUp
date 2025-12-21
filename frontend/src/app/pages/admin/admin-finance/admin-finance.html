@@ -55,6 +55,35 @@
     </div>
   </div>
 
+  <div class="identity-alert-card" *ngIf="overview">
+    <div class="card-header">
+      <div>
+        <h3>Identités en attente</h3>
+        <p *ngIf="awaitingIdentityCount > 0">{{ awaitingIdentityCount }} profils nécessitent une relance.</p>
+        <p *ngIf="awaitingIdentityCount === 0" class="muted">Tous les profils sont à jour.</p>
+      </div>
+      <button type="button" class="ghost" (click)="navigateToIdentityMonitoring()">
+        Aller aux dossiers
+      </button>
+    </div>
+    <div class="identity-alert-body">
+      <div class="identity-pill muted">
+        <strong>{{ overview.identitiesPending }}</strong>
+        <small>En attente initiale</small>
+      </div>
+      <div class="identity-pill warning">
+        <strong>{{ overview.identitiesRequiresInput }}</strong>
+        <small>Actions requises</small>
+      </div>
+      <div class="identity-alert-highlight" *ngIf="highlightedAlerts.length">
+        <p>{{ highlightedAlerts.length }} alerte(s) de paiement concernent des clients non vérifiés.</p>
+        <button type="button" class="ghost" (click)="setAlertSeverity('CRITIQUE')">
+          Voir les alertes
+        </button>
+      </div>
+    </div>
+  </div>
+
   <div class="chart-card">
     <h3>Évolution des revenus</h3>
     <canvas baseChart
@@ -123,6 +152,7 @@
           <li><strong>Client :</strong> {{ alert.customer }}</li>
           <li><strong>Montant :</strong> {{ alert.amount | number:'1.2-2' }} €</li>
           <li><strong>Statut :</strong> {{ alert.paymentStatus }}</li>
+          <li><strong>Identité :</strong> {{ alert.identityVerified ? 'Validée' : 'À vérifier' }}</li>
           <li><strong>Créée :</strong> {{ alert.reservationDate | date:'dd/MM HH:mm' }}</li>
         </ul>
         <div class="alert-actions">

@@ -283,6 +283,19 @@ export class AdminFinanceComponent implements OnInit {
     }).catch(err => console.warn('Navigation booking management impossible', err));
   }
 
+  get awaitingIdentityCount(): number {
+    if (!this.overview) {
+      return 0;
+    }
+    return (this.overview.identitiesPending ?? 0) + (this.overview.identitiesRequiresInput ?? 0);
+  }
+
+  navigateToIdentityMonitoring(): void {
+    this.router.navigate(['/admin/bookings'], {
+      queryParams: { identity: 'UNVERIFIED' }
+    }).catch(err => console.warn('Navigation filtres identité impossible', err));
+  }
+
   trackByReservation(_: number, alert: PaymentAlert): number | string {
     return alert.reservationId ?? alert.message;
   }

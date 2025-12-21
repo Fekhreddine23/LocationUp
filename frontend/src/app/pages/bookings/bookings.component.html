@@ -9,6 +9,23 @@
     </button>
   </div>
 
+  <div class="identity-warning" *ngIf="identityWarningVisible">
+    <div class="warning-icon">🪪</div>
+    <div class="warning-content">
+      <h3>Vérification d'identité requise</h3>
+      <p>Confirmez vos réservations et vos paiements une fois vos documents validés.</p>
+      <small *ngIf="identityStatus?.updatedAt">
+        Dernière mise à jour : {{ identityStatus?.updatedAt | date:'dd/MM/yyyy HH:mm' }}
+      </small>
+      <small *ngIf="identityStatus?.reason">
+        Motif Stripe : {{ identityStatus?.reason }}
+      </small>
+    </div>
+    <a routerLink="/profile" fragment="identity" class="btn btn-outline">
+      Faites vérifier vos documents →
+    </a>
+  </div>
+
   <!-- Loading State -->
   <div *ngIf="isLoading && bookings.length === 0" class="loading-state">
     <app-spinner text="Chargement de vos réservations..."></app-spinner>
@@ -117,7 +134,8 @@
             <!-- Bouton Confirmer avec loading -->
             <button class="btn btn-success btn-sm" 
                     (click)="confirmBooking(booking.reservationId!)"
-                    [disabled]="isLoadingAction(booking.reservationId!, 'confirm')"
+                    [disabled]="!canPerformPaymentActions || isLoadingAction(booking.reservationId!, 'confirm')"
+                    [title]="!canPerformPaymentActions ? 'Identité à vérifier' : ''"
                     [class.loading]="isLoadingAction(booking.reservationId!, 'confirm')">
               
               <span *ngIf="!isLoadingAction(booking.reservationId!, 'confirm')">
@@ -143,6 +161,9 @@
                 <span>Annulation...</span>
               </span>
             </button>
+            <p class="identity-hint" *ngIf="!canPerformPaymentActions">
+              Vérifiez votre identité pour confirmer cette réservation.
+            </p>
           </div>
 
           <!-- STATUT: CONFIRMED -->
@@ -200,10 +221,14 @@
             <button class="btn btn-outline btn-sm"
                     *ngIf="booking.paymentStatus !== 'PAID' && booking.paymentStatus !== 'REFUNDED'"
                     (click)="syncPayment(booking)"
-                    [disabled]="paymentSyncLoading[booking.reservationId!]">
+                    [disabled]="paymentSyncLoading[booking.reservationId!] || !canPerformPaymentActions"
+                    [title]="!canPerformPaymentActions ? 'Identité à vérifier' : ''">
               <ng-container *ngIf="!paymentSyncLoading[booking.reservationId!]">🔄 Vérifier le paiement</ng-container>
               <ng-container *ngIf="paymentSyncLoading[booking.reservationId!]">⏳ Vérification...</ng-container>
             </button>
+            <p class="identity-hint" *ngIf="!canPerformPaymentActions">
+              Finalisez la vérification pour relancer un paiement.
+            </p>
           </div>
         </div>
 

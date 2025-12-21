@@ -323,6 +323,33 @@
               placeholder="Description de l'offre..."
               rows="3"></textarea>
           </div>
+
+          <div class="form-group full-width">
+            <label>Image de l'offre</label>
+            <input 
+              type="file" 
+              accept="image/*"
+              (change)="onNewOfferImageSelected($event)"
+              class="form-input">
+            <small class="muted">Formats acceptés : JPG, PNG, WEBP - max 5MB</small>
+            <div class="image-preview" *ngIf="newOfferImagePreview">
+              <img [src]="newOfferImagePreview" alt="Aperçu de l'image sélectionnée">
+            </div>
+          </div>
+
+          <div class="form-group full-width">
+            <label>Galerie (jusqu'à 5 images)</label>
+            <input 
+              type="file" 
+              accept="image/*"
+              multiple
+              (change)="onNewOfferGallerySelected($event)"
+              class="form-input">
+            <small class="muted">Formats acceptés : JPG, PNG, WEBP - max 5MB par image</small>
+            <div class="gallery-preview" *ngIf="newOfferGalleryPreviews.length">
+              <img *ngFor="let img of newOfferGalleryPreviews" [src]="img" alt="Aperçu galerie">
+            </div>
+          </div>
         </div>
         </ng-container>
       </div>
@@ -332,9 +359,9 @@
         </button>
         <button 
           (click)="submitNewOffer()" 
-          [disabled]="!isValidOffer() || isLoadingServices"
+          [disabled]="!isValidOffer() || isLoadingServices || imageUploadLoading"
           class="btn-confirm">
-          {{ isLoadingServices ? 'Chargement...' : 'Créer l\'offre' }}
+          {{ imageUploadLoading ? 'Téléversement...' : (isLoadingServices ? 'Chargement...' : 'Créer l\'offre') }}
         </button>
       </div>
     </div>
@@ -448,6 +475,33 @@
               class="form-textarea"
               rows="3"></textarea>
           </div>
+
+          <div class="form-group full-width">
+            <label>Image de l'offre</label>
+            <input 
+              type="file" 
+              accept="image/*"
+              (change)="onEditOfferImageSelected($event)"
+              class="form-input">
+            <small class="muted">Formats acceptés : JPG, PNG, WEBP - max 5MB</small>
+            <div class="image-preview" *ngIf="selectedOfferImagePreview || selectedOffer.imageUrl">
+              <img [src]="selectedOfferImagePreview || selectedOffer.imageUrl" alt="Aperçu de l'image sélectionnée">
+            </div>
+          </div>
+
+          <div class="form-group full-width">
+            <label>Galerie (jusqu'à 5 images)</label>
+            <input 
+              type="file" 
+              accept="image/*"
+              multiple
+              (change)="onEditOfferGallerySelected($event)"
+              class="form-input">
+            <small class="muted">Formats acceptés : JPG, PNG, WEBP - max 5MB par image</small>
+            <div class="gallery-preview" *ngIf="selectedOfferGalleryPreviews.length || selectedOffer.galleryUrls?.length">
+              <img *ngFor="let img of (selectedOfferGalleryPreviews.length ? selectedOfferGalleryPreviews : selectedOffer.galleryUrls)" [src]="img" alt="Aperçu galerie">
+            </div>
+          </div>
         </div>
         </ng-container>
       </div>
@@ -455,8 +509,8 @@
         <button (click)="isEditModalOpen = false" class="btn-cancel">
           Annuler
         </button>
-        <button (click)="updateOffer()" class="btn-confirm">
-          Enregistrer
+        <button (click)="updateOffer()" class="btn-confirm" [disabled]="imageUploadLoading">
+          {{ imageUploadLoading ? 'Téléversement...' : 'Enregistrer' }}
         </button>
       </div>
     </div>

@@ -110,7 +110,11 @@
 
 .price-tile {
   min-width: 220px;
-  text-align: right;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  align-items: flex-start;
 
   .amount {
     font-size: 2.2rem;

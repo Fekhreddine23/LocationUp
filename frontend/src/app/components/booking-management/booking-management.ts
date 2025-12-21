@@ -13,6 +13,8 @@ import { FinanceAlertFilters, PaymentAlert } from '../../core/models/admin-finan
 import { Subject, forkJoin, Observable, of } from 'rxjs';
 import { catchError, finalize, map, takeUntil, tap } from 'rxjs/operators';
 import { NotificationService } from '../../core/services/notification.service';
+import { IdentityDocument } from '../../core/models/identity.model';
+import { IdentityVerificationRecord } from '../../core/models/identity-admin.model';
 
 type BookingStatus = AdminBooking['status'] | 'ALL';
 type NormalizedBookingOffer = NonNullable<AdminBooking['offer']>;
@@ -98,6 +100,14 @@ export class BookingManagement implements OnInit, OnDestroy {
   detailAuxLoading = false;
   private detailLoadingCountdown = 0;
   isDeleteProcessing = false;
+  detailTab: 'overview' | 'documents' = 'overview';
+  identityDocuments: IdentityDocument[] = [];
+  identityDocumentsLoading = false;
+  identityDocumentsError = '';
+  identityVerifications: IdentityVerificationRecord[] = [];
+  identityVerificationsLoading = false;
+  identityVerificationsError = '';
+  identitySessionLoading = false;
   
   // Filtre utilisateur actif
   private activeUserFilter: { id: number, name: string } | null = null;
@@ -459,6 +469,7 @@ export class BookingManagement implements OnInit, OnDestroy {
     this.route.queryParams
       .pipe(takeUntil(this.destroy$))
       .subscribe(params => {
+        const identityParam = (params['identity'] ?? '').toString().toUpperCase();
         if (params['userId']) {
           const userId = parseInt(params['userId']);
           const userName = params['userName'] || `Utilisateur #${userId}`;
@@ -477,6 +488,10 @@ export class BookingManagement implements OnInit, OnDestroy {
         } else {
           this.pendingReservationFocus = null;
         }
+        if (identityParam === 'VERIFIED' || identityParam === 'UNVERIFIED') {
+          this.identityFilter = identityParam as typeof this.identityFilter;
+          this.applyFilters();
+        }
       });
   }
 
@@ -485,10 +500,15 @@ export class BookingManagement implements OnInit, OnDestroy {
     this.focusedReservationId = booking?.reservationId ?? null;
     this.selectedBooking = booking;
     this.isDetailModalOpen = true;
+    this.detailTab = 'overview';
     this.paymentEvents = [];
     this.paymentEventsError = '';
     this.adminActions = [];
     this.adminActionsError = '';
+    this.identityDocuments = booking.identityDocuments ?? [];
+    this.identityDocumentsError = '';
+    this.identityVerifications = [];
+    this.identityVerificationsError = '';
     if (booking?.reservationId) {
       this.detailLoadingCountdown = 2;
       this.detailAuxLoading = true;
@@ -497,6 +517,13 @@ export class BookingManagement implements OnInit, OnDestroy {
     } else {
       this.detailLoadingCountdown = 0;
       this.detailAuxLoading = false;
+    }
+    if (booking?.user?.id) {
+      this.loadIdentityDocuments(booking.user.id);
+      this.loadIdentityVerifications(booking.user.id);
+    } else {
+      this.identityDocumentsLoading = false;
+      this.identityVerificationsLoading = false;
     }
   }
 
@@ -596,6 +623,74 @@ export class BookingManagement implements OnInit, OnDestroy {
     });
   }
 
+  setDetailTab(tab: 'overview' | 'documents'): void {
+    this.detailTab = tab;
+  }
+
+  refreshIdentityDocuments(): void {
+    if (this.selectedBooking?.user?.id) {
+      this.loadIdentityDocuments(this.selectedBooking.user.id);
+      this.loadIdentityVerifications(this.selectedBooking.user.id);
+    }
+  }
+
+  private loadIdentityDocuments(userId: number): void {
+    this.identityDocumentsLoading = true;
+    this.identityDocumentsError = '';
+    this.adminService.getIdentityDocuments(userId).subscribe({
+      next: (documents) => {
+        this.identityDocuments = documents ?? [];
+        this.identityDocumentsLoading = false;
+      },
+      error: (error) => {
+        console.error('Erreur chargement documents identité:', error);
+        this.identityDocumentsError = 'Impossible de charger les documents client.';
+        this.identityDocumentsLoading = false;
+      }
+    });
+  }
+
+  private loadIdentityVerifications(userId: number): void {
+    this.identityVerificationsLoading = true;
+    this.identityVerificationsError = '';
+    this.adminService.getIdentityVerificationHistory(userId).subscribe({
+      next: (records) => {
+        this.identityVerifications = records ?? [];
+        this.identityVerificationsLoading = false;
+      },
+      error: (error) => {
+        console.error('Erreur historique identité:', error);
+        this.identityVerificationsError = 'Impossible de charger l’historique des vérifications.';
+        this.identityVerificationsLoading = false;
+      }
+    });
+  }
+
+  requestIdentitySession(): void {
+    if (!this.selectedBooking?.user?.id) {
+      return;
+    }
+    this.identitySessionLoading = true;
+    const returnUrl = typeof window !== 'undefined'
+      ? `${window.location.origin}/profile/identity`
+      : '/profile/identity';
+    this.adminService.startIdentitySessionForUser(this.selectedBooking.user.id, {
+      reservationId: this.selectedBooking.reservationId,
+      documentType: 'DRIVER_ID',
+      returnUrl
+    }).subscribe({
+      next: () => {
+        this.identitySessionLoading = false;
+        this.notificationService.success('Lien Stripe Identity envoyé.');
+      },
+      error: (error) => {
+        console.error('Erreur session identité:', error);
+        this.identitySessionLoading = false;
+        this.notificationService.error('Impossible de demander un nouveau scan.');
+      }
+    });
+  }
+
   private resolveDetailLoadingSection(): void {
     if (this.detailLoadingCountdown > 0) {
       this.detailLoadingCountdown--;
@@ -610,6 +705,12 @@ export class BookingManagement implements OnInit, OnDestroy {
     this.selectedBooking = null;
     this.detailAuxLoading = false;
     this.detailLoadingCountdown = 0;
+    this.identityDocuments = [];
+    this.identityDocumentsError = '';
+    this.identityVerifications = [];
+    this.identityVerificationsError = '';
+    this.detailTab = 'overview';
+    this.identitySessionLoading = false;
     if (!this.pendingReservationFocus) {
       this.focusedReservationId = null;
     }
@@ -1207,7 +1308,7 @@ export class BookingManagement implements OnInit, OnDestroy {
       case 'VERIFIED':
         return 'Identité vérifiée';
       case 'UNVERIFIED':
-        return 'À vérifier';
+        return 'Identité non vérifiée';
       default:
         return 'Toutes';
     }
@@ -1227,7 +1328,7 @@ export class BookingManagement implements OnInit, OnDestroy {
       case 'PENDING':
       case 'NONE':
       default:
-        return 'À vérifier';
+        return 'Identité non vérifiée';
     }
   }
 
@@ -1247,6 +1348,40 @@ export class BookingManagement implements OnInit, OnDestroy {
 
   private isIdentityVerifiedStatus(status?: string | null): boolean {
     return (status ?? '').toUpperCase() === 'VERIFIED';
+  }
+
+  formatIdentityTimestamp(timestamp?: string | null): string {
+    if (!timestamp) {
+      return '—';
+    }
+    return new Date(timestamp).toLocaleString('fr-FR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  }
+
+  buildIdentityReminderLink(booking?: AdminBooking | null): string | null {
+    const email = booking?.user?.email;
+    if (!email) {
+      return null;
+    }
+    const profileUrl = typeof window !== 'undefined'
+      ? `${window.location.origin}/profile/identity`
+      : '/profile/identity';
+    const userLabel = booking?.user?.username ?? `client #${booking?.user?.id ?? ''}`;
+    const subject = encodeURIComponent('Vérification d’identité requise');
+    const body = encodeURIComponent(
+      `Bonjour ${userLabel},\n\nNous avons besoin d'une pièce d'identité valide pour finaliser la réservation #${booking?.reservationId ?? ''}. ` +
+      `Merci de compléter vos documents ici : ${profileUrl}\n\nÀ très vite,\nL'équipe LocationUp`
+    );
+    return `mailto:${email}?subject=${subject}&body=${body}`;
+  }
+
+  shouldShowIdentityReminder(booking?: AdminBooking | null): boolean {
+    return !this.isIdentityVerifiedStatus(booking?.identityStatus);
   }
 
   clearAnomalyFilter(): void {

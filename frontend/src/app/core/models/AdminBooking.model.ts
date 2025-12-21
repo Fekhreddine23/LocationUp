@@ -1,3 +1,6 @@
+import { IdentityDocument } from './identity.model';
+import { DriverProfile } from './driver-profile.model';
+
 export type PaymentStatus = 'PENDING' | 'REQUIRES_ACTION' | 'PAID' | 'FAILED' | 'REFUNDED' | 'EXPIRED';
 
 export interface AdminBooking {
@@ -21,6 +24,10 @@ export interface AdminBooking {
     price?: number;
   };
   identityStatus?: string;
+  identityUpdatedAt?: string;
+  identityReason?: string;
+  identityDocuments?: IdentityDocument[];
+  driverProfile?: DriverProfile;
 }
 
 

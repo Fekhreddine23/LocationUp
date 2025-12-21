@@ -205,7 +205,7 @@
           Validées
         </button>
         <button type="button" [class.active]="identityFilter === 'UNVERIFIED'" (click)="setIdentityFilter('UNVERIFIED')">
-          À vérifier
+          Non vérifiées
         </button>
       </div>
       <button (click)="downloadBookingsCsv()" class="export-btn">
@@ -430,7 +430,11 @@
         <div class="detail-loading-overlay" *ngIf="detailAuxLoading" aria-live="polite">
           <div class="app-skeleton-line" *ngFor="let _ of detailSkeletonLines"></div>
         </div>
-        <div class="detail-grid">
+        <div class="detail-tabs">
+          <button type="button" [class.active]="detailTab === 'overview'" (click)="setDetailTab('overview')">Synthèse</button>
+          <button type="button" [class.active]="detailTab === 'documents'" (click)="setDetailTab('documents')">Documents client</button>
+        </div>
+        <div class="detail-grid" *ngIf="detailTab === 'overview'">
           <div class="detail-section">
             <h4>Informations Utilisateur</h4>
             <div class="detail-item">
@@ -513,6 +517,42 @@
               </span>
             </div>
           </div>
+          <div class="detail-section identity-documents" *ngIf="selectedBooking">
+            <h4>Documents & statut d'identité</h4>
+            <div class="detail-item">
+              <span class="detail-label">Statut:</span>
+              <span class="identity-chip" [ngClass]="getIdentityBadgeClass(selectedBooking.identityStatus)">
+                {{ getIdentityLabel(selectedBooking.identityStatus) }}
+              </span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Dernière mise à jour:</span>
+              <span class="detail-value">
+                {{ formatIdentityTimestamp(selectedBooking.identityUpdatedAt) }}
+              </span>
+            </div>
+            <div class="detail-item" *ngIf="selectedBooking.identityReason">
+              <span class="detail-label">Motif Stripe:</span>
+              <span class="detail-value">{{ selectedBooking.identityReason }}</span>
+            </div>
+            <div class="identity-reminder" *ngIf="shouldShowIdentityReminder(selectedBooking)">
+              <p>Relancez le client pour finaliser ses documents avant validation.</p>
+              <a
+                *ngIf="buildIdentityReminderLink(selectedBooking) as reminderLink"
+                [href]="reminderLink"
+                class="ghost-btn"
+                target="_blank"
+                rel="noopener">
+                📧 Relancer par e-mail
+              </a>
+              <button
+                type="button"
+                class="primary-btn"
+                (click)="viewUserBookings(selectedBooking.user?.id, selectedBooking.user?.username)">
+                🔍 Voir ses réservations
+              </button>
+            </div>
+          </div>
           <div class="detail-section">
             <h4>Historique Stripe</h4>
             <ng-container *ngIf="paymentEventsLoading; else stripeHistory">
@@ -573,6 +613,81 @@
               </ul>
             </ng-template>
           </div>
+        </div>
+        <div class="documents-pane" *ngIf="detailTab === 'documents'">
+          <section class="documents-card">
+            <div class="card-header">
+              <h4>Profil conducteur</h4>
+            </div>
+            <div *ngIf="!selectedBooking?.driverProfile" class="info-text">
+              Aucun profil conducteur enregistré sur cette réservation.
+            </div>
+            <ul *ngIf="selectedBooking?.driverProfile" class="driver-profile-list">
+              <li><strong>Permis :</strong> {{ selectedBooking.driverProfile?.licenseNumber || '—' }}</li>
+              <li><strong>Pays :</strong> {{ selectedBooking.driverProfile?.licenseCountry || '—' }}</li>
+              <li><strong>Catégorie :</strong> {{ selectedBooking.driverProfile?.licenseCategory || '—' }}</li>
+              <li><strong>Expiration :</strong> {{ selectedBooking.driverProfile?.licenseExpiresOn ? (selectedBooking.driverProfile?.licenseExpiresOn | date:'dd/MM/yyyy') : '—' }}</li>
+              <li><strong>Kilométrage annuel :</strong> {{ selectedBooking.driverProfile?.annualKilometers || '—' }}</li>
+              <li><strong>Usage :</strong> {{ selectedBooking.driverProfile?.usageReason || '—' }}</li>
+            </ul>
+          </section>
+          <section class="documents-card">
+            <div class="card-header">
+              <div>
+                <h4>Documents Stripe</h4>
+                <p>Pièces reçues via Stripe Identity</p>
+              </div>
+              <div class="card-actions">
+                <button type="button" class="ghost-btn" (click)="refreshIdentityDocuments()">↻</button>
+                <button type="button" class="primary-btn" (click)="requestIdentitySession()" [disabled]="identitySessionLoading">
+                  {{ identitySessionLoading ? 'Demande en cours…' : 'Demander un nouveau scan' }}
+                </button>
+              </div>
+            </div>
+            <div *ngIf="identityDocumentsLoading" class="info-text">Chargement des documents...</div>
+            <div *ngIf="identityDocumentsError" class="warning-text">{{ identityDocumentsError }}</div>
+            <div *ngIf="!identityDocumentsLoading && !identityDocumentsError && identityDocuments.length === 0" class="info-text">
+              Aucun document disponible pour ce client.
+            </div>
+            <ul *ngIf="identityDocuments.length > 0" class="documents-list">
+              <li *ngFor="let doc of identityDocuments">
+                <div class="doc-row">
+                  <strong>{{ doc.documentType || 'Document' }}</strong>
+                  <span class="doc-status">{{ doc.status || '—' }}</span>
+                </div>
+                <div class="doc-meta">
+                  <span>Expiration : {{ doc.expirationDate ? (doc.expirationDate | date:'dd/MM/yyyy') : 'n/a' }}</span>
+                  <span>Pays : {{ doc.issuingCountry || '—' }}</span>
+                  <span *ngIf="doc.fileIds?.length">Fichiers : {{ doc.fileIds?.join(', ') }}</span>
+                </div>
+              </li>
+            </ul>
+          </section>
+          <section class="documents-card">
+            <div class="card-header">
+              <h4>Historique des vérifications</h4>
+            </div>
+            <div *ngIf="identityVerificationsLoading" class="info-text">Chargement de l’historique...</div>
+            <div *ngIf="identityVerificationsError" class="warning-text">{{ identityVerificationsError }}</div>
+            <div *ngIf="!identityVerificationsLoading && !identityVerificationsError && identityVerifications.length === 0" class="info-text">
+              Aucune vérification enregistrée.
+            </div>
+            <ul *ngIf="identityVerifications.length > 0" class="events-timeline">
+              <li *ngFor="let record of identityVerifications">
+                <div class="event-header">
+                  <span class="event-type badge" [ngClass]="getIdentityBadgeClass(record.status)">{{ record.status }}</span>
+                  <span class="event-date">{{ formatIdentityTimestamp(record.updatedAt) }}</span>
+                </div>
+                <div class="event-status">
+                  <span class="badge badge-muted">Session</span>
+                  <span class="code-value">{{ record.stripeSessionId || '—' }}</span>
+                </div>
+                <div class="event-error" *ngIf="record.reason">
+                  {{ record.reason }}
+                </div>
+              </li>
+            </ul>
+          </section>
         </div>
       </div>
       <div class="modal-actions">

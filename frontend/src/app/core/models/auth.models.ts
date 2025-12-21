@@ -14,6 +14,7 @@ export interface AuthResponse {
   username: string;
   role: string;
   userId: number;
+  avatarUrl?: string;
 }
 
 export interface User {
@@ -24,4 +25,5 @@ export interface User {
   token?: string;
   createdAt?: string;
   bookingCount?: number;
+  avatarUrl?: string;
 }

@@ -122,6 +122,83 @@
             </div>
           </div>
 
+          <div class="form-section driver-profile-panel">
+            <div class="section-header">
+              <div>
+                <h4>Profil conducteur</h4>
+                <p>Permis, usages et kilométrage sont conservés pour vos prochaines réservations.</p>
+              </div>
+              <span class="status-pill" *ngIf="driverProfileLoading">Chargement...</span>
+            </div>
+            <div class="form-grid">
+              <div class="form-field">
+                <label for="licenseNumber">Numéro de permis</label>
+                <input
+                  id="licenseNumber"
+                  name="licenseNumber"
+                  type="text"
+                  [(ngModel)]="driverProfile.licenseNumber"
+                  placeholder="AA-123-456"
+                  [disabled]="driverProfileLoading">
+              </div>
+              <div class="form-field">
+                <label for="licenseCountry">Pays d'émission</label>
+                <input
+                  id="licenseCountry"
+                  name="licenseCountry"
+                  type="text"
+                  [(ngModel)]="driverProfile.licenseCountry"
+                  placeholder="FR"
+                  maxlength="4"
+                  [disabled]="driverProfileLoading">
+              </div>
+              <div class="form-field">
+                <label for="licenseCategory">Catégorie</label>
+                <input
+                  id="licenseCategory"
+                  name="licenseCategory"
+                  type="text"
+                  [(ngModel)]="driverProfile.licenseCategory"
+                  placeholder="B / BE / A2..."
+                  [disabled]="driverProfileLoading">
+              </div>
+              <div class="form-field">
+                <label for="licenseExpiresOn">Expiration</label>
+                <input
+                  id="licenseExpiresOn"
+                  name="licenseExpiresOn"
+                  type="date"
+                  [(ngModel)]="driverProfile.licenseExpiresOn"
+                  [disabled]="driverProfileLoading">
+              </div>
+              <div class="form-field">
+                <label for="annualKilometers">Kilométrage annuel estimé</label>
+                <input
+                  id="annualKilometers"
+                  name="annualKilometers"
+                  type="number"
+                  min="0"
+                  step="1000"
+                  [(ngModel)]="driverProfile.annualKilometers"
+                  placeholder="12000"
+                  [disabled]="driverProfileLoading">
+              </div>
+              <div class="form-field full-width">
+                <label for="usageReason">Motif d'utilisation</label>
+                <textarea
+                  id="usageReason"
+                  name="usageReason"
+                  rows="2"
+                  [(ngModel)]="driverProfile.usageReason"
+                  placeholder="Trajets domicile-travail, déplacements professionnels..."
+                  [disabled]="driverProfileLoading"></textarea>
+              </div>
+            </div>
+            <div class="alert alert-warning" *ngIf="driverProfileError">
+              ⚠️ {{ driverProfileError }}
+            </div>
+          </div>
+
           <div *ngIf="bookingRequest.reservationDate" class="preview-section">
             <h4>📋 Aperçu</h4>
             <div class="preview-details">

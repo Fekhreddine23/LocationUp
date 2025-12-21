@@ -10,6 +10,7 @@ import { NotificationService as ToastNotificationService } from '../../core/serv
 import { NotificationService as NotificationStreamService } from '../../core/services/notification/notification';
 import { Notification as NotificationPayload } from '../../core/models/notification/notification.model';
 import { Toast } from '../../core/models/toast.model';
+import { BRAND_IMAGE_MAP, BrandImageKey, findBrandKey } from '../../core/config/brand-images';
 
 interface HighlightBadge {
   icon: string;
@@ -51,9 +52,6 @@ export class OffreDetail implements OnInit, OnDestroy {
   private galleryTouchStartX: number | null = null;
   private galleryTouchCurrentX: number | null = null;
   private readonly swipeThreshold = 40;
-
-  // Pour formater les dates
-  currentDate = new Date();
 
   constructor(
     private offersService: OffersService,
@@ -159,9 +157,7 @@ export class OffreDetail implements OnInit, OnDestroy {
   }
 
   isOfferAvailable(): boolean {
-    if (!this.offer) return false;
-    const pickupDate = new Date(this.offer.pickupDatetime);
-    return pickupDate > this.currentDate;
+    return this.offer ? this.offersService.isOfferAvailable(this.offer) : false;
   }
 
   reserveOffer(): void {
@@ -296,6 +292,12 @@ export class OffreDetail implements OnInit, OnDestroy {
   }
 
   private buildGalleryForOffer(offer: Offer): string[] {
+    const fromOffer = offer.galleryUrls ?? [];
+    const brandImages = this.getBrandImages(offer);
+    const combined = [...fromOffer, ...brandImages].filter(Boolean);
+    if (combined.length) {
+      return Array.from(new Set(combined));
+    }
     const base = this.resolveImage(offer);
     const keyword = this.getGalleryKeyword(offer);
     const candidates = [
@@ -308,20 +310,58 @@ export class OffreDetail implements OnInit, OnDestroy {
   }
 
   private resolveImage(offer: Offer): string {
-    if (!offer?.imageUrl) {
-      return 'https://images.unsplash.com/photo-1477847616630-cf9cf8815fda?auto=format&fit=crop&w=900&q=80';
+    const brandImages = this.getBrandImages(offer);
+    if (brandImages.length) {
+      return brandImages[0];
     }
-    return offer.imageUrl;
+    if (offer?.imageUrl) {
+      return offer.imageUrl;
+    }
+    return 'https://images.unsplash.com/photo-1477847616630-cf9cf8815fda?auto=format&fit=crop&w=900&q=80';
   }
 
   private getGalleryKeyword(offer: Offer): string {
+    const brand = this.getBrandKey(offer);
+    if (brand) {
+      return brand;
+    }
     const text = `${offer.description ?? ''} ${offer.mobilityService ?? ''}`.toLowerCase();
+    if (text.includes('clio') || text.includes('renault')) return 'clio';
+    if (text.includes('peugeot')) return 'peugeot';
+    if (text.includes('dacia')) return 'dacia';
+    if (text.includes('toyota')) return 'toyota';
+    if (text.includes('citroen')) return 'citroen';
+    if (text.includes('nissan')) return 'nissan';
+    if (text.includes('kangoo')) return 'kangoo';
+    if (text.includes('tesla')) return 'tesla';
     if (text.includes('voiture')) return 'car';
     if (text.includes('scooter')) return 'scooter';
     if (text.includes('velo') || text.includes('vélo')) return 'bike';
     if (text.includes('trottinette')) return 'scooter';
     if (text.includes('cargo') || text.includes('utilitaire')) return 'van';
     return 'transport';
+  }
+
+  private getBrandImages(offer: Offer): string[] {
+    const brandKey = this.getBrandKey(offer);
+    if (!brandKey) {
+      return [];
+    }
+    const meta = BRAND_IMAGE_MAP[brandKey];
+    if (!meta) {
+      return [];
+    }
+    const images = new Set<string>();
+    if (meta.card) {
+      images.add(meta.card);
+    }
+    meta.gallery.forEach(img => images.add(img));
+    return Array.from(images);
+  }
+
+  private getBrandKey(offer: Offer): BrandImageKey | null {
+    const text = `${offer.description ?? ''} ${offer.mobilityService ?? ''}`;
+    return findBrandKey(text);
   }
 
   private extractEquipmentList(offer: Offer): string[] {
@@ -407,7 +447,7 @@ export class OffreDetail implements OnInit, OnDestroy {
     const available = this.offersService.isOfferAvailable(offer);
     badges.push({
       icon: available ? '✅' : '⏱️',
-      label: available ? 'Créneau confirmé' : 'Prochain créneau à confirmer'
+      label: available ? 'Offre disponible' : 'Indisponible pour le moment'
     });
     if (text.includes('électrique')) {
       badges.push({ icon: '⚡️', label: 'Recharge comprise' });

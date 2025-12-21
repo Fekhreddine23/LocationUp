@@ -1,6 +1,6 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable, of } from 'rxjs';
+import { Observable, of, forkJoin } from 'rxjs';
 import { catchError, map, tap } from 'rxjs/operators';
 import { AdminStats } from '../models/AdminStats.model';
 import { AdminUser } from '../models/AdminUser.model';
@@ -15,6 +15,14 @@ import { PaymentEvent } from '../models/payment-event.model';
 import { ReservationAdminAction } from '../models/reservation-admin-action.model';
 import { BusinessEventsService } from './business-events/business-events';
 import { AuthService } from './auth.service';
+
+interface IdentitySessionPayload {
+  reservationId?: number;
+  documentType?: string;
+  returnUrl?: string;
+}
+import { IdentityDocument, IdentitySessionResponse } from '../models/identity.model';
+import { IdentityVerificationRecord } from '../models/identity-admin.model';
 
 
 
@@ -97,6 +105,18 @@ export class AdminService {
   getFinanceEvents(limit: number = 20): Observable<PaymentEventLogEntry[]> {
     const params = new HttpParams().set('size', limit.toString());
     return this.http.get<PaymentEventLogEntry[]>(`${this.apiUrl}/finance/events`, { params });
+  }
+
+  getIdentityDocuments(userId: number): Observable<IdentityDocument[]> {
+    return this.http.get<IdentityDocument[]>(`${this.apiUrl}/identity/users/${userId}/documents`);
+  }
+
+  getIdentityVerificationHistory(userId: number): Observable<IdentityVerificationRecord[]> {
+    return this.http.get<IdentityVerificationRecord[]>(`${this.apiUrl}/identity/users/${userId}/verifications`);
+  }
+
+  startIdentitySessionForUser(userId: number, payload?: IdentitySessionPayload): Observable<IdentitySessionResponse> {
+    return this.http.post<IdentitySessionResponse>(`${this.apiUrl}/identity/users/${userId}/sessions`, payload ?? {});
   }
 
   exportFinanceCsv(months: number = 6, scope: 'overview' | 'alerts' = 'overview', filters?: FinanceAlertFilters): Observable<Blob> {
@@ -349,7 +369,11 @@ export class AdminService {
       paymentDate: rawBooking.paymentDate ?? rawBooking.payment_date ?? undefined,
       user,
       offer,
-      identityStatus: rawBooking.userIdentityStatus ?? rawBooking.identityStatus ?? undefined
+      identityStatus: rawBooking.userIdentityStatus ?? rawBooking.identityStatus ?? undefined,
+      identityUpdatedAt: rawBooking.userIdentityUpdatedAt ?? rawBooking.identityUpdatedAt ?? undefined,
+      identityReason: rawBooking.userIdentityReason ?? rawBooking.identityReason ?? undefined,
+      identityDocuments: rawBooking.identityDocuments ?? undefined,
+      driverProfile: rawBooking.driverProfile ?? undefined
     };
   }
 
@@ -1063,6 +1087,28 @@ changeUserRole(userId: number, newRole: string): Observable<AdminUser> {
         }
       }),
       catchError(error => this.handleApiError('création de l\'offre', error))
+    );
+  }
+
+  /**
+   * Upload d'une image d'offre (multipart)
+   */
+  uploadOfferImage(file: File): Observable<{ url: string }> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post<{ url: string }>(`${this.apiUrl}/offers/image`, formData).pipe(
+      catchError(error => this.handleApiError('upload de l\'image', error))
+    );
+  }
+
+  /**
+   * Upload multiple images et renvoie leurs URLs
+   */
+  uploadOfferGallery(files: File[]): Observable<string[]> {
+    const uploads = files.map(file => this.uploadOfferImage(file));
+    return forkJoin(uploads).pipe(
+      map(results => results.map(r => r.url)),
+      catchError(error => this.handleApiError('upload de la galerie', error))
     );
   }
 

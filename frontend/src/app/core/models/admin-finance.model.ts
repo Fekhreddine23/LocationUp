@@ -18,6 +18,8 @@ export interface PaymentAlert {
   severity: string;
   message: string;
   reservationDate: string;
+  identityVerified?: boolean;
+  identityStatus?: string;
 }
 
 export interface PaymentEventLogEntry {
