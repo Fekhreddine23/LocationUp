@@ -1,8 +1,9 @@
 export const environment = {
   production: true,
-  apiUrl: 'http://localhost:8088',
+  apiUrl: 'https://locationup-backend-1.onrender.com',
   useMockOffers: false,
   stripe: {
-    publishableKey: 'pk_test_51SVt1ZLwAqOhLT9RONcrbMpQuLIsTv5Rc8gvuIErzqQDCXSxgnbYkzbOpx6ac8Ie14KTMiRaBcXkGPRZEEWR3G1H00oSCpLLic'
+    // Injectée au build via Docker/Render
+    publishableKey: 'pk_test_placeholder'
   }
 };

@@ -5,8 +5,13 @@ COPY package*.json ./
 RUN npm ci
 COPY . .
 ARG STRIPE_PUBLIC_KEY=pk_test_placeholder
+ARG API_URL=https://locationup-backend-1.onrender.com
 ENV STRIPE_PUBLIC_KEY=${STRIPE_PUBLIC_KEY}
+ENV API_URL=${API_URL}
 RUN sed -i "s|publishableKey: '.*'|publishableKey: '${STRIPE_PUBLIC_KEY}'|" \
+  src/environments/environment.ts \
+  src/environments/environment.prod.ts \
+  && sed -i "s|apiUrl: '.*'|apiUrl: '${API_URL}'|" \
   src/environments/environment.ts \
   src/environments/environment.prod.ts
 RUN npm run build --prod
