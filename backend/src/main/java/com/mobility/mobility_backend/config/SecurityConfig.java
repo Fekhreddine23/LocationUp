@@ -94,8 +94,11 @@ public class SecurityConfig {
 	@Bean
 	public CorsConfigurationSource corsConfigurationSource() {
 		CorsConfiguration configuration = new CorsConfiguration();
-		configuration.setAllowedOrigins(
-				Arrays.asList("http://localhost:4200", "http://127.0.0.1:4200", "http://localhost:3000"));
+		configuration.setAllowedOrigins(Arrays.asList(
+				"http://localhost:4200",
+				"http://127.0.0.1:4200",
+				"http://localhost:3000",
+				"https://locationup.onrender.com"));
 		configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"));
 		configuration.setAllowedHeaders(
 				Arrays.asList("Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With",
