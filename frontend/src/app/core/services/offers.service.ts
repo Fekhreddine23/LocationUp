@@ -11,7 +11,7 @@ import { BRAND_IMAGE_MAP, BrandImageKey, findBrandKey } from '../config/brand-im
   providedIn: 'root'
 })
 export class OffersService {
-  private apiUrl = '/api/offers';
+  private apiUrl = `${environment.apiUrl}/api/offers`;
   private useMocks = environment.useMockOffers ?? false;
   private readonly favoritesStorageKey = 'locationup_favorite_offers';
   private favoriteIds = new Set<number>();
