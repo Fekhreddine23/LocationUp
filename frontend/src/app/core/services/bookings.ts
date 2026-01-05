@@ -6,6 +6,7 @@ import { AuthService } from './auth.service';
 import { LoadingService } from './loading.service';
 import { BusinessEventsService } from './business-events/business-events';
 import { DriverProfile } from '../models/driver-profile.model';
+import { environment } from '../../../environments/environment';
 
 export interface Booking {
   reservationId?: number;
@@ -46,7 +47,7 @@ export interface CreateBookingRequest {
   providedIn: 'root'
 })
 export class BookingsService {
-  private apiUrl = 'http://localhost:8088/api/reservations';
+  private apiUrl = `${environment.apiUrl}/api/reservations`;
   private useMockData = false;
 
   private mockBookings: Booking[] = [

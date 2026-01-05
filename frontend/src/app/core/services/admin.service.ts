@@ -15,6 +15,7 @@ import { PaymentEvent } from '../models/payment-event.model';
 import { ReservationAdminAction } from '../models/reservation-admin-action.model';
 import { BusinessEventsService } from './business-events/business-events';
 import { AuthService } from './auth.service';
+import { environment } from '../../../environments/environment';
 
 interface IdentitySessionPayload {
   reservationId?: number;
@@ -35,7 +36,7 @@ export class AdminService {
     constructor(private http: HttpClient, private businessEvents: BusinessEventsService, private authService: AuthService) {}
 
 
-     private apiUrl = 'http://localhost:8088/api/admin';
+     private apiUrl = `${environment.apiUrl}/api/admin`;
 
 
   /**

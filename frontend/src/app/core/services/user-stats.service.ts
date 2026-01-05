@@ -1,9 +1,10 @@
 import { Injectable } from '@angular/core';
 import { UserStats } from '../models/UserStats.model';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { AuthService } from './auth.service';
 import { Observable } from 'rxjs/internal/Observable';
 import { map } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
@@ -17,7 +18,9 @@ export class UserStatsService {
 
 
    getUserStats(userId: number): Observable<UserStats> {
-    return this.http.get<any[]>(`/api/reservations/user/${userId}`).pipe(
+    const token = this.authService.getToken();
+    const headers = token ? new HttpHeaders({ Authorization: `Bearer ${token}` }) : undefined;
+    return this.http.get<any[]>(`${environment.apiUrl}/api/reservations/user/${userId}`, { headers }).pipe(
       map(bookings => this.calculateStats(bookings))
     );
   }
