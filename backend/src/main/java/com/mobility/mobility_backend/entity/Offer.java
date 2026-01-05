@@ -95,9 +95,6 @@ public class Offer {
 	@Enumerated(EnumType.STRING)
 	private OfferStatus status = OfferStatus.PENDING; // Valeur par défaut
 
-	@Version
-	private Long version;
-
 	@Column(name = "active", nullable = false)
 	private boolean active = true; // Valeur par défaut
 

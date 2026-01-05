@@ -164,6 +164,11 @@ export class CreateBookingComponent implements OnInit {
       return;
     }
 
+    // Normaliser le format date pour le backend (ISO_LOCAL_DATE_TIME exige les secondes)
+    if (this.bookingRequest.reservationDate && this.bookingRequest.reservationDate.length === 16) {
+      this.bookingRequest.reservationDate = `${this.bookingRequest.reservationDate}:00`;
+    }
+
     this.bookingRequest.driverProfile = { ...this.driverProfile };
     this.creationLoading = true;
     this.errorMessage = '';
