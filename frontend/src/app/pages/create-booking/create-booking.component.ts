@@ -185,7 +185,7 @@ export class CreateBookingComponent implements OnInit {
     this.errorMessage = '';
     this.paymentError = '';
 
-    console.log('📦 Payload envoyé:', JSON.stringify(payload, null, 2));
+    console.log('📦 Payload envoyé (v3 - fix text error):', JSON.stringify(payload, null, 2));
 
     this.bookingsService.createBooking(payload).subscribe({
       next: (booking) => {
@@ -200,15 +200,20 @@ export class CreateBookingComponent implements OnInit {
       error: (error: any) => {
         this.creationLoading = false;
         // AFFICHER L'ERREUR EXACTE DANS LA CONSOLE DU NAVIGATEUR
-        console.error('❌ ERREUR 400 (TEST OBJET VIDE):', error);
+        console.error('❌ ERREUR CREATION (v3):', error);
         if (error.error) {
-          console.error('❌ BODY ERREUR (TEST OBJET VIDE):', error.error);
+          console.error('❌ BODY ERREUR:', error.error);
         }
         
         // Tentative de récupération d'un message d'erreur lisible
-        let msg = error.error?.message || 'Erreur lors de la création de la réservation';
-        if (error.error?.errors && Array.isArray(error.error.errors)) {
+        let msg = 'Erreur lors de la création de la réservation';
+        
+        if (typeof error.error === 'string') {
+           msg = error.error; // Cas où le backend renvoie juste du texte (ex: "not available")
+        } else if (error.error?.errors && Array.isArray(error.error.errors)) {
            msg = error.error.errors.map((e: any) => `${e.field}: ${e.defaultMessage}`).join(', ');
+        } else if (error.error?.message) {
+           msg = error.error.message;
         }
 
         this.errorMessage = msg;
