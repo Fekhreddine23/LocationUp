@@ -111,6 +111,13 @@ export class CreateBookingComponent implements OnInit {
         this.selectedOffer = offer;
         this.isLoadingOffer = false;
         console.log('✅ Offer loaded:', offer);
+
+        // Vérification : Empêcher de réserver sa propre offre
+        // (adminId est présent dans l'objet retourné par le backend)
+        if (this.bookingRequest.userId && (offer as any).adminId === this.bookingRequest.userId) {
+          this.errorMessage = "Vous ne pouvez pas réserver votre propre offre.";
+          this.notificationService.warning("Action impossible : Vous êtes le propriétaire de cette offre.");
+        }
       },
       error: (error) => {
         this.isLoadingOffer = false;
@@ -145,6 +152,13 @@ export class CreateBookingComponent implements OnInit {
       this.errorMessage = 'Aucune offre sélectionnée';
       return;
     }
+
+    // Bloquer si c'est sa propre offre
+    if ((this.selectedOffer as any).adminId === this.bookingRequest.userId) {
+      this.errorMessage = "Vous ne pouvez pas réserver votre propre offre.";
+      return;
+    }
+
     if (this.identityStatus?.status?.toUpperCase() !== 'VERIFIED') {
       this.errorMessage = 'Veuillez vérifier votre identité avant de poursuivre.';
       this.notificationService.warning('Vérifiez votre identité via votre profil.');
@@ -176,16 +190,15 @@ export class CreateBookingComponent implements OnInit {
     if (this.driverProfile?.licenseNumber) {
       payload.driverProfile = { ...this.driverProfile };
     } else {
-      // Au lieu de supprimer (qui est vu comme null par le backend), on envoie un objet vide.
-      // Cela permet de passer la validation @NotNull sur l'objet parent.
-      payload.driverProfile = {};
+      // Revert: On supprime la clé car {} déclenche des erreurs de validation sur les champs internes.
+      delete payload.driverProfile;
     }
 
     this.creationLoading = true;
     this.errorMessage = '';
     this.paymentError = '';
 
-    console.log('📦 Payload envoyé (v3 - fix text error):', JSON.stringify(payload, null, 2));
+    console.log('📦 Payload envoyé (v4 - delete driverProfile):', JSON.stringify(payload, null, 2));
 
     this.bookingsService.createBooking(payload).subscribe({
       next: (booking) => {
@@ -200,9 +213,9 @@ export class CreateBookingComponent implements OnInit {
       error: (error: any) => {
         this.creationLoading = false;
         // AFFICHER L'ERREUR EXACTE DANS LA CONSOLE DU NAVIGATEUR
-        console.error('❌ ERREUR CREATION (v3):', error);
+        console.error('❌ ERREUR CREATION (v4):', error);
         if (error.error) {
-          console.error('❌ BODY ERREUR:', error.error);
+          console.error('❌ BODY ERREUR:', JSON.stringify(error.error, null, 2));
         }
         
         // Tentative de récupération d'un message d'erreur lisible
@@ -210,6 +223,9 @@ export class CreateBookingComponent implements OnInit {
         
         if (typeof error.error === 'string') {
            msg = error.error; // Cas où le backend renvoie juste du texte (ex: "not available")
+           if (msg.includes('not available')) {
+             msg = "Cette offre n'est pas disponible pour les dates sélectionnées (ou vous êtes le propriétaire).";
+           }
         } else if (error.error?.errors && Array.isArray(error.error.errors)) {
            msg = error.error.errors.map((e: any) => `${e.field}: ${e.defaultMessage}`).join(', ');
         } else if (error.error?.message) {
