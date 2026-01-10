@@ -176,7 +176,9 @@ export class CreateBookingComponent implements OnInit {
     if (this.driverProfile?.licenseNumber) {
       payload.driverProfile = { ...this.driverProfile };
     } else {
-      delete payload.driverProfile;
+      // Au lieu de supprimer (qui est vu comme null par le backend), on envoie un objet vide.
+      // Cela permet de passer la validation @NotNull sur l'objet parent.
+      payload.driverProfile = {};
     }
 
     this.creationLoading = true;
@@ -198,9 +200,9 @@ export class CreateBookingComponent implements OnInit {
       error: (error: any) => {
         this.creationLoading = false;
         // AFFICHER L'ERREUR EXACTE DANS LA CONSOLE DU NAVIGATEUR
-        console.error('❌ ERREUR HTTP:', error);
+        console.error('❌ ERREUR 400 (TEST OBJET VIDE):', error);
         if (error.error) {
-          console.error('❌ BODY ERREUR:', error.error);
+          console.error('❌ BODY ERREUR (TEST OBJET VIDE):', error.error);
         }
         
         // Tentative de récupération d'un message d'erreur lisible
