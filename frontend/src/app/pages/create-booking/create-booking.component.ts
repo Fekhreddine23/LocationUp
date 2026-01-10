@@ -174,7 +174,9 @@ export class CreateBookingComponent implements OnInit {
     if (this.driverProfile?.licenseNumber) {
       this.bookingRequest.driverProfile = { ...this.driverProfile };
     } else {
-      this.bookingRequest.driverProfile = undefined;
+      // On envoie null explicitement. Si le backend a @NotNull, cela échouera toujours,
+      // mais s'il a juste besoin que la clé existe, cela peut aider.
+      this.bookingRequest.driverProfile = null as any;
     }
 
     this.creationLoading = true;
@@ -192,6 +194,9 @@ export class CreateBookingComponent implements OnInit {
       },
       error: (error: any) => {
         this.creationLoading = false;
+        // AFFICHER L'ERREUR EXACTE DANS LA CONSOLE DU NAVIGATEUR
+        console.error('❌ DÉTAILS ERREUR 400 :', JSON.stringify(error.error, null, 2));
+        
         this.errorMessage = error.error?.message || 'Erreur lors de la création de la réservation';
         console.error('❌ Error creating booking:', error);
       }
