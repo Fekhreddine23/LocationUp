@@ -169,7 +169,14 @@ export class CreateBookingComponent implements OnInit {
       this.bookingRequest.reservationDate = `${this.bookingRequest.reservationDate}:00`;
     }
 
-    this.bookingRequest.driverProfile = { ...this.driverProfile };
+    // Si le profil conducteur est vide (pas de numéro de permis), on ne l'envoie pas
+    // pour éviter une erreur 400 (validation backend sur les champs vides).
+    if (this.driverProfile?.licenseNumber) {
+      this.bookingRequest.driverProfile = { ...this.driverProfile };
+    } else {
+      this.bookingRequest.driverProfile = undefined;
+    }
+
     this.creationLoading = true;
     this.errorMessage = '';
     this.paymentError = '';
