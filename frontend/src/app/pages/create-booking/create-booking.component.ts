@@ -169,20 +169,23 @@ export class CreateBookingComponent implements OnInit {
       this.bookingRequest.reservationDate = `${this.bookingRequest.reservationDate}:00`;
     }
 
-    // Si le profil conducteur est vide (pas de numéro de permis), on ne l'envoie pas
-    // pour éviter une erreur 400 (validation backend sur les champs vides).
+    // Création d'une copie de la requête pour ne pas modifier l'objet du formulaire
+    const payload: any = { ...this.bookingRequest };
+
+    // Si le profil conducteur est vide, on SUPPRIME la clé pour ne pas l'envoyer du tout
     if (this.driverProfile?.licenseNumber) {
-      this.bookingRequest.driverProfile = { ...this.driverProfile };
+      payload.driverProfile = { ...this.driverProfile };
     } else {
-      // On envoie null explicitement. Si le backend a @NotNull, cela échouera toujours,
-      // mais s'il a juste besoin que la clé existe, cela peut aider.
-      this.bookingRequest.driverProfile = null as any;
+      delete payload.driverProfile;
     }
 
     this.creationLoading = true;
     this.errorMessage = '';
     this.paymentError = '';
-    this.bookingsService.createBooking(this.bookingRequest).subscribe({
+
+    console.log('📦 Payload envoyé:', JSON.stringify(payload, null, 2));
+
+    this.bookingsService.createBooking(payload).subscribe({
       next: (booking) => {
         this.creationLoading = false;
         this.createdBooking = booking;
@@ -195,9 +198,18 @@ export class CreateBookingComponent implements OnInit {
       error: (error: any) => {
         this.creationLoading = false;
         // AFFICHER L'ERREUR EXACTE DANS LA CONSOLE DU NAVIGATEUR
-        console.error('❌ DÉTAILS ERREUR 400 :', JSON.stringify(error.error, null, 2));
+        console.error('❌ ERREUR HTTP:', error);
+        if (error.error) {
+          console.error('❌ BODY ERREUR:', error.error);
+        }
         
-        this.errorMessage = error.error?.message || 'Erreur lors de la création de la réservation';
+        // Tentative de récupération d'un message d'erreur lisible
+        let msg = error.error?.message || 'Erreur lors de la création de la réservation';
+        if (error.error?.errors && Array.isArray(error.error.errors)) {
+           msg = error.error.errors.map((e: any) => `${e.field}: ${e.defaultMessage}`).join(', ');
+        }
+
+        this.errorMessage = msg;
         console.error('❌ Error creating booking:', error);
       }
     });
