@@ -4,6 +4,8 @@ import java.io.ByteArrayOutputStream;
 import java.time.format.DateTimeFormatter;
 import java.util.Optional;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import com.lowagie.text.Document;
@@ -24,13 +26,14 @@ public class ReservationDocumentService {
 	private final ReservationRepository reservationRepository;
 
 	private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("dd MMM yyyy HH:mm");
+	private static final Logger LOGGER = LoggerFactory.getLogger(ReservationDocumentService.class);
 
 	public ReservationDocumentService(ReservationRepository reservationRepository) {
 		this.reservationRepository = reservationRepository;
 	}
 
 	public byte[] buildReceipt(Integer reservationId) {
-		Optional<Reservation> optional = reservationRepository.findById(reservationId);
+		Optional<Reservation> optional = reservationRepository.findWithReceiptDetailsByReservationId(reservationId);
 		if (optional.isEmpty()) {
 			throw new IllegalArgumentException("Réservation introuvable");
 		}
@@ -102,6 +105,7 @@ public class ReservationDocumentService {
 			document.close();
 			return baos.toByteArray();
 		} catch (Exception ex) {
+			LOGGER.error("Failed to generate receipt for reservation {}", reservationId, ex);
 			throw new IllegalStateException("Impossible de générer le reçu", ex);
 		}
 	}

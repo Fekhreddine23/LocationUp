@@ -8,6 +8,7 @@ import java.util.Optional;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -41,6 +42,9 @@ public interface ReservationRepository extends JpaRepository<Reservation, Intege
 
 	List<Reservation> findByPaymentStatusAndUpdatedAtBefore(Reservation.PaymentStatus status,
 		LocalDateTime threshold);
+
+	@EntityGraph(attributePaths = { "user", "offer", "offer.mobilityService" })
+	Optional<Reservation> findWithReceiptDetailsByReservationId(Integer reservationId);
 
 	@Query("SELECT COALESCE(SUM(COALESCE(r.paymentAmount, r.offer.price, 0)), 0) FROM Reservation r "
 		+ "WHERE r.paymentStatus = com.mobility.mobility_backend.entity.Reservation$PaymentStatus.PAID")
