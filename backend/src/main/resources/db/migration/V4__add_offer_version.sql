@@ -1,0 +1,6 @@
+ALTER TABLE offers
+ADD COLUMN version BIGINT DEFAULT 0 NOT NULL;
+
+UPDATE offers
+SET version = 0
+WHERE version IS NULL;
