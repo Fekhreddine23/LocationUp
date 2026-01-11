@@ -2,14 +2,32 @@
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 16px;
 }
 
 .surface-panel {
   background: var(--surface-panel, rgba(255,255,255,0.03));
   border-radius: 16px;
-  padding: 1.5rem;
+  padding: 1.25rem;
   border: 1px solid var(--border-color, rgba(255,255,255,0.08));
   box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+}
+
+.page-header {
+  h1 {
+    font-size: 1.6rem;
+    line-height: 1.2;
+    margin: 0.35rem 0 0.5rem;
+    color: var(--text-primary);
+  }
+
+  .subtitle {
+    margin: 0;
+    color: var(--muted, rgba(255,255,255,0.7));
+    font-size: 0.95rem;
+  }
 }
 
 .page-header .eyebrow {
@@ -27,8 +45,8 @@
 
 .form-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 1rem;
+  grid-template-columns: 1fr;
+  gap: 0.9rem;
 }
 
 label {
@@ -49,7 +67,7 @@ textarea {
   border-radius: 12px;
   border: 1px solid rgba(255,255,255,0.1);
   background: rgba(255,255,255,0.02);
-  padding: 0.75rem 1rem;
+  padding: 0.8rem 1rem;
   color: inherit;
   font: inherit;
   transition: border-color 0.2s, background 0.2s;
@@ -74,12 +92,19 @@ textarea:focus {
 
 .form-actions {
   display: flex;
+  flex-direction: column;
   align-items: center;
   gap: 1rem;
+
+  .btn {
+    width: 100%;
+    justify-content: center;
+  }
 
   .muted {
     color: var(--muted, rgba(255,255,255,0.6));
     font-size: 0.9rem;
+    text-align: center;
   }
 }
 
@@ -105,12 +130,38 @@ textarea:focus {
   color: var(--muted, rgba(255,255,255,0.75));
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.55rem;
 }
 
-@media (max-width: 768px) {
+@media (min-width: 720px) {
+  .support-page {
+    padding: 24px;
+  }
+
+  .surface-panel {
+    padding: 1.5rem;
+  }
+
+  .page-header h1 {
+    font-size: 2rem;
+  }
+
+  .form-grid {
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1rem;
+  }
+
   .form-actions {
-    flex-direction: column;
-    align-items: stretch;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+
+    .btn {
+      width: auto;
+    }
+
+    .muted {
+      text-align: left;
+    }
   }
 }
