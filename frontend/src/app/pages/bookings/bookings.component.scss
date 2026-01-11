@@ -335,6 +335,8 @@
         h4 {
           margin: 0;
           font-size: 14px;
+          color: var(--text-primary);
+          font-weight: 600;
         }
 
         .event-date {
@@ -384,10 +386,33 @@
       width: 100%;
     }
   }
+
+  .bookings-container {
+    padding: 16px;
+  }
+
+  .booking-card {
+    padding: 16px;
+  }
+  
+  .bookings-filters .stats {
+    gap: 12px;
+  }
   
   .booking-header {
     flex-direction: column;
     gap: 12px;
+  }
+
+  .booking-status {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .status-badge,
+  .payment-badge {
+    width: fit-content;
   }
   
   .booking-details {
@@ -399,6 +424,93 @@
     
     button {
       width: 100%;
+    }
+  }
+
+  .booking-actions .timeline-actions {
+    flex-direction: column;
+    
+    button {
+      width: 100%;
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .bookings-container {
+    padding: 12px;
+  }
+
+  .bookings-header {
+    margin-bottom: 20px;
+
+    h1 {
+      font-size: 22px;
+      line-height: 1.2;
+    }
+  }
+
+  .bookings-filters {
+    padding: 12px;
+  }
+
+  .booking-card {
+    padding: 14px;
+    border-radius: 10px;
+  }
+
+  .booking-header .booking-title {
+    font-size: 16px;
+  }
+
+  .booking-header .booking-date {
+    font-size: 12px;
+  }
+
+  .booking-status {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .status-badge,
+  .payment-badge {
+    font-size: 11px;
+    padding: 4px 10px;
+  }
+
+  .offer-details {
+    padding: 12px;
+
+    h4 {
+      font-size: 13px;
+    }
+
+    .offer-meta {
+      flex-direction: column;
+      gap: 6px;
+    }
+  }
+
+  .booking-details .detail-item {
+    font-size: 13px;
+  }
+
+  .booking-actions .action-info {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .booking-timeline .timeline-event {
+    flex-direction: column;
+    gap: 8px;
+
+    .event-indicator {
+      margin-top: 0;
+    }
+
+    .event-content {
+      padding: 10px;
     }
   }
 }
