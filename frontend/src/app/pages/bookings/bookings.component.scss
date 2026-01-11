@@ -119,6 +119,8 @@
   padding: 20px;
   box-shadow: var(--card-shadow);
   border-left: 4px solid var(--card-border);
+  overflow-wrap: anywhere;
+  word-break: break-word;
   
   &.booking-card-pending {
     border-left-color: rgba(255, 223, 0, 0.7);
@@ -236,6 +238,8 @@
   padding: 16px;
   background: #f8f9fa;
   border-radius: 6px;
+  overflow-wrap: anywhere;
+  word-break: break-word;
   
   h4 {
     margin: 0 0 8px 0;
@@ -326,6 +330,8 @@
       padding: 12px;
       border-radius: 8px;
       flex: 1;
+      overflow-wrap: anywhere;
+      word-break: break-word;
 
       .event-header {
         display: flex;
@@ -439,6 +445,9 @@
 @media (max-width: 480px) {
   .bookings-container {
     padding: 12px;
+    max-width: 100%;
+    width: 100%;
+    margin: 0;
   }
 
   .bookings-header {
@@ -511,7 +520,23 @@
 
     .event-content {
       padding: 10px;
+
+      .event-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+      }
     }
+  }
+}
+
+@media (max-width: 360px) {
+  .bookings-container {
+    padding: 10px;
+  }
+
+  .booking-card {
+    padding: 12px;
   }
 }
 
