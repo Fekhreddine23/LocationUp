@@ -414,3 +414,45 @@
     align-items: flex-start;
   }
 }
+
+@media (max-width: 600px) {
+  .dashboard-container {
+    padding: 0.75rem;
+  }
+
+  .dashboard-section {
+    padding: 1.25rem;
+  }
+
+  .dashboard-header {
+    h1 {
+      font-size: 2rem;
+    }
+
+    .welcome-message {
+      font-size: 1rem;
+    }
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .stat-card {
+    padding: 1rem;
+
+    .stat-icon {
+      font-size: 1.5rem;
+    }
+
+    .stat-content {
+      .stat-number {
+        font-size: 1.6rem;
+      }
+
+      .stat-label {
+        font-size: 0.85rem;
+      }
+    }
+  }
+}
