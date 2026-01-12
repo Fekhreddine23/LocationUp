@@ -151,13 +151,10 @@ export class OffersMapComponent implements OnChanges, OnDestroy {
   }
 
   private resolveCoordinates(offer: Offer): L.LatLngExpression | null {
-    if (
-      typeof offer.pickupLatitude === 'number' &&
-      typeof offer.pickupLongitude === 'number' &&
-      !Number.isNaN(offer.pickupLatitude) &&
-      !Number.isNaN(offer.pickupLongitude)
-    ) {
-      return [offer.pickupLatitude, offer.pickupLongitude];
+    const lat = Number(offer.pickupLatitude);
+    const lng = Number(offer.pickupLongitude);
+    if (Number.isFinite(lat) && Number.isFinite(lng)) {
+      return [lat, lng];
     }
 
     const cityKey = this.normalizeText(offer.pickupLocationName || offer.pickupLocation || '');

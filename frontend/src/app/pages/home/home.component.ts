@@ -115,7 +115,10 @@ export class HomeComponent {
     }
 
     if (this.maxPrice !== null && Number.isFinite(this.maxPrice)) {
-      result = result.filter((offer) => offer.price <= (this.maxPrice as number));
+      result = result.filter((offer) => {
+        const priceValue = Number(offer.price);
+        return Number.isFinite(priceValue) && priceValue <= (this.maxPrice as number);
+      });
     }
 
     if (this.userPosition && this.radiusKm !== null) {
@@ -149,8 +152,10 @@ export class HomeComponent {
   }
 
   private getOfferCoordinates(offer: Offer): { lat: number; lng: number } | null {
-    if (typeof offer.pickupLatitude === 'number' && typeof offer.pickupLongitude === 'number') {
-      return { lat: offer.pickupLatitude, lng: offer.pickupLongitude };
+    const lat = Number(offer.pickupLatitude);
+    const lng = Number(offer.pickupLongitude);
+    if (Number.isFinite(lat) && Number.isFinite(lng)) {
+      return { lat, lng };
     }
 
     const cityKey = this.normalizeText(offer.pickupLocationName || offer.pickupLocation || '');
