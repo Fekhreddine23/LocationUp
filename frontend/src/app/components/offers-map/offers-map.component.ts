@@ -227,22 +227,23 @@ export class OffersMapComponent implements OnChanges, OnDestroy {
   }
 
   private configureLeafletIcons(): void {
-    const iconRetinaUrl = new URL('leaflet/dist/images/marker-icon-2x.png', import.meta.url).toString();
-    const iconUrl = new URL('leaflet/dist/images/marker-icon.png', import.meta.url).toString();
-    const shadowUrl = new URL('leaflet/dist/images/marker-shadow.png', import.meta.url).toString();
+    const iconUrl = this.buildMarkerSvg('#2563eb');
 
     const defaultIcon = L.icon({
-      iconRetinaUrl,
       iconUrl,
-      shadowUrl,
-      iconSize: [25, 41],
-      iconAnchor: [12, 41],
-      popupAnchor: [1, -34],
-      tooltipAnchor: [16, -28],
-      shadowSize: [41, 41]
+      iconRetinaUrl: iconUrl,
+      iconSize: [28, 42],
+      iconAnchor: [14, 42],
+      popupAnchor: [0, -36],
+      tooltipAnchor: [14, -28]
     });
 
     L.Marker.prototype.options.icon = defaultIcon;
+  }
+
+  private buildMarkerSvg(color: string): string {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="42" viewBox="0 0 28 42" fill="none"><path d="M14 0C6.268 0 0 6.268 0 14c0 10.5 12.2 26.9 13.1 28.1a1 1 0 0 0 1.8 0C15.8 40.9 28 24.5 28 14 28 6.268 21.732 0 14 0Z" fill="${color}"/><circle cx="14" cy="14" r="5.5" fill="#ffffff"/></svg>`;
+    return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
   }
 
   private isMarkerClusterGroup(layer: L.Layer): layer is L.MarkerClusterGroup {

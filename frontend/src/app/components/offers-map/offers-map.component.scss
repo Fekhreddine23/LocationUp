@@ -48,6 +48,12 @@
   gap: 0.4rem;
 }
 
+:host ::ng-deep .leaflet-popup-content-wrapper,
+:host ::ng-deep .leaflet-popup-tip {
+  background: #ffffff;
+  color: #111827;
+}
+
 :host ::ng-deep .leaflet-popup-content .popup-title {
   font-weight: 700;
   font-size: 1rem;
@@ -56,7 +62,7 @@
 
 :host ::ng-deep .leaflet-popup-content .popup-row {
   font-size: 0.9rem;
-  color: var(--text-primary);
+  color: #1f2937;
 }
 
 :host ::ng-deep .leaflet-popup-content .popup-action {
