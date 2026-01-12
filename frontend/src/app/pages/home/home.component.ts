@@ -202,6 +202,21 @@ export class HomeComponent {
     const mobilityService = this.normalizeText(this.getMobilityServiceName(offer)).toLowerCase();
     const source = `${description} ${mobilityService}`;
 
+    if (source.includes('electrique')) {
+      return 'Électrique';
+    }
+    if (source.includes('suv') || source.includes('4x4')) {
+      return 'SUV';
+    }
+    if (source.includes('utilitaire') || source.includes('fourgon')) {
+      return 'Utilitaire';
+    }
+    if (source.includes('premium') || source.includes('luxe')) {
+      return 'Premium';
+    }
+    if (source.includes('economique')) {
+      return 'Économique';
+    }
     if (source.includes('velo') || source.includes('bike')) {
       return 'Vélo';
     }
