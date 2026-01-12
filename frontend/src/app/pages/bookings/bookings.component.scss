@@ -231,6 +231,23 @@
   .identity-hint {
     color: var(--text-secondary);
   }
+
+  .booking-timeline .timeline-event .event-content {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+
+    .event-header h4 {
+      color: var(--text-primary);
+    }
+
+    .event-header .event-date {
+      color: var(--text-secondary);
+    }
+
+    p {
+      color: var(--text-secondary);
+    }
+  }
 }
 
 .offer-details {
@@ -341,19 +358,19 @@
         h4 {
           margin: 0;
           font-size: 14px;
-          color: var(--text-primary);
-          font-weight: 600;
+          color: #111827;
+          font-weight: 700;
         }
 
         .event-date {
           font-size: 12px;
-          color: #6b7280;
+          color: #4b5563;
         }
       }
 
       p {
         margin: 6px 0 0 0;
-        color: #4b5563;
+        color: #1f2937;
         font-size: 13px;
       }
     }
