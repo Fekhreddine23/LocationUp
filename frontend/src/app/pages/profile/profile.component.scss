@@ -923,6 +923,7 @@
 @media (max-width: 768px) {
     .profile-container {
         padding: 1rem;
+        max-width: 100%;
     }
 
     .profile-info-grid {
@@ -982,6 +983,57 @@
         color: #6c757d;
         font-size: 0.875rem;
         margin-left: 0.5rem;
+}
+
+@media (max-width: 600px) {
+    .profile-container {
+        padding: 0.85rem;
+    }
+
+    .profile-header {
+        margin-bottom: 2rem;
+
+        h1 {
+            font-size: 2rem;
+        }
+
+        p {
+            font-size: 1rem;
+        }
+    }
+
+    .profile-section {
+        padding: 1.25rem;
+    }
+
+    .profile-info-grid {
+        gap: 1.25rem;
+    }
+
+    .profile-details .info-item {
+        label {
+            min-width: 0;
+        }
+    }
+
+    .stats-grid,
+    .preferences-section .preferences-grid,
+    .security-section .security-grid,
+    .driver-profile-section .driver-profile-grid,
+    .profile-actions,
+    .admin-panel .admin-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .history-section li {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .history-section .timeline-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
 }
 
 
