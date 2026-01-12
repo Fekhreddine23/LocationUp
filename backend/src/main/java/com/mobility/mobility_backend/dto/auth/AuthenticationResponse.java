@@ -1,7 +1,10 @@
 package com.mobility.mobility_backend.dto.auth;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 public class AuthenticationResponse {
 	private String token; // Access token
+	@JsonIgnore
 	private String refreshToken; // Refresh token (non exposé côté front, utilisé pour le cookie)
 	private String username;
 	private String role;
@@ -64,10 +67,12 @@ public class AuthenticationResponse {
 		this.avatarUrl = avatarUrl;
 	}
 
+	@JsonIgnore
 	public String getRefreshToken() {
 		return refreshToken;
 	}
 
+	@JsonIgnore
 	public void setRefreshToken(String refreshToken) {
 		this.refreshToken = refreshToken;
 	}

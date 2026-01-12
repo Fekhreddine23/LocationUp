@@ -51,7 +51,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 		System.out.println("🔐 Request: " + request.getMethod() + " " + path);
 
 		final String authHeader = request.getHeader("Authorization");
-		System.out.println("🔐 Authorization Header: " + authHeader);
+		System.out.println("🔐 Authorization Header present: " + (authHeader != null));
 
 		// Vérifier si c'est une requête OPTIONS (preflight CORS)
 		if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
@@ -60,7 +60,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 			return;
 		}
 
-		if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+		String jwt = null;
+		if (authHeader != null && authHeader.startsWith("Bearer ")) {
+			jwt = authHeader.substring(7);
+		} else {
+			String tokenParam = request.getParameter("access_token");
+			if (tokenParam != null && !tokenParam.isBlank()) {
+				jwt = tokenParam;
+				System.out.println("🔐 Using access_token query parameter");
+			}
+		}
+
+		if (jwt == null || jwt.isBlank()) {
 			System.out.println("❌ No Bearer token found or invalid format");
 			System.out.println("=== 🔐 [JwtAuthFilter] END (No Token) ===");
 
@@ -77,9 +88,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 		}
 
 		try {
-			String jwt = authHeader.substring(7);
 			System.out.println("🔐 JWT Token length: " + jwt.length());
-			System.out.println("🔐 JWT Token start: " + jwt.substring(0, Math.min(20, jwt.length())) + "...");
 
 			String userEmail = jwtService.extractUsername(jwt);
 			System.out.println("🔐 Extracted username/email: " + userEmail);
@@ -133,7 +142,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 	 * 🔥 LISTE DES PATHS PUBLICS - DOIT MATCHER AVEC SECURITYCONFIG
 	 */
 	private boolean shouldSkipJwtFilter(String path) {
-		return path.startsWith("/api/notifications/") || path.startsWith("/api/debug/") || path.startsWith("/api/auth/")
+		return path.startsWith("/api/debug/") || path.startsWith("/api/auth/")
 				|| path.startsWith("/swagger-ui/") || path.startsWith("/v3/api-docs/")
 				|| path.startsWith("/h2-console/") || path.startsWith("/actuator/")
 				|| path.equals("/api/offers")

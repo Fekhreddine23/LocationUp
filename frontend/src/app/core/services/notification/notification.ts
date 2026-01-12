@@ -1,7 +1,9 @@
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { Observable, firstValueFrom } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import { Notification as NotificationPayload } from '../../models/notification/notification.model';
+import { AuthService } from '../auth.service';
 
 @Injectable({
   providedIn: 'root'
@@ -13,11 +15,21 @@ export class NotificationService {
   private reconnectionAttempts = 0;
   private maxReconnectionAttempts = 5;
 
+  constructor(
+    private http: HttpClient,
+    private authService: AuthService
+  ) {}
+
   connect(userId: string): Observable<NotificationPayload> {
     this.currentUserId = userId;
 
     return new Observable<NotificationPayload>(observer => {
-      const streamUrl = `${this.baseUrl}/api/notifications/stream?userId=${encodeURIComponent(userId)}`;
+      const accessToken = this.authService.getToken();
+      if (!accessToken) {
+        observer.error(new Error('Authentication required'));
+        return;
+      }
+      const streamUrl = `${this.baseUrl}/api/notifications/stream?userId=${encodeURIComponent(userId)}&access_token=${encodeURIComponent(accessToken)}`;
 
       const startEventSource = () => {
         if (this.eventSource) {
@@ -100,31 +112,15 @@ export class NotificationService {
       return;
     }
 
-    const requestUrl = `${this.baseUrl}/api/notifications/test?userId=${encodeURIComponent(this.currentUserId)}&message=${encodeURIComponent(message)}&severity=${severity.toUpperCase()}`;
+    const params = new HttpParams()
+      .set('userId', this.currentUserId)
+      .set('message', message)
+      .set('severity', severity.toUpperCase());
 
-    console.log('📤 Envoi test vers:', requestUrl);
-
-    fetch(requestUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      }
-    })
-      .then(response => {
-        console.log('📝 Réponse HTTP:', response.status, response.statusText);
-        if (response.ok) {
-          console.log('✅ Notification de test envoyée');
-          return response.text();
-        } else {
-          console.error(`❌ Erreur envoi notification de test: HTTP ${response.status}`);
-          return response.text().then(text => { throw new Error(text); });
-        }
-      })
-      .then(text => {
-        console.log('📄 Contenu réponse:', text);
-      })
-      .catch(error => {
-        console.error('❌ Erreur réseau lors de l\'envoi de la notification de test', error);
+    this.http.post(`${this.baseUrl}/api/notifications/test`, null, { params })
+      .subscribe({
+        next: () => console.log('✅ Notification de test envoyée'),
+        error: (error) => console.error('❌ Erreur envoi notification de test', error)
       });
   }
 
@@ -151,29 +147,10 @@ export class NotificationService {
 
     console.log('📤 Envoi notification personnalisée:', requestPayload);
 
-    fetch(`${this.baseUrl}/api/notifications/send`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      body: JSON.stringify(requestPayload)
-    })
-      .then(response => {
-        console.log('📝 Réponse personnalisée:', response.status);
-        if (response.ok) {
-          console.log('✅ Notification personnalisée envoyée');
-          return response.text();
-        } else {
-          console.error(`❌ Erreur envoi notification personnalisée: HTTP ${response.status}`);
-          return response.text().then(text => { throw new Error(text); });
-        }
-      })
-      .then(text => {
-        console.log('📄 Réponse personnalisée texte:', text);
-      })
-      .catch(error => {
-        console.error('❌ Erreur réseau lors de l\'envoi de la notification personnalisée', error);
+    this.http.post(`${this.baseUrl}/api/notifications/send`, requestPayload)
+      .subscribe({
+        next: () => console.log('✅ Notification personnalisée envoyée'),
+        error: (error) => console.error('❌ Erreur envoi notification personnalisée', error)
       });
   }
 
@@ -372,17 +349,9 @@ export class NotificationService {
  * Charge les notifications existantes pour un utilisateur
  */
   getUserNotifications(userId: string): Promise<NotificationPayload[]> {
-    return fetch(`${this.baseUrl}/api/notifications/user/${userId}`)
-      .then(response => {
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-        return response.json();
-      })
-      .then((notifications: any[]) => {
-        return notifications.map(notification => this.mapToNotificationModel(notification));
-      })
-      .catch(error => {
+    return firstValueFrom(this.http.get<any[]>(`${this.baseUrl}/api/notifications/user/${userId}`))
+      .then((notifications) => notifications.map((notification) => this.mapToNotificationModel(notification)))
+      .catch((error) => {
         console.error('❌ Erreur chargement notifications:', error);
         return [];
       });
@@ -392,16 +361,17 @@ export class NotificationService {
    * Marque une notification comme lue
    */
   markAsRead(notificationId: string): Promise<void> {
-    return fetch(`${this.baseUrl}/api/notifications/${notificationId}/read`, {
-      method: 'POST'
-    })
-      .then(response => {
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
+    const userId = this.currentUserId;
+    if (!userId) {
+      return Promise.reject(new Error('UserId manquant pour marquer la notification comme lue.'));
+    }
+
+    const params = new HttpParams().set('userId', userId);
+    return firstValueFrom(this.http.post(`${this.baseUrl}/api/notifications/${notificationId}/read`, null, { params }))
+      .then(() => {
         console.log('✅ Notification marquée comme lue:', notificationId);
       })
-      .catch(error => {
+      .catch((error) => {
         console.error('❌ Erreur marquer comme lu:', error);
       });
   }
@@ -410,16 +380,11 @@ export class NotificationService {
    * Marque toutes les notifications comme lues
    */
   markAllAsRead(userId: string): Promise<void> {
-    return fetch(`${this.baseUrl}/api/notifications/user/${userId}/mark-all-read`, {
-      method: 'POST'
-    })
-      .then(response => {
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
+    return firstValueFrom(this.http.post(`${this.baseUrl}/api/notifications/user/${userId}/mark-all-read`, null))
+      .then(() => {
         console.log('✅ Toutes les notifications marquées comme lues');
       })
-      .catch(error => {
+      .catch((error) => {
         console.error('❌ Erreur marquer tout comme lu:', error);
       });
   }
@@ -428,16 +393,17 @@ export class NotificationService {
    * Supprime une notification
    */
   deleteNotification(notificationId: String): Promise<void> {
-    return fetch(`${this.baseUrl}/api/notifications/${notificationId}`, {
-      method: 'DELETE'
-    })
-      .then(response => {
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
+    const userId = this.currentUserId;
+    if (!userId) {
+      return Promise.reject(new Error('UserId manquant pour supprimer la notification.'));
+    }
+
+    const params = new HttpParams().set('userId', userId);
+    return firstValueFrom(this.http.delete(`${this.baseUrl}/api/notifications/${notificationId}`, { params }))
+      .then(() => {
         console.log('✅ Notification supprimée:', notificationId);
       })
-      .catch(error => {
+      .catch((error) => {
         console.error('❌ Erreur suppression notification:', error);
       });
   }

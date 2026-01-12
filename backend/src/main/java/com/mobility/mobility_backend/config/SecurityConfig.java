@@ -19,6 +19,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -45,12 +46,21 @@ public class SecurityConfig {
 		System.out.println("🔒 [DEBUG] SecurityConfig is being loaded!");
 
 		http.csrf(csrf -> csrf.disable()).cors(cors -> cors.configurationSource(corsConfigurationSource()))
-				.headers(headers -> headers.frameOptions(frame -> frame.disable()).contentSecurityPolicy(
-						csp -> csp.policyDirectives("frame-ancestors 'self' http://localhost:8088")))
+				.headers(headers -> headers
+						.frameOptions(frame -> frame.disable())
+						.contentSecurityPolicy(csp -> csp
+								.policyDirectives("frame-ancestors 'self' http://localhost:8088"))
+						.referrerPolicy(referrer -> referrer
+								.policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
+						.permissionsPolicy(permissions -> permissions
+								.policy("geolocation=(self), microphone=(), camera=(), payment=()"))
+						.httpStrictTransportSecurity(hsts -> hsts
+								.includeSubDomains(true)
+								.preload(true)
+								.maxAgeInSeconds(31536000)))
 			.authorizeHttpRequests(auth -> auth
 						// Routes publiques - DOIVENT ÊTRE EN PREMIER
-				.requestMatchers("/api/notifications/**").permitAll().requestMatchers("/api/debug/**")
-				.permitAll().requestMatchers("/ws/**").permitAll() // Pour WebSocket si utilisé plus tard
+				.requestMatchers("/api/debug/**").permitAll().requestMatchers("/ws/**").permitAll() // Pour WebSocket si utilisé plus tard
 				.requestMatchers("/api/auth/**").permitAll()
 				.requestMatchers(HttpMethod.POST, "/api/payments/webhook").permitAll()
 				.requestMatchers(HttpMethod.POST, "/api/identity/webhook").permitAll()
@@ -69,6 +79,7 @@ public class SecurityConfig {
 						.requestMatchers(HttpMethod.GET, "/api/offers/**").permitAll()
 
 						.requestMatchers(HttpMethod.POST, "/api/reservations").authenticated()
+						.requestMatchers("/api/notifications/**").authenticated()
 
 						// Routes protégées par rôle
 						.requestMatchers("/api/admin/**").hasRole("ADMIN")
@@ -132,7 +143,4 @@ public class SecurityConfig {
 	    System.out.println("🔐 [SecurityConfig] Creating BCryptPasswordEncoder");
 	    return new BCryptPasswordEncoder();
 	}
-
-		// Pour revenir à BCrypt plus tard :
-		// return new BCryptPasswordEncoder();
-	}
+}

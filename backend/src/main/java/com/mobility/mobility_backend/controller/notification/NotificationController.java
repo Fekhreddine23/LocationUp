@@ -1,8 +1,11 @@
 package com.mobility.mobility_backend.controller.notification;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -12,18 +15,22 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.mobility.mobility_backend.dto.socket.NotificationMessage;
 import com.mobility.mobility_backend.dto.socket.NotificationSeverity;
+import com.mobility.mobility_backend.service.UserService;
 import com.mobility.mobility_backend.service.notification.NotificationService;
 
 @RestController
 @RequestMapping("/api/notifications")
-@CrossOrigin(origins = "*")
 public class NotificationController {
 
 	@Autowired
 	private NotificationService notificationService;
+
+	@Autowired
+	private UserService userService;
 
 	// === CONNEXION SSE ===
 
@@ -34,8 +41,10 @@ public class NotificationController {
 	public SseEmitter streamNotifications(@RequestParam String userId,
 			@RequestParam(required = false) String userRole) {
 
+		enforceUserAccess(userId);
+		String effectiveRole = isAdmin() ? "ADMIN" : "USER";
 		System.out.println("🔔 [CONTROLLER] Connexion SSE demandée - userId: " + userId + ", userRole: " + userRole);
-		return notificationService.connect(userId, userRole);
+		return notificationService.connect(userId, effectiveRole);
 	}
 
 	// === ENVOI DE NOTIFICATIONS ===
@@ -45,6 +54,7 @@ public class NotificationController {
 	 */
 	@PostMapping("/send")
 	public ResponseEntity<String> sendNotification(@RequestBody NotificationMessage notification) {
+		enforceAdmin();
 		try {
 			System.out.println("📤 [CONTROLLER] Envoi notification personnalisée: " + notification.getTitle() + " à: "
 					+ notification.getRecipient());
@@ -63,6 +73,7 @@ public class NotificationController {
 	public ResponseEntity<String> sendReservationEvent(@RequestParam String reservationId, @RequestParam String userId,
 			@RequestParam String eventType, @RequestBody(required = false) java.util.Map<String, Object> data) {
 
+		enforceAdmin();
 		try {
 			System.out.println("🏨 [CONTROLLER] Événement réservation - reservationId: " + reservationId + ", userId: "
 					+ userId + ", eventType: " + eventType);
@@ -81,6 +92,7 @@ public class NotificationController {
 	public ResponseEntity<String> sendPaymentEvent(@RequestParam String paymentId, @RequestParam String userId,
 			@RequestParam String eventType, @RequestBody(required = false) java.util.Map<String, Object> data) {
 
+		enforceAdmin();
 		try {
 			System.out.println("💳 [CONTROLLER] Événement paiement - paymentId: " + paymentId + ", userId: " + userId
 					+ ", eventType: " + eventType);
@@ -99,6 +111,7 @@ public class NotificationController {
 	public ResponseEntity<String> sendSystemEvent(@RequestParam String eventType, @RequestParam String message,
 			@RequestParam String severity) {
 
+		enforceAdmin();
 		try {
 			System.out.println("🔊 [CONTROLLER] Événement système - eventType: " + eventType + ", message: " + message
 					+ ", severity: " + severity);
@@ -120,6 +133,7 @@ public class NotificationController {
 	public ResponseEntity<java.util.List<NotificationMessage>> getUserNotifications(@PathVariable String userId,
 			@RequestParam(required = false) String category, @RequestParam(required = false) String severity) {
 
+		enforceUserAccess(userId);
 		try {
 			System.out.println("📋 [CONTROLLER] Récupération notifications - userId: " + userId + ", category: "
 					+ category + ", severity: " + severity);
@@ -137,6 +151,7 @@ public class NotificationController {
 	 */
 	@GetMapping("/user/{userId}/unread-count")
 	public ResponseEntity<Long> getUnreadCount(@PathVariable String userId) {
+		enforceUserAccess(userId);
 		try {
 			System.out.println("🔢 [CONTROLLER] Comptage non lus - userId: " + userId);
 			long count = notificationService.getUnreadCount(userId);
@@ -153,6 +168,7 @@ public class NotificationController {
 	@PostMapping("/{notificationId}/read")
 	public ResponseEntity<String> markAsRead(@PathVariable String notificationId, @RequestParam String userId) {
 
+		enforceUserAccess(userId);
 		try {
 			System.out.println(
 					"📖 [CONTROLLER] Marquer comme lue - notificationId: " + notificationId + ", userId: " + userId);
@@ -169,6 +185,7 @@ public class NotificationController {
 	 */
 	@PostMapping("/user/{userId}/mark-all-read")
 	public ResponseEntity<String> markAllAsRead(@PathVariable String userId) {
+		enforceUserAccess(userId);
 		try {
 			System.out.println("📚 [CONTROLLER] Marquer toutes comme lues - userId: " + userId);
 			notificationService.markAllAsRead(userId);
@@ -185,6 +202,7 @@ public class NotificationController {
 	@DeleteMapping("/{notificationId}")
 	public ResponseEntity<String> deleteNotification(@PathVariable String notificationId, @RequestParam String userId) {
 
+		enforceUserAccess(userId);
 		try {
 			System.out.println("🗑️ [CONTROLLER] Suppression notification - notificationId: " + notificationId
 					+ ", userId: " + userId);
@@ -206,6 +224,7 @@ public class NotificationController {
 			@RequestParam(required = false, defaultValue = "INFO") String severity,
 			@RequestParam(required = false, defaultValue = "Test Notification") String message) {
 
+		enforceAdmin();
 		try {
 			System.out.println("🧪 [CONTROLLER] Test notification - userId: " + userId + ", severity: " + severity
 					+ ", message: " + message);
@@ -228,6 +247,7 @@ public class NotificationController {
 	public ResponseEntity<String> sendTestBroadcast(@RequestParam String message,
 			@RequestParam(required = false, defaultValue = "INFO") String severity) {
 
+		enforceAdmin();
 		try {
 			System.out.println("📢 [CONTROLLER] Test broadcast - message: " + message + ", severity: " + severity);
 			NotificationSeverity severityEnum = NotificationSeverity.valueOf(severity.toUpperCase());
@@ -249,6 +269,56 @@ public class NotificationController {
 			return ResponseEntity.ok(status);
 		} catch (Exception e) {
 			return ResponseEntity.badRequest().body(java.util.Map.of("error", e.getMessage()));
+		}
+	}
+
+	private void enforceUserAccess(String userId) {
+		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+		if (auth == null || !auth.isAuthenticated()) {
+			throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication required");
+		}
+		if (isAdmin(auth)) {
+			return;
+		}
+
+		Integer requestedId = parseUserId(userId);
+		String username = auth.getName();
+		Integer currentId = userService.getUserByUsername(username)
+				.map(user -> user.getId())
+				.orElse(null);
+		if (currentId == null || !currentId.equals(requestedId)) {
+			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Forbidden");
+		}
+	}
+
+	private void enforceAdmin() {
+		if (!isAdmin()) {
+			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Admin role required");
+		}
+	}
+
+	private boolean isAdmin() {
+		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+		return isAdmin(auth);
+	}
+
+	private boolean isAdmin(Authentication auth) {
+		if (auth == null || auth.getAuthorities() == null) {
+			return false;
+		}
+		for (GrantedAuthority authority : auth.getAuthorities()) {
+			if ("ROLE_ADMIN".equals(authority.getAuthority())) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private Integer parseUserId(String userId) {
+		try {
+			return Integer.valueOf(userId);
+		} catch (NumberFormatException ex) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid userId");
 		}
 	}
 }

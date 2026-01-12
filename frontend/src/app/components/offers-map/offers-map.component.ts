@@ -206,24 +206,53 @@ export class OffersMapComponent implements OnChanges, OnDestroy {
       .toLowerCase();
   }
 
-  private buildPopupContent(offer: Offer): string {
+  private buildPopupContent(offer: Offer): HTMLElement {
+    const container = document.createElement('div');
+    container.className = 'popup-content';
+
+    const title = document.createElement('div');
+    title.className = 'popup-title';
+    title.textContent = offer.description ?? '';
+    container.appendChild(title);
+
     const service = offer.mobilityService || offer.mobilityServiceId ? `Service : ${offer.mobilityService || `#${offer.mobilityServiceId}`}` : '';
     const location = offer.pickupLocationName || offer.pickupLocation ? `Lieu : ${offer.pickupLocationName || offer.pickupLocation}` : '';
     const price = offer.price ? `Tarif : ${offer.price.toFixed(2)}€` : '';
     const distanceValue = this.offerDistances?.get(offer.offerId);
     const distance = distanceValue !== undefined ? `Distance : ${distanceValue.toFixed(1)} km` : '';
-    const segments = [service, location, price, distance].filter(Boolean).map((segment) => `<div class="popup-row">${segment}</div>`);
-    const actions = `<div class="popup-actions">
-      <a class="popup-action" href="/bookings/new?offerId=${offer.offerId}" target="_blank" rel="noopener">Réserver</a>
-      <button class="popup-route" data-offer-id="${offer.offerId}">Itinéraire</button>
-    </div>`;
+    const segments = [service, location, price, distance].filter(Boolean);
+    segments.forEach((segment) => {
+      const row = document.createElement('div');
+      row.className = 'popup-row';
+      row.textContent = segment;
+      container.appendChild(row);
+    });
 
-    return `<div class="popup-content">
-      <div class="popup-title">${offer.description}</div>
-      ${segments.join('')}
-      ${actions}
-      <div class="popup-route-info" data-route-info="${offer.offerId}"></div>
-    </div>`;
+    const actions = document.createElement('div');
+    actions.className = 'popup-actions';
+
+    const bookingLink = document.createElement('a');
+    bookingLink.className = 'popup-action';
+    bookingLink.href = `/bookings/new?offerId=${offer.offerId}`;
+    bookingLink.target = '_blank';
+    bookingLink.rel = 'noopener';
+    bookingLink.textContent = 'Réserver';
+
+    const routeButton = document.createElement('button');
+    routeButton.type = 'button';
+    routeButton.className = 'popup-route';
+    routeButton.dataset['offerId'] = String(offer.offerId);
+    routeButton.textContent = 'Itinéraire';
+
+    actions.append(bookingLink, routeButton);
+    container.appendChild(actions);
+
+    const routeInfo = document.createElement('div');
+    routeInfo.className = 'popup-route-info';
+    routeInfo.dataset['routeInfo'] = String(offer.offerId);
+    container.appendChild(routeInfo);
+
+    return container;
   }
 
   private configureLeafletIcons(): void {
@@ -299,13 +328,16 @@ export class OffersMapComponent implements OnChanges, OnDestroy {
       return;
     }
     if (!route) {
-      popupContent.innerHTML = '<em>Itinéraire indisponible</em>';
+      const message = document.createElement('em');
+      message.textContent = 'Itinéraire indisponible';
+      popupContent.replaceChildren(message);
       return;
     }
-    popupContent.innerHTML = `
-      <div>Distance : ${route.distanceKm.toFixed(1)} km</div>
-      <div>Durée : ${route.durationMinutes.toFixed(0)} min</div>
-    `;
+    const distance = document.createElement('div');
+    distance.textContent = `Distance : ${route.distanceKm.toFixed(1)} km`;
+    const duration = document.createElement('div');
+    duration.textContent = `Durée : ${route.durationMinutes.toFixed(0)} min`;
+    popupContent.replaceChildren(distance, duration);
   }
 
   private removeRoute(): void {
