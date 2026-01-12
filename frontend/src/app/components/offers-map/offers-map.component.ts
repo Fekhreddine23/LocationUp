@@ -91,9 +91,14 @@ export class OffersMapComponent implements OnChanges, OnDestroy {
 
     const layers: L.Layer[] = [];
     if (markers.length) {
-      const clusterGroup = L.markerClusterGroup();
-      clusterGroup.addLayers(markers);
-      layers.push(clusterGroup);
+      const clusterFactory = (L as any).markerClusterGroup;
+      if (typeof clusterFactory === 'function') {
+        const clusterGroup = clusterFactory();
+        clusterGroup.addLayers(markers);
+        layers.push(clusterGroup);
+      } else {
+        layers.push(...markers);
+      }
     }
 
     if (this.userLocation) {
