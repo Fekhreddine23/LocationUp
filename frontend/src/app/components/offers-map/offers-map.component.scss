@@ -103,3 +103,29 @@
 :host ::ng-deep .leaflet-popup-content .popup-route:hover {
   background: rgba(37, 99, 235, 0.08);
 }
+
+@media (max-width: 600px) {
+  :host ::ng-deep .leaflet-popup-content {
+    margin: 10px 12px;
+    max-width: 240px;
+  }
+
+  :host ::ng-deep .leaflet-popup-content .popup-title {
+    font-size: 0.95rem;
+  }
+
+  :host ::ng-deep .leaflet-popup-content .popup-row {
+    font-size: 0.85rem;
+  }
+
+  :host ::ng-deep .leaflet-popup-content .popup-actions {
+    width: 100%;
+  }
+
+  :host ::ng-deep .leaflet-popup-content .popup-action,
+  :host ::ng-deep .leaflet-popup-content .popup-route {
+    flex: 1 1 100%;
+    width: 100%;
+    justify-content: center;
+  }
+}
