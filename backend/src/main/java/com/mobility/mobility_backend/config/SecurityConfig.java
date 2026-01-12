@@ -46,18 +46,19 @@ public class SecurityConfig {
 		System.out.println("🔒 [DEBUG] SecurityConfig is being loaded!");
 
 		http.csrf(csrf -> csrf.disable()).cors(cors -> cors.configurationSource(corsConfigurationSource()))
-				.headers(headers -> headers
-						.frameOptions(frame -> frame.disable())
-						.contentSecurityPolicy(csp -> csp
-								.policyDirectives("frame-ancestors 'self' http://localhost:8088"))
-						.referrerPolicy(referrer -> referrer
-								.policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
-						.permissionsPolicy(permissions -> permissions
-								.policy("geolocation=(self), microphone=(), camera=(), payment=()"))
-						.httpStrictTransportSecurity(hsts -> hsts
-								.includeSubDomains(true)
-								.preload(true)
-								.maxAgeInSeconds(31536000)))
+				.headers(headers -> {
+					headers.frameOptions(frame -> frame.disable());
+					headers.contentSecurityPolicy(csp -> csp
+							.policyDirectives("frame-ancestors 'self' http://localhost:8088"));
+					headers.referrerPolicy(referrer -> referrer
+							.policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN));
+					headers.permissionsPolicy(permissions -> permissions
+							.policy("geolocation=(self), microphone=(), camera=(), payment=()"));
+					headers.httpStrictTransportSecurity(hsts -> hsts
+							.includeSubDomains(true)
+							.preload(true)
+							.maxAgeInSeconds(31536000));
+				})
 			.authorizeHttpRequests(auth -> auth
 						// Routes publiques - DOIVENT ÊTRE EN PREMIER
 				.requestMatchers("/api/debug/**").permitAll().requestMatchers("/ws/**").permitAll() // Pour WebSocket si utilisé plus tard
