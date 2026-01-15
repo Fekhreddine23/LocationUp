@@ -20,9 +20,15 @@ import com.mobility.mobility_backend.entity.User;
 import com.mobility.mobility_backend.service.DashboardService;
 import com.mobility.mobility_backend.service.cache.AdminStatsCacheService;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.extern.slf4j.Slf4j;
+
 @RestController
 @RequestMapping("/api/admin")
 @PreAuthorize("hasRole('ADMIN')")
+@Slf4j
+@Tag(name = "Admin Dashboard", description = "Endpoints pour le tableau de bord administrateur")
 public class AdminDashboardController {
 
 	private final DashboardService dashboardService;
@@ -36,12 +42,15 @@ public class AdminDashboardController {
 	}
 
 	@GetMapping("/stats")
+	@Operation(summary = "Récupérer les statistiques globales", description = "Retourne les KPIs principaux (CA, utilisateurs, etc.)")
 	public ResponseEntity<AdminStatsDTO> getDashboardStats() {
+		log.debug("Récupération des statistiques admin");
 		AdminStatsDTO stats = dashboardService.getAdminStats();
 		return ResponseEntity.ok(stats);
 	}
 
 	@GetMapping("/stats/trends")
+	@Operation(summary = "Récupérer les tendances", description = "Retourne l'évolution des chiffres sur les X derniers mois")
 	public ResponseEntity<DashboardTrendsDTO> getDashboardTrends(@RequestParam(value = "months", defaultValue = "6") int months) {
 		return ResponseEntity.ok(dashboardService.getDashboardTrends(months));
 	}
@@ -52,6 +61,7 @@ public class AdminDashboardController {
 	 */
 	@GetMapping("/dashboard/stats")
 	public ResponseEntity<Page<User>> getUsers(Pageable pageable) {
+		log.debug("Consultation liste utilisateurs page {} size {}", pageable.getPageNumber(), pageable.getPageSize());
 		Page<User> users = dashboardService.getUsers(pageable);
 		return ResponseEntity.ok(users);
 	}
