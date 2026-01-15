@@ -91,6 +91,10 @@ public class Offer {
 	@Column(name = "updated_at")
 	private LocalDateTime updatedAt;
 
+	@Version
+	@Column(name = "version", nullable = false)
+	private Long version = 0L;
+
 	@Column(name = "status", nullable = false)
 	@Enumerated(EnumType.STRING)
 	private OfferStatus status = OfferStatus.PENDING; // Valeur par défaut
@@ -308,8 +312,7 @@ public class Offer {
 		return "Offer [offerId=" + offerId + ", pickupLocation=" + pickupLocation + ", returnLocation=" + returnLocation
 				+ ", mobilityService=" + mobilityService + ", admin=" + admin + ", pickupDatetime=" + pickupDatetime
 				+ ", description=" + description + ", price=" + price + ", imageUrl=" + imageUrl + ", createdAt="
-				+ createdAt + ", updatedAt=" + updatedAt + ", status=" + status + ", version=" + version + ", active="
-				+ active + "]";
+				+ createdAt + ", updatedAt=" + updatedAt + ", status=" + status + ", active=" + active + "]";
 	}
 
 	// gestion administrateur
